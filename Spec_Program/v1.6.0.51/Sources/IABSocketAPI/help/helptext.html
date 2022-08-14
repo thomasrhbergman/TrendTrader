@@ -1,0 +1,4183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta name="Description" content="TIABSocket API help file">
+<link rel="shortcut icon" href="/images/iabsocketapi.ico" type="image/x-icon">
+<title>TIABSocket component help file</title>
+</head>
+<body>
+<a name="Introduction"></a>
+<a name="Top"></a>
+<font color="#c0c0c0" size="-1">Updated on November 20th, 2021.&nbsp;&nbsp;API v10.11</font><br>
+<center><h2>TIABSocket component help file.</h2>
+<a href="https://www.hhssoftware.com/iabsocketapi/" target="newwindow">https://www.hhssoftware.com/iabsocketapi/</a></center>
+<br>
+This component set is built to work with the Interactive Brokers TradeWorkStation API.  It allows Delphi and BCB programmers to build apps that send orders directly to the TWS.  This TIABSocket component links directly to the sockets on your computer to communicate with the TWS.
+<br>
+<br>
+There are no dll, ActiveX or DDE files required.  This direct connection makes for a fast reliable interaction and response time.
+<br>
+<br>
+The TIABSocket is the main component in the set.  Install this component into your Delphi component library, and then drop it on a form.  The properties and events will appear in the Object Inspector.  Other objects in this set are the <a href="#TIABOrder">TIABOrder</a>, <a href="#TIABOrders">TIABOrders</a>, <a href="#TIABPortfolio">TIABPortfolio</a>, <a href="#TIABInstrumentSpec">TIABInstrumentSpec</a>, <a href="#TIABBondSpec">TIABBondSpec</a>, <a href="#TIABScanner">TIABScanner</a>, <a href="#TIABScan">TIABScan</a>.
+The component manages all interactions with the TWS, including all order activity, portfolio and account details.
+<br>
+<br>
+Effective with API v10.10 onwards, the ability to handle <a href="#BigDecimal">BigDecimal</a> values was added for use with bitcoin trading.  This requires the addition of third party code from <a href="https://github.com/rvelthuis/DelphiBigNumbers">DelphiBigNumbers</a>
+<br>
+<br>
+This help file should be read in conjunction with TWS API help located here<br>
+&nbsp;&nbsp;<a href="https://interactivebrokers.github.io/tws-api/index.html" target="twshelp">https://interactivebrokers.github.io/tws-api/index.html</a><br><br>
+The discussion groups for the API here cover many programming tasks for the IAB API in general.<br>
+&nbsp;&nbsp;<a href="https://groups.io/g/twsapi" target="twshelp">https://groups.io/g/twsapi</a>
+<br>
+<br>
+<h3><font color="#0000ff">Getting started</font></h3>
+<ol>
+<li>Install the TIABSocket component into the library.
+  <br>In Delphi 7 era programs; Menu select Components -&gt; Install component into dclextras, or other new bpl file, then add the IABSocketAPI.pas, IABSocketAPI_const.pas and .dcr files, Build, Install, save and close. It will appear on the Samples page by default.<br>
+  <br>In Delphi XE era programs; Menu select Components -&gt; Select IABSocketAPI.pas, IABSocketAPI_const.pas and .dcr files, select existing (dclextras), or new bpl file, Build, Install, save and close. It will appear on the Samples page by default.<br>
+  <br>For Updating:  Replace the IABSocketAPI.pas, IABSocketAPI_const.pas files, open the .dpk package built above, and Build / Install it again.<br><br>
+  If bitcoin trading is needed, then enable USE_BIGDECIMAL (see the Bigdecimal.txt for procedures.)
+  <br><br>	
+</li>
+<li>Start a project, and drop the component on the form.<br><br></li>
+<li>Set the various properties including the Default Order settings.<br><br></li>
+<li>Set the events for (as required):  
+<ul>
+<li>OnAccountTime - latest account update.</li>
+<li>OnAccountValue - changes in any account value. </li>
+<li>OnConnectionState - monitors connection to TWS, wait for a Ready state before sending order.</li>
+<li>OnOrderStatus - changes, fills, partials, cancels to orders.</li>
+<li>OnPortfolioUpdate - changes in the portfolio.</li>
+<li>OnTickPrice &amp; OnTickSize, or OnTickSizeAndSize - for market data.</li>
+</ul><br></li>
+<li>Set connected property to true to start a connection to the TWS.<br><br></li>
+<li>Call these Methods to (example):
+<ul>
+<li>PlaceOrder - enter new order.</li>
+<li>CancelOrder - cancels an open order.</li>
+<li>ModifyOrder - changes an existing order (cancel and replace).</li>
+<li>GetMarketData - starts flow of market data.</li>
+<li>GetAccountUpdates - starts flow of changes.</li>
+<li>GetExecutions - for execution details.</li>
+<li>GetOpenOrders - any open orders on logon.</li>
+</ul><br></li>
+<li>Check the various properties for values such as:
+<ul>
+<li>Filled, remaining, partial fill quantity.</li>
+<li>Fill price, partial fill prices.</li>
+<li>Account data</li>
+<li>Portfolio data</li>
+<li>State, fill, of any order</li>
+</ul></li>
+</ol>
+ 
+<br>
+<br>
+<hr>
+<i>This help file applies to API version 10.11  (November 2021)</i>
+<br>
+<br>
+<br>
+<a name="TIABSocket"></a>
+<center><h3><font color="#0000ff">TIABSocket component</font></h3></center>
+This component is the main interface, which is used for placing and checking on orders, receiving events and calling all methods of the API. 
+<br>
+<br>
+<br>
+<h3><font color="#0000ff">TIABSocket properties</font></h3>
+<br>
+<a name="AccountValues"></a>
+<b> property </b> AccountValues: TStringList
+<br>
+<br>
+<blockquote>This property requires the GetAccountUpdates method to be called first to populate the string list.  The Account Values property maintains a String List of current account values from the TWS.   Each string is a combination of the  Key, Data, Currency  values separated by one space between each element.  New changes from the TWS are included as they arrive.  Each change from TWS generates an <a href="#OnAccountValue">OnAccountValue</a> event.  (read and write).
+<br>
+<br>
+These values below are defined, and the zero based Index will refer to these in order.
+<ul>  
+<li>AccountDescription</li>
+<li>CashBalance</li>
+<li>Currency</li>
+<li>DayTradeEquity</li>
+<li>DayTradesRemaining</li>
+<li>EquityWithLoanValue</li>
+<li>FutureOptionValue</li>
+<li>FuturesPNL</li>
+<li>GrossPositionValue</li>
+<li>InitMarginReq</li>
+<li>Leverage</li>
+<li>LongOptionValue</li>
+<li>MaintMarginReq</li>
+<li>NetLiquidation</li>
+<li>OptionMarketValue</li>
+<li>PreviousDayEquityWithLoanValue</li>
+<li>RealizedPnL</li>
+<li>ShortOptionValue</li>
+<li>StockMarketValue</li>
+<li>UnalteredInitMarginReq</li>
+<li>UnalteredMaintMarginReq</li>
+<li>UnrealizedPnL</li>
+</ul></blockquote>
+<a name="Portfolio"></a>
+<hr>
+<br>
+<b> property </b> Portfolio: <a href="#TIABPortfolio">TIABPortfolio</a>
+<br>
+<br>
+<br>
+<blockquote>This property requires the GetAccountUpdates method to be called first to populate the list.  The Portfolio property maintains a list of all TPortfolioItem updates or adjustments sent by the TWS.  Any changes to the list will generate an <a href="#OnPortfolioUpdate">OnPortfolioUpdate</a> event.  (read and write).  Access each item in the same manner as Lines property in a TMemo.  i.e.  <i>Portfolio[2].MarketPrice</i>  
+<br>
+<br>
+The fields of a TIABPortfolioItem are:
+<ul>
+<li>Symbol: <b>string</b>;</li>
+<li>Local: <b>string</b>;</li>
+<li>SecurityType: <a href="#TIABSecurityType">TIABSecurityType</a>;</li>
+<li>Expiry: <b>string</b>;</li>  
+<li>Strike: Double;</li>
+<li>Right: <a href="#TIABRight">TIABRight</a>;</li>
+<li>Currency: <b>string</b>;</li>
+<li>Position: BigDecimal;<font color="#008000">//Double;</font></li>
+<li>MarketPrice: Double;</li>
+<li>MarketValue: Double;</li>
+<li>AverageCost: Double;</li>
+<li>UnrealizedPNL: Double;</li>
+<li>RealizedPNL: Double;</li>
+<li>AccountName: <b>string</b>;</li>
+<li>InstrumentId: Integer;</li>
+<li>Multiplier: <b>string</b>;</li>
+<li>PrimaryExchange: <b>string</b>;</li>
+<li>TradingClass: <b>string</b>;</li>
+</ul>
+</blockquote>
+<br>
+<a name="Connected"></a>
+<hr>
+<br>
+<b> property </b>Connected: Boolean
+<br>
+<br>
+<blockquote>
+Read the Connected property to determine if connected to the TWS.  Write false / true to set the connection to the TWS.  Monitor the <a href="#OnConnectionState">OnConnectionState</a> event for changes in connection status.  Do not communicate with TWS until the OnConnectionState signals twsReady.  (read and write).
+</blockquote>
+<br>
+<a name="ClientID"></a>
+<hr>
+<br>
+<b> property </b>ClientID: Integer
+<br>
+<br>
+<blockquote>
+Set a value for the TWS to identify this Client application.  This value may be changed whilst disconnected.  Each new ClientId distinguishes each running API process to the TWS.  Each running client must have a unique ID.  (read and write).  
+<br>
+<br>
+A value of 0 to cause this client to become part of the TWS.  See <a href="#BindTWSOrdersToClient">BindTWSOrdersToClient</a>.   
+</blockquote>  
+<br>
+<a name="Scanner"></a>
+<hr>
+<br>
+<b> property </b>Scanner: TIABScanner;
+<br>
+<br>
+<blockquote>
+This property provides access to the <a href="#TIABScanner">TIABScanner</a> object.  This controls the scans in the same manner as the TWS.  See the <a href="#TIABScanner">TIABScanner</a> for details.
+<br>   
+<br>
+These events are related to the TIABScanner;  <a href="#OnScannerParam">OnScannerParam</a> and <a href="#OnScannerData">OnScannerData</a>. 
+<br>
+</blockquote>  
+<br>
+<a name="DefOrder"></a>
+<hr>
+<br>
+<b> property </b>DefOrder: <a href="#TIABOrder">TIABOrder</a>
+<br>
+<br>
+<blockquote>
+The DefOrder is the default order.  Use the default order to set many of the basic values that will not change between separate orders.  This order can be passed to the PlaceOrder method, changing only the values that are different from last order.  (read and write).
+<br>
+<br>
+See the <a href="#TIABOrder">TIABOrder</a> object for details on the properties of DefOrder.
+</blockquote>
+<br>
+<a name="InstrumentSpecs"></a>
+<hr>
+<br>
+<b> property </b>InstrumentSpecs: <a href="#TIABInstrumentSpec">TIABInstrumentSpec</a>
+<br>
+<br>
+<blockquote>This property requires the GetInstrumentSpecs method to be called first.  The InstrumentSpecs property maintains a list of TIABInstrumentSpecItem requested from the TWS.  (read and write).  Access each item in the same manner as Lines property in a TMemo.  i.e.  <i>InstrumentSpecs[2].MinimumTick</i>  
+<br>
+<br>
+The fields of a TIABInstrumentSpecItem are:
+<ul>
+<li>MarketName: <b>string</b>;</li>
+<li>TradingClass: <b>string</b>;</li>
+<li>ContractId: Integer;</li>
+<li>Multiplier: <b>string</b>;</li>
+<li>MinimumTick: Double;</li>
+<li>OrderTypes: TIABOrderTypesSet;</li>
+<li>ValidExchanges: <b>string</b>;</li>
+<li>Symbol: <b>string</b>;</li>
+<li>SecurityType: TIABSecurityType;</li>		
+<li>Expiry: <b>string</b>;</li>
+<li>Strike: Double;</li>
+<li>Right: <a href="#TIABRight">TIABRight</a>;</li>
+<li>Exchange: <b>string</b>;</li>
+<li>Currency: <b>string</b>;</li>
+<li>LocalSymbol: <b>string</b>;</li>
+<li>PriceMagnifier: Integer;</li>
+<li>DataID: Integer;</li>
+<li>UnderConId: Integer;</li>
+<li>LongName: <b>string</b>;</li>
+<li>PrimaryExchange: <b>string</b>;</li>
+<li>ContractMonth: <b>string</b>;</li>
+<li>Industry: <b>string</b>;</li>
+<li>Category: <b>string</b>;</li>
+<li>SubCategory: <b>string</b>;</li>
+<li>TimeZoneID: <b>string</b>;</li>
+<li>TradingHours: <b>string</b>;</li>
+<li>LiquidHours: <b>string</b>;</li>
+<li>EVRule: <b>string</b>;</li>
+<li>EVMultiplier: Double;</li>
+<li>SecIdList: TIABTagValueArray;</li>
+<li>AggGroup: Integer;</li>
+<li>UnderSymbol: <b>string</b>;</li>
+<li>UnderSecType: <b>string</b>;</li>
+<li>MarketRuleIds: <b>string</b>;</li>
+<li>DerivativeSecTypes: <b>string</b>;</li>
+<li>LastTradeTime: <b>string</b>;</li>
+<li>MinSize: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SuggestedSizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+</ul></blockquote>
+<br>
+<a name="BondSpecs"></a>
+<hr>
+<br>
+<b> property </b>BondSpecs: <a href="#TIABBondSpec">TIABBondSpec</a>
+<br>
+<br>
+<blockquote>This property requires the GetInstrumentSpecs method to be called first, using a valid bond CUSIP or ISIN number in the Symbol field..  The BondSpecs property maintains a list of TIABBondSpecItem requested from the TWS.  (read and write).  Access each item in the same manner as Lines property in a TMemo.  i.e.  <i>BondSpecs[2].Cusip</i>  
+<br>
+<br>
+The fields of a TIABBondSpecItem are:
+<ul>
+<li>MarketName: <b>string</b></li>
+<li>TradingClass: <b>string</b></li>
+<li>ContractId: Integer</li>
+<li>MinimumTick: Double</li>
+<li>OrderTypes: TIABOrderTypesSet</li>
+<li>ValidExchanges: <b>string</b></li>
+<li>Symbol: <b>string</b></li>
+<li>SecurityType: TIABSecurityType</li>
+<li>Cusip: <b>string</b></li>
+<li>Ratings: <b>string</b></li>
+<li>DescAppend: <b>string</b></li>
+<li>BondType: <b>string</b></li>
+<li>CouponType: <b>string</b></li>
+<li>Callable: Boolean</li>
+<li>Putable: Boolean</li>
+<li>Coupon: Double</li>
+<li>Convertible: Boolean</li>
+<li>Maturity: <b>string</b></li>
+<li>IssueDate: <b>string</b></li>
+<li>Exchange: <b>string</b></li>
+<li>Currency: <b>string</b></li>
+<li>NextOptionDate: <b>string</b></li>
+<li>NextOptionType: <b>string</b></li>
+<li>NextOptionPartial: Boolean</li>
+<li>Notes: <b>string</b></li>
+<li>LongName: <b>string</b></li>
+<li>DataId: Integer</li>
+<li>EVRule: <b>string</b>;</li>
+<li>EVMultiplier: Double;</li>
+<li>SecIdList: TIABTagValueArray;</li>
+<li>AggGroup: Integer;</li>
+<li>MarketRuleIds: <b>string</b>;</li>
+<li>TimeZoneID: <b>string</b>;</li>
+<li>LastTradeTime: <b>string</b>;</li>
+<li>MinSize: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SuggestedSizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+</ul></blockquote>
+<br>
+<a name="ReserveIDs"></a>
+<hr>
+<br>
+<b>property</b> ReserveIDs: Integer
+<br>
+<br>
+<blockquote>
+Set the required number of TempId's required.  Advises the TWS to reserve a block of TempId's.  (read and write).
+<br>
+<br>
+Note: Not certain this really is required for successful orders.
+</blockquote>
+<br>
+<a name="TWSHostAddress"></a>
+<hr>
+<br>
+<b>property</b> TWSHostAddress: <b>string</b>
+<br>
+<br>
+<blockquote>
+Sets the IP Address that the TWS Server is located.  The default is '127.0.0.1' (localhost).  The TWS will now accept connections from any IP address.  
+</blockquote>
+<br>
+<a name="TWSPort"></a>
+<hr>
+<br>
+<b>property</b> TWSPort: Integer
+<br>
+<br>
+<blockquote>
+This value is the port that the TWS server listens.  The default TWS port is 7496 for live TWS API connection, and 7497 for Paper trading TWS connections.  This value must correspond the value set in the TWS configuration.  (read and write).
+</blockquote>
+<br>
+<a name="ConnectAtServerTime"></a>
+<hr>
+<br>
+<b>property</b> ConnectAtServerTime: <b>string</b>
+<br>
+<br>
+<blockquote>
+Read only.  This property is set after a good connection.  Read this value in the <a href="#OnConnectionState">OnConnectionState</a> event when a Ready state exists.
+<br>
+The format is The TWS connection time is provided as a string with the format "yyyymmdd{space}hh:nn:ss{space}" followed by the local time zone.  Use the IABDateTimeStrToDateTime function to convert to a TDateTime value.
+<br>
+</blockquote>
+<br>
+
+<a name="SecurityID"></a>
+<a name="SecurityIDType"></a>
+<hr>
+<br>
+<b>property</b> SecurityID: <b>string</b>
+<b>property</b> SecurityIDType: <b>string</b>
+<br>
+<br>
+<blockquote>
+Use these fields when querying contract details (reqContractDetails) or when placing orders (placeOrder).
+<br>
+</blockquote>
+<br>
+
+
+
+
+<a name="Orders"></a>
+<hr>
+<br>
+<b>property</b> Orders: <a href="#TIABOrders">TIABOrders</a>
+<br>
+<br>
+<blockquote>
+Orders property is an array component of all singular Orders.  The array is populated automatically, each time a new order is placed, and when TWS sends notification of previous executions or OpenOrders.  Each Order fill / price is amended automatically as changes occur.
+<br>
+Access this property in the same manner as a Lines property of a TMemo.  i.e. <i>Orders[2].FillPrice</i>
+<br>
+<br>
+See the <a href="#TIABOrders">TIABOrders</a> object for details on its properties / methods / events.
+</blockquote>
+<br>
+
+<a name="VerifiedOrders"></a>
+<hr>
+<br>
+<b>property</b> VerifiedOrders: <a href="#TIABOrders">TIABOrders</a>
+<br>
+<br>
+<blockquote>
+This property operates in the same manner as <a href="#Orders">Orders</a> property - see above for descriptions.
+<br>
+<br>
+The VerifiedOrders property contains only orders that have been sucessfully processed by the <a href="#VerifyOrder">VerifyOrder</a> method.  See the <a href="#VerifyOrder">VerifyOrder</a> method for a description of verified Orders.
+</blockquote>
+<br>
+<a name="v100plusAPICalls"></a>
+<a name="ClientMaxVerOverride"></a>
+<hr>
+<br>
+<b>property</b> v100plusAPICalls: Boolean;<br>
+<b>property</b> ClientMaxVerOverride: Integer;
+<br>
+<br>
+<blockquote>
+In mid 2016, the TWS API made a large change to a newer format with better data size tracking.  Then they changed the updates to smaller increamental ones, but within each version releases.
+<br>
+<br>
+These properties allow you to go back to the old API, or control the current version to communicate to TWS with.
+<br>
+<br>
+v100plusAPICalls: Boolean default true;  Setting false puts the API back to v63 (late 2015).
+<br>
+<br>
+ClientMaxVerOverride: Integer;   Set the maximum API version to use (972, 973, etc).   This will be handy if some new TWS API change is made but causes crashes.  Default is 0 which uses the latest defined version per the API code.
+<br>
+</blockquote>
+<br>
+<a name="SmartDepthMarketData"></a>
+<hr>
+<br>
+<b>property</b> SmartDepthMarketData: Boolean;
+<br>
+<br>
+<blockquote>
+Applies to Level 2 market depth requests in <a href="#GetMarketDepth">GetMarketDepth</a>.  Set this to recieve combined Smart exchange data values.
+<br>
+<br>
+</blockquote>
+<br>
+
+
+<hr>
+<br>
+<h3><font color="#0000ff">TIABSocket Methods</font></h3>
+<br>
+<br>
+<a name="CancelAccountUpdates"></a>
+<b>procedure</b> CancelAccountUpdates;
+<br>
+<br>
+<blockquote>
+This method cancels a previous request for Account updates via <a href="#GetAccountUpdates">GetAccountUpdates</a>. 
+</blockquote>
+<br>
+<hr>
+<br>
+<a name="CancelOrder"></a>
+<b>procedure</b> CancelOrder(TempID: Integer);
+<br>
+<blockquote>
+This method cancels an existing open order.  The TempId is the value that was returned by the PlaceOrder method.  Confirm that the cancel was processed correctly by the <a href="#OnOrderStatus">OnOrderStatus</a> event and an Order.Completed property of true;
+</blockquote>
+<br>
+<br>
+<a name="CancelMarketData"></a>
+<hr>
+<br>
+<b>procedure</b> CancelMarketData(DataId: Integer);
+<br>
+<br>
+<blockquote>
+Cancels the flow of <a href="#OnMarketDepth">OnMarketDepth</a> and <a href="#OnMarketLevel2">OnMarketLevel2</a> events.  The DataId value is the value supplied to the GetMarketDepth method used to identify and start the flow of data.
+</blockquote>
+<br>
+<br>
+<a name="CancelMarketDepth"></a>
+<hr>
+<br>
+<b>procedure</b> CancelMarketDepth(DataId: Integer);
+<br>
+<br>
+<blockquote>
+Cancels the flow of <a href="#OnTickPrice">OnTickPrice</a> and <a href="#OnTickSize">OnTickSize</a> and <a href="#OnTickSizeAndPrice">TickSizeAndPrice</a> events.  The DataId value is the value supplied to the GetMarketData method used to identify and start the flow of data.
+</blockquote>
+<br>
+<a name="GetAccountUpdates"></a>
+<hr>
+<br>
+<b>procedure</b> GetAccountUpdates(AccountCode: <b>string</b>);
+<br>
+<br>
+<blockquote>
+Starts the flow of account status and amendment updates.  The AccountCode parameter applies to FA (financial adviser) accounts only.  All other account types - pass an empty string.  The TWS will send about 20 initial values.  The TWS will continue to amend the account every minute, and when order executions occur.  The <a href="#OnAccountDetailsReady">OnAccountDetailsReady</a> event will fire at the completion of the *initial only* call to this method.   The flow of data is stopped with <a href="#CancelAccountUpdates">CancelAccountUpdates</a>.
+<br>
+<br>
+This method starts the <a href="#OnAccountValue">OnAccountValue</a> and <a href="#OnAccountTime">OnAccountTime</a> events.
+</blockquote>
+<br>
+<a name="GetExecutions"></a>
+<hr>
+<br>
+<b>function</b> GetExecutions(Filter: TIABExecutionFilter): Integer;
+<br>
+<br>
+<blockquote>
+Requests from the TWS executions based on the filter conditions.  Setting a field to null or 0 will remove that condition.  Time is based on exchange time.  The function returns a sequential request number that will be in the <a href="#OnExecutionDetailsReady">OnExecutionDetailsReady</a> event parameter.  The return values of the execution are received through the <a href="#OnExecution">OnExecution</a> event.  The <a href="#Orders">Orders</a> property will be populated for each new or old order received.
+<br><br>
+&nbsp;&nbsp;TIABExecutionFilter = <b>record</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;ClientId: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;AccountCode: <b>string</b>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;FromTime: TDateTime;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Symbol: <b>string</b>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SecurityType: <a href="#TIABSecurityType">TIABSecurityType</a>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Exchange: <b>string</b>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Action: TIABActionFilter;<br>
+&nbsp;&nbsp;end;
+<br><br>
+&nbsp;&nbsp;TIABActionFilter = (afNone,afBuy,afSell,afShort,afExercise,afLapse);
+<br><br>
+See also <a href="#RebuildFromTWS">RebuildFromTWS</a>.
+</blockquote>
+<br>
+<a name="GetInstrumentSpecs"></a>
+<hr>
+<br>
+<b>procedure</b> GetInstrumentSpecs(DataId: Integer; Order: TIABOrder; IncludeExpired: Boolean = false);
+<br>
+<br>
+<blockquote>
+Call this function to download all details for a particular underlying instrument, contract or Bond.  The return values for instrument or contract are received through the <a href="#OnInstrumentSpecDetails">OnInstrumentSpecDetails</a> event.  Bond details are returned via the <a href="#OnBondSpecDetails">OnBondSpecDetails</a> event.
+<br><br>
+IncludeExpired parameter (default = false).   If it is true, historical data queries can be done on expired contracts, those queries being limited to the last year of the contracts life.
+<br>
+The DataId value is a unique value used to identify this set of data, and is used for identifying the response later. 
+<br><br>
+This method is the same as the API GetContractDetails.  
+<br><br>
+</blockquote>
+<br>
+<a name="GetMarketData"></a>
+<hr>
+<br>
+
+<b>procedure</b> GetMarketData(DataId: Integer; Symbol, Local, Exchange, Expiry, Currency, PrimaryExchange: <strong>string</strong>;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SecurityType: TIABSecurityType; Right: TIABRight; Strike: Double; ComboLegs: TIABComboLegArray;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TradingClass: <strong>string</strong> = ''; ExMarketData: TIABExMktDataSet = []; Multiplier: <strong>string</strong> = '');&nbsp;<b>overload;</b><br/><br/>
+<b>procedure</b> GetMarketData(DataId: Integer; Order: TIABOrder; ExMarketData: TIABExMktDataSet = []);&nbsp;<b>overload;</b><br /><br />
+<b>procedure</b> GetMarketData(DataId: Integer; Order: TIABOrder; ExMarketDataString: <strong>string</strong>);&nbsp;<b>overload;</b><br />
+
+<br>
+<br>
+<blockquote>
+GetMarketData is an overload method, and may be called three different ways.  These methods start the flow of data to the <a href="#OnTickPrice">OnTickPrice</a> and <a href="#OnTickSize">OnTickSize</a> and <a href="#OnTickSizeAndPrice">TickSizeAndPrice</a> events.  The DataId value is a unique value used to identify this set of data, and is used for canceling later via CancelMarketdata method.<br />
+<br>
+In the first version of this method, we specify each of the individual parameters.<br />
+<br>
+In the second method, the Order parameter is an existing <a href="#TIABOrder">TIABOrder</a>, and GetMarketData will use the symbol and Exchange information contained there.  (Pass the DefOrder or create a new <a href="#TIABOrder">TIABOrder</a>, and pass it).
+<br>
+<br>
+The ExMarketData parameter is to specify an Extended Market Data values.  This is a parameter set.  Normal (basic) market data requests do not need this parameter.  This parameter is defaulted to an empty set [].
+<br>
+The values of TIABExMktDataSet comprise of:
+<br> 
+<br>
+TIABExMktData = (emdOptionVolume, emdOptionOpenInterest, emdHistoricalVolatility, emdOptionImpliedVolatility,
+emdIndexFuturePremium, emdMiscellaneous, emdMarkPricePnL, emdMarkPricePnLAuction);
+<br>
+<br>
+Each of these values will generate additional <a href="#OnTickPrice">OnTickPrice</a> and <a href="#OnTickSize">OnTickSize</a> events.  Not all the requests apply to all instrument types.  See the beta notes, or regular help for a table of events from each specific ExMktData value. 
+<br>
+<br>
+The third version of GetMarketData, is for passing special ID strings directly into the TWS.  The ExMarketDataString parameter is a comma separated string of Integer ID's (eg. '234,123,').  Use this function to retrieve the Shortable state of an instrument - set the ExMktDataString to '236'.  The result is delivered in the <a href="#OnTickGeneric">OnTickGeneric</a> event.     
+<br>
+<br>
+To cancel the data flow, call <a href="#CancelMarketData">CancelMarketData</a> using the same DataId value.
+<br>
+<br>
+The full list of available tick types, and which event they return through, is here: <a href="https://interactivebrokers.github.io/tws-api/tick_types.html">TWS tick types and responses</a>.
+<br>
+<br>
+See also <a href="#GetMarketSnapShot">GetMarketSnapShot</a> method to retrieve a one time only set of data for an instrument. 
+</blockquote>
+<br>
+											 
+<br>
+<a name="GetMarketSnapShot"></a>
+<hr>
+<br>
+<b>procedure</b> GetMarketSnapShot(DataId: Integer; Symbol, Local, Exchange, Expiry, Currency, PrimaryExchange: <b>string</b>; SecurityType: <a href="#TIABSecurityType">TIABSecurityType</a>; Right: <a href="#TIABRight">TIABRight</a>; Strike: Double);<br><br>
+<br>
+<blockquote>
+GetMarketSnapShot is much like the <a href="#GetMarketData">GetMarketData</a> method, except that a snapshot will give just a single set of data through the OnTick events only.  See <a href="#GetMarketData">GetMarketData</a> for parameter details.  See the <a href="#GetMarketData">OnSnapShotDataEnd</a> event as well. 
+</blockquote>
+<br>
+											 
+<a name="GetMarketDepth"></a>
+<hr>
+<br>
+<b>procedure</b> GetMarketDepth(DataId: Integer; Order: <a href="#TIABOrder">TIABOrder</a>; nRows: Integer); <b>overload</b>;<br><br>
+<b>procedure</b> GetMarketDepth(DataId: Integer; Symbol, Local, Exchange, PrimaryExchange, Expiry, Currency: string; SecurityType:  <a href="#TIABSecurityType">TIABSecurityType</a>; Right: <a href="#TIABRight">TIABRight</a>; Strike: Double; nRows: Integer; Multiplier: <b>string</b> = ''); <b>overload</b>;<br><br>
+<b>procedure</b> GetMarketDepth(DataId: Integer; Symbol, Local, Exchange, PrimaryExchange, Expiry, Currency, TradingClass, MktDataOptions, Multiplier: <b>string</b>; SecurityType: TIABSecurityType; Right: TIABRight; Strike: Double; nRows, ConId: Integer);  <b>overload</b>;<br>
+<br>
+<br>
+<blockquote>
+GetMarketDepth is an overload method, and may be called three different ways.  These methods start the flow of data to the <a href="#OnMarketLevel2">OnMarketLevel2</a> and <a href="#OnMarketDepth">OnMarketDepth</a> events.  The TWS will send data to one Event only, depending on the type of data available for the instrument requested.  The DataId value is a unique value used to identify the data for this instrument.
+<br>
+<br>
+In the first method, the Order parameter is an existing <a href="#TIABOrder">TIABOrder</a>, and GetMarketDepth will use the symbol and Exchange information contained there.  (Pass the DefOrder or create a new <a href="#TIABOrder">TIABOrder</a>, and pass it).  <b>OR</b> you may specify the individual details in the second GetMarketDepth method.
+<br>
+<br>
+To cancel the data flow, call <a href="#CancelMarketDepth">CancelMarketDepth</a> using the same DataId value.
+<br>
+<br>
+See also <a href="#SmartDepthMarketData">SmartDepthMarketData</a> setting for Level2 data.
+</blockquote>
+<br>
+<a name="GetOpenOrdersClient"></a>
+<hr>
+<br>
+<b>procedure</b> GetOpenOrdersClient;
+<br>
+<br>
+<blockquote>
+This method requests from the TWS all open orders - for this Client Id only.  The results arrive via the <a href="#OnOpenOrder">OnOpenOrder</a> and <a href="#OnOrderStatus">OnOrderStatus</a> events.  The TIABSocket will locate the matching Order and amend it, or generate a new <a href="#TIABOrder">TIABOrder</a> in the Orders property, for each value returned.  At the end of each data set for this method, the <a href="#OnOpenOrderDetailsReady">OnOpenOrderDetailsReady</a> event fires.
+<br><br>
+See also <a href="#RebuildFromTWS">RebuildFromTWS</a>.
+</blockquote>
+<br>
+<a name="GetOpenOrdersAccount"></a>
+<hr>
+<br>
+<b>procedure</b> GetOpenOrdersAccount;
+<br>
+<br>
+<blockquote>
+This method requests from the TWS all open orders - for the entire account. i.e via other Clients or Id's, including TWS generated orders.  The results arrive via the <a href="#OnOpenOrder">OnOpenOrder</a> and <a href="#OnOrderStatus">OnOrderStatus</a> events.  The TIABSocket will locate the matching Order and amend it, or generate a new <a href="#TIABOrder">TIABOrder</a> in the Orders property, for each value returned.  At the end of each data set for this method, the <a href="#OnOpenOrderDetailsReady">OnOpenOrderDetailsReady</a> event fires.
+<br><br>
+Note:  The TWS generated orders are currently excluded from the output, as these all have identical Id's (ClientId=0, OrderId=0), and they cannot be distinguished from each other.  Awaiting a fix from IAB (PermId inclusion in OpenOrder event). 
+<br><br>
+See also <a href="#RebuildFromTWS">RebuildFromTWS</a>.
+</blockquote>
+<br>
+<a name="BindTWSOrdersToClient"></a>
+<hr>
+<br>
+<b>procedure</b> BindTWSOrdersToClient(AutoBind: Boolean);
+<br>
+<br>
+<blockquote>
+Call this method to request that newly created TWS orders be implicitly associated with the client.  When a new TWS order is created, the order will be associated with the client, and fed back through the <a href="#OnOpenOrder">OnOpenOrder</a> and <a href="#OnOrderStatus">OnOrderStatus</a> events.  At the end of each data set for this method, the <a href="#OnOpenOrderDetailsReady">OnOpenOrderDetailsReady</a> event fires.
+<br><br>
+AutoBind - If set to TRUE, newly created TWS orders will be implicitly associated with the client. If set to FALSE, no association will be made.
+<br>
+<br>
+Note: This request can only be made from a client with ClientId of 0.
+</blockquote>
+<br>
+<a name="ModifyOrder"></a>
+<hr>
+<br>
+<b>function</b> ModifyOrder(TempId, ClientId, Quantity: Integer; OrderType: <a href="#TIABOrderType">TIABOrderType</a>; Price, AuxPrice: Double): Boolean;
+<br>
+<br>
+<blockquote>
+Modify an existing open order.  A return value of true indicates only that the order was sent to TWS.  It does not indicate a successful change to the order.  The TWS will generate a new <a href="#OnOrderStatus">OnOrderStatus</a> event if successful (usually a Submitted status).
+<br>
+<br>
+TempId = existing order identity - must be open (not Completed).  ClientID = associated with this order.  
+<br>
+<br>
+The TWS allows only these parameters to be changed in an existing order.
+<ul>
+<li>Quantity = new quantity.</li>
+<li>OrderType = otMarket.</li>
+<li>Price = new Price</li>
+<li>AuxPrice = new AuxPrice</li>
+</ul>
+This method may be called using only the parameters requiring change to be set, and the remaining parameters set to 0 to keep the existing values.  i.e.  
+<br>
+<br>
+&nbsp;&nbsp;<i>ModifyOrder(OrderId, ClientID, 0, otNoChange, 25.75, 0.0);</i>  will change only the Price field in the submitted order.
+<br>
+<br>
+<b>Change</b><br>
+up to API 7.3:  This method re-adjusts the quantity downwards if a partial fill occurred.<br>
+API 7.6 onwards:  TWS manages partial fills.  This method allows TWS to adjust quantity as required.  Pass a new total quantity to adjust total required quantity, or zero to leave order quantity unchanged.<br>  
+For partial fills: do not adjust quantity - pass a 0 for quantity, and the component assumes the modify is to fill the remainder at the new price, or MKT if specified.  
+</blockquote>
+
+<br>
+<a name="PlaceOrder"></a>
+<hr>
+<br>
+<b>function</b> PlaceOrder(Order: <a href="#TIABOrder">TIABOrder</a>): Integer;
+<br>
+<br>
+<blockquote>
+Places an order into the TWS.  The Order parameter is a <a href="#TIABOrder">TIABOrder</a> object.  The return vale is the TempId of this order.  The TempId is used to identify this order at all times.
+<br>
+<br>
+Order parameter may be set to nil, and PlaceOrder will use the DefOrder values.  <b>OR</b> Create a new <a href="#TIABOrder">TIABOrder</a> object, set its values, and pass it as the Order parameter.  In this case, you will free the TIABOrder just created.
+<br>
+<br>
+Each PlaceOrder method call will add the order to the Orders property and maintained by the <a href="#TIABOrders">TIABOrders</a> object.  This new order may be found using method of the TIABOrders object through the Orders property.
+</blockquote>
+<br>
+<a name="ExerciseOptions"></a>
+<hr>
+<br>
+<b>function</b> ExerciseOptions(Order: <a href="#TIABOrder">TIABOrder</a>; OverridePos: Boolean): Integer;
+<br>
+<br>
+<blockquote>
+Places an ExerciseOptions order into the TWS.  The Order parameter is a <a href="#TIABOrder">TIABOrder</a> object.  The return vale is the TempId of this order.  The TempId is used to identify this order at all times.
+<br>
+<br>
+Order parameter may be set to nil, and PlaceOrder will use the DefOrder values.  <b>OR</b> Create a new <a href="#TIABOrder">TIABOrder</a> object, set its values, and pass it as the Order parameter.  In this case, you will free the TIABOrder just created.
+<br>
+<br>
+Each ExerciseOptions method call will add the order to the Orders property and maintained by the <a href="#TIABOrders">TIABOrders</a> object.  This new order may be found using method of the TIABOrders object through the Orders property.
+<br>
+<br>
+The Order.Action poperty can have two values: iabExercise for exercise, and iabLapse for lapse.  If no multiplier is specified, a default of 100 is assumed. If the OverridePos parameter is true, exercise instructions will be processed even if the option is out-of-the-money, and lapse instructions will be processed even if the option is in-the-money. Please note that SMART is not an allowed exchange in ExerciseOptions method, and that TWS does a moneyness request for the position in question whenever any API initiated exercise or lapse is attempted.
+</blockquote>
+<br>
+<a name="RebuildFromTWS"></a>
+<hr>
+<br>
+<b>procedure</b> RebuildFromTWS;
+<br>
+<br>
+<blockquote>
+This method will initialize, or rebuild the <a href="#Orders">Orders</a> property, so it corresponds with the TWS.  Use this method if you hold positions, or open orders, and have restarted your application or the TWS.
+<br>
+<br>
+The <a href="#OnRebuildFromTWS">OnRebuildFromTWS</a> event will be called for each element update.  Note that this method, once completed, should set the Orders property to reflect the TWS version of trades to this client.  
+<br>
+<br>
+</blockquote>
+<br>
+<a name="GetNewsBulletins"></a>
+<hr>
+<br>
+<b>procedure</b> GetNewsBulletins(AllMessages: Boolean);
+<br>
+<br>
+<blockquote>
+This method will start the flow of Flash news Bulletins, and messages concerning Exchange avialability.  News / bulletins arrive in the <a href="#OnNewsBulletin">OnNewsBulletin</a> Event.  Changes in exchange avialability arrive in the <a href="#OnExchangeStatus">OnExchangeStatus</a> Event.  The AllMessages parameter set to TRUE, returns all the existing bulletins for the current day and any new ones.  If set to FALSE, will only return new bulletins.
+<br>
+<br>
+Cancel with <a href="#CancelNewsBulletins">CancelNewsBulletins</a>.
+</blockquote>
+<br>
+<a name="CancelNewsBulletins"></a>
+<hr>
+<br>
+<b>procedure</b> CancelNewsBulletins;
+<br>
+<br>
+<blockquote>
+Cancels the flow of Flash news Bulletins, and messages concerning Exchange avialability.
+<br>
+<br>
+Start the flow with <a href="#GetNewsBulletins">GetNewsBulletins</a>.
+</blockquote>
+<a name="SetServerLogLevel"></a>
+<hr>
+<br>
+<b>procedure</b> SetServerLogLevel(LogLevel: Integer);
+<br>
+<br>
+<blockquote>
+This method controls the details the TWS will log (log.txt) when communicating with an API Client.  This setting has no affect on this API's functionality or the component set.  See the IAB help files for details.
+<br>
+<br>
+1 = SYSTEM (least detailed)
+<br>
+2 = ERROR  (default, if no level is specified)
+<br>
+3 = WARNING
+<br>
+4 = INFORMATION
+<br>
+5 = DETAIL (most detailed)
+<br>
+<br>
+NOTE: Setting the log level to 5 will have a performance overhead, and should only be used when trying to resolve an issue.<br/>
+<br/>
+<b>UPDATE</b>:  somewhere along the way, the TWS shifted to encrypted logs, and reduced the available details to API connections.<br/>
+Now to access the API log, it must be decrypted from within the TWS, and log level 5 is required to record any API data. This instruction below shows how to setup TWS to log and then convert API logs.<br/>
+<br/>
+<a href="https://interactivebrokers.github.io/tws-api/support.html">https://interactivebrokers.github.io/tws-api/support.html</a><br/>
+<br/>
+<br/>
+An alternative is to use our API Debug capture files.  See the message near the top of IABSocketAPI.pas and {$DEFINE CAPTURE_TWS_STREAM}
+</blockquote>
+<br>
+<a name="GetManagedAccounts"></a>
+<hr>
+<br>
+<b>procedure</b> GetManagedAccounts;
+<br>
+<br>
+<blockquote>
+Call this method to request the list of managed accounts. The list will be returned by the <a href="#OnManagedAccounts">OnManagedAccounts</a> event.  Note: This request can only be made when connected to a FA managed account. 
+<br>
+</blockquote>
+<br>
+<a name="RequestFA"></a>
+<hr>
+<br>
+<b>procedure</b> RequestFA(FADataType: TIABFADataType);
+<br>
+<br>
+TIABFADataType = (faGroups,faProfiles,faAliases);
+<br>
+TIABFADataTypeStr: <b>array</b> [TIABFADataType] of <b>string</b> = ('GROUPS','PROFILES','ALIASES');
+<br>
+<blockquote>
+Call this method to request the details of managed accounts. The list will be returned by the <a href="#OnReceiveFADetail">OnReceiveFADetail</a> event.  Note: This request can only be made when connected to a FA managed account. 
+<br>
+</blockquote>
+<br>
+
+<a name="ReplaceFA"></a>
+<hr>
+<br>
+<b>procedure</b> ReplaceFA(FADataType: TIABFADataType; XmlValue: <b>string</b>);
+<br>
+<br>
+TIABFADataType = (faGroups,faProfiles,faAliases);
+<br>
+TIABFADataTypeStr: <b>array</b> [TIABFADataType] of <b>string</b> = ('GROUPS','PROFILES','ALIASES');
+<br>
+<blockquote>
+Call this method to request the deatils of managed accounts. The list will be returned by the <a href="#OnReceiveFADetail">OnReceiveFADetail</a> event and the <a href="#OnReplaceFAEnd">OnReplaceFAEnd</a> event.  Note: This request can only be made when connected to a FA managed account. 
+<br>
+</blockquote>
+<br>
+
+<a name="GetHistoricalData"></a>
+<hr>
+<br>
+<b>procedure</b> GetHistoricalData(DataId: Integer; Symbol, Local, Exchange, Expiry, Currency, PrimaryExchange, Multiplier: <b>string</b>;
+                                       SecurityType: TIABSecurityType; Right: TIABRight; Strike: Double;
+                                       DataEndDateTime: string; DataDuration, DurationTimeUnits: Integer; BarSize: TIABChartBarSize;
+                                       DataBasis: TIABHistoricalDataType; ExtendedHours, IncludeExpired, KeepUpdated: Boolean; DateFormat: Integer;
+                                       ContractId: Integer; TradingClass: <b>string</b>; ChartOptions: TIABTagValueArray);<br>
+<br>
+<br>
+
+Associated data types for this method:<br><br>
+&nbsp;&nbsp;TIABHistoricalDataType = (cdTrades,cdMidPoint,cdBid,cdAsk,cdBidAsk);<br>
+&nbsp;&nbsp;TIABChartBarSize = (bs1sec,bs5sec,bs15sec,bs30sec,bs1min,bs2min,bs3min,bs5min,bs15min,bs30min, bs1Hour,bs1Day,bs1Week,bs1Month,bs3Month,bs1Year);<br>
+&nbsp;&nbsp;IAB_TIME_UNIT_YEAR = 4; IAB_TIME_UNIT_MONTH = 3; IAB_TIME_UNIT_WEEK = 2; IAB_TIME_UNIT_DAY = 1; IAB_TIME_UNIT_SEC = 0;<br><br>
+TIABTagValue = record<br>
+&nbsp;&nbsp;Tag, Value: <b>string</b>;<br>
+end;<br>
+PTIABTagValue = ^TIABTagValue;<br>
+TIABTagValueArray = array of TIABTagValue;<br>
+<br>
+<blockquote>
+Call this method to request the details of Historical Chart data. The data will be returned by the <a href="#OnHistoricalData">OnHistoricalData</a> event.  This method and event is cancelled with the <a href="#CancelHistoricalData">CancelHistoricalData</a> method; 
+<br><br>
+A client can extract historical data of up to one year in duration, which can end at any date and time during the past six months for any valid contract or combo.  Unlike market data requests, only one request for Historical data can be in
+process at any given time.  The time span covered by the request is specified in the DataDuration parameter.  Use the Constants IAB_TIME_UNIT_xx in the DurationTimeUnits parameter to specify the meaning of DataDuration.  The DataEndDateTime parameter accepts a string in the form "yyyymmdd{space}hh:mm:ss", with a time zone optionally allowed after a space at the end of the string. At the time of this release, "20050701 18:26:44 GMT" is a legal value for this parameter (though it will not be six months later!).<br>
+The BarSize specifies the size of the bars that will be returned (within limits imposed by IB's servers and TWS).  The values range from 1 second to 1 day.  Use a TIABChartBarSize value here.<br><br>
+Data is returned in bars of a nature very similar to the bars in TWS charts, each bar containing the start time, open, high, low, close, volume, and weighted average price during the time slice in question.
+<br><br>
+The final time slice has a Date value of "finished," allowing an API application to know when its query has completed. API 882: This also has a time stamp appended showing the request start-finish times eg:<br>'finished-20060406 12:19:16-20060406 12:24:16'
+<br><br>
+The nature of the data extracted is governed by setting the value in DataBasis ("TRADES", "MIDPOINT", "BID", "ASK", "BID_ASK" ).  Bars of the first four types contain the start time, open, high, low, close, volume, and weighted average price during the time slice in question. The contents of bars returned in response to a BID_ASK query differ from those returned by the other query types, in that the open and close values are actually the time weighted average bid, and time weighted average offer, respectively. This makes these bars identical in nature to TWS's BID_ASK candlestick chart bars.
+<br><br>
+The ExtendedHours parameter exists to specify regular or extended trading sessions.  All data available during the time span requested is returned, even data bars covering time
+intervals where the market in question was il-liquid.  If ExtendedHours is set false, only data within the "Regular Trading Hours" of the product in question is returned, even if the time span requested falls partially or completely outside of them.
+<br><br>
+IncludeExpired parameter.  If it is true, historical data queries can be done on expired contracts, those queries being limited to the last year of the contracts life.
+<br><br>
+DateFormat parameter: If formatDate = 1, dates applying to bars are returned in a format "yyyymmdd{space}hh:mm:dd," which is the same format already used in EXECUTION_DATA messages. If formatDate = 2, those dates are returned as a long integer specifying the number of seconds since 1/1/1970 GMT.
+<br><br>
+ContractID: unknown - set to 0.
+<br><br>
+TradingClass: unknown - set to an empty string ''.
+<br><br>
+ChartOptions:  Additional tag=value options, but unknown at this time - set to nil.
+<br><br>
+For details on time frames and allowable requests - see this <a href="https://www.interactivebrokers.com/en/software/api/apiguide/tables/historical_data_limitations.htm"> discussion</a>.
+<br><br> 
+This information below is old and probably redundant now:
+<i>When TWS connects either to IB via the internet, or an API client application, it creates Java-based sockets of a predetermined size. If an API application intends to make historical data requests that return more than 1000 bars, it is recommended that TWS be configured to increase the sizes of the API socket buffer. This can be done in the "settings.xml" file in the user's Jts directory. It is important that TWS not be running when its settings.xml file is manually modified. In the &lt;SystemSettings&gt; XML element, the &lt;apiSocketBufferSizes&gt; elements can be used for this purpose. Adding this line to the &lt;SystemSettings&gt; element in settings.xml should suffice:</i>
+<br><br><tt>
+    &lt;apiSocketBufferSizes&gt;500000&lt;/apiSocketBufferSizes&gt;
+</tt>
+</blockquote>
+<br>
+
+<a name="GetRealTimeData"></a>
+<hr>
+<br>
+<b>procedure</b> GetRealTimeData(DataId: Integer; Symbol, Local, Exchange, Expiry, Currency, PrimaryExchange, Multiplier: <b>string</b>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SecurityType: TIABSecurityType; Right: TIABRight; Strike: Double;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BarSize: TIABChartBarSize;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DataBasis: TIABHistoricalDataType; ExtendedHours: Boolean; DateFormat: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ContractId: Integer; TradingClass: <b>string</b>; RealtimeBarOptions: TIABTagValueArray);<br>
+<br>
+<br>
+<b>Note:</b>  some parts of this procedure can now be replaced with the newer <a href="#GetHistoricalTicks">GetHistoricalTicks</a>.   This old method here will deliver tick "samples" (max 3 samples per second usually).  The new method is a full "time and sales" stream with all data points included.
+<br><br>
+Associated data types for this method:<br><br>
+&nbsp;&nbsp;TIABHistoricalDataType = (cdTrades,cdMidPoint,cdBid,cdAsk,cdBidAsk);<br>
+&nbsp;&nbsp;TIABChartBarSize = (bs1sec,bs5sec,bs15sec,bs30sec,bs1min,bs2min,bs3min,bs5min,bs15min,bs30min, bs1Hour,bs1Day,bs1Week,bs1Month,bs3Month,bs1Year);<br>
+<br>
+<blockquote>
+Call this method to request the details of RealTime data. The data will be returned by the <a href="#OnRealTimeData">OnRealTimeData</a> event.  This method and event is cancelled with the <a href="#CancelRealTimeData">CancelRealTimeData</a> method;  
+<br><br>
+NOTE:  the current Barsize value is limited by the TWS to a 5 second period ONLY.
+<br><br>
+Data is returned in bars of a nature very similar to the bars in TWS charts, each bar containing the start time, open, high, low, close, volume, and weighted average price during the time slice in question.
+<br><br>
+The nature of the data extracted is governed by setting the value in DataBasis ("TRADES", "MIDPOINT", "BID", "ASK", "BID_ASK" ).
+<br><br>
+The ExtendedHours parameter exists to specify regular or extended trading sessions.  All data available during the time span requested is returned, even data bars covering time
+<br><br>
+ContractID: unknown - set to 0.
+<br><br>
+TradingClass: unknown - set to an empty string ''.
+<br><br>
+RealtimeBarOptions:  Additional tag=value options, but unknown at this time - set to nil.
+<br><br> 
+</blockquote>
+<br>
+
+<a name="CancelHistoricalData"></a>
+<hr>
+<br>
+<b>procedure</b> CancelHistoricalData(DataId: Integer);<br>
+<br>
+<br>
+<blockquote>
+Cancels a previous call to <a href="#GetHistoricalData">GetHistoricalData</a>
+<br>
+<br>
+</blockquote>
+<br>
+
+
+<a name="GetHistoricalTicks"></a><a name="GetTickByTickData"></a><a name="CancelTickByTickData"></a>
+<a name="OnHistoricalTickData"></a><a name="OnTickByTickData"></a>
+<hr>
+<br>
+<b>procedure</b> GetHistoricalTicks(DataId: Integer; Contract: TIABContract; StartDateTime, EndDateTime, WhatToShow: <b>string</b>; NumberOfTicks, UseRTH: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IgnoreSize: Boolean; MiscOptions: TIABTagValueArray);<br><br>
+<b>procedure</b> GetTickByTickData(DataId: Integer; Contract: TIABContract; TickType: TIABTickType; NumberOfTicks: Integer; IgnoreSize: Boolean);<br><br>
+<b>procedure</b> CancelTickByTickData(DataId: Integer);<br>
+<br>
+<br>
+<blockquote>
+For receiving a Time and Sales stream, both historical data (max 1000) and current stream.  Note that this new version (2019) of tick data, delivers a full and complete stream of Time and Sales.  The older tick methods gave the summarized version.
+<br><br>
+The GetHistoricalTicks method will return the history and then continue with the live stream.  The GetTickByTickData method goes straight to live stream data.  Only 1 stream at any point is accepted, and you must call CancelTickByTickData to terminate the current stream before requesting another.<br>
+<br><br>
+The stream is returned in the <a href="#OnHistoricalTickData">OnHistoricalTickData</a> event, and the <a href="#OnTickByTickData">OnTickByTickData</a> event.  The record type TIABTickData holds the tick history and live data.  The TIABTickData is a composite record of all types of returned data, so check the TickType field to identify which fields apply.
+<br><br>
+The MiscOptions param is not used (set to nil).
+</blockquote>
+<br>
+Associated data types for this method:<br><br>
+&nbsp;&nbsp;TIABTickDataType = (tdNone, tdLast, tdAllLast, tdBidAsk, tdMidPoint);<br><br>
+&nbsp;&nbsp;TIABTickData = <b>record</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;TickType: TIABTickDataType;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Time: TDateTime;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<FONT COLOR="#00aa00">// <i>tdLast, tdAllLast</i></FONT><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;PastLimit: Boolean;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Unreported: Boolean;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Price: Double;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Size: BigDecimal; <font color="#00aa00">// <i>Double; Integer;</i></font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Exchange: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;SpecialConditions: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<FONT COLOR="#00aa00">//<i> tdBidAsk</i></FONT><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;BidPrice: Double;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;AskPrice: Double;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;BidSize: BigDecimal; <font color="#00aa00">// <i>Double; Integer;</i></font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;AskSize: BigDecimal; <font color="#00aa00">// <i>Double; Integer;</i></font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;BidPastLow: Boolean;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;AskPastHigh: Boolean;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<FONT COLOR="#00aa00">// <i>tdMidPoint</i></FONT><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;MidPoint: Double;<br/>
+&nbsp;&nbsp;<b>end</b>;<br>
+<br>
+
+
+&nbsp;&nbsp;TIABDeltaNeutralContract = <b>record</b><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;ContractId: Integer;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Delta: Double;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Price: Double;<br/>
+&nbsp;&nbsp;<b>end;</b><br/>
+<br/>
+&nbsp;&nbsp;TIABContract = <b>record</b><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;ContractId: Integer;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Symbol: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;SecurityType: TIABSecurityType;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;LastTradeDateOrContractMonth: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Strike: Double;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Right: TIABRight;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Multiplier: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Exchange: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;PrimaryExchange: <b>string</b>; <font color="#00aa00">// <i>pick an actual (ie non-aggregate) exchange that the contract trades on. DO NOT SET TO SMART.</i></font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Currency: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;LocalSymbol: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;TradingClass: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;IncludeExpired: Boolean;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;SecIdType: <b>string</b>;		<font color="#00aa00">// <i>CUSIP;SEDOL;ISIN;RIC</i></font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;SecId: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;ComboLegsDescrip: <b>string</b>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;ComboLegList: TIABComboLegArray;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;DeltaNeutralContract: TIABDeltaNeutralContract;<br/>
+&nbsp;&nbsp;<b>end</b>;<br/>
+<br/><br/>
+Two helper methods are available for TIABContracts:<br/><br/>
+&nbsp;&nbsp;InitIABContract(<b>var</b> contract: TIABContract);  and<br/>
+&nbsp;&nbsp;FillContractFromOrder(Order: TIABOrder; <b>var</b> Contract: TIABContract);<br/>
+<br/><br/>
+
+
+<a name="GetFundamentalData"></a>
+<hr>
+<br>
+<b>procedure</b> GetFundamentalData(DataId: Integer; Order: TIABOrder; ReportType: <b>string</b>);<br>
+<br>
+<br>
+<blockquote>
+For receiving Reuters global fundamental market data. Please note that you must set up a subscription to Reuters Fundamentals through the Market Data section of Account Management before you can receive data.
+<br><br>
+You can receive data via three reports: Estimates (estimates), Financial Statements (finstat) and Summary (snapshot). Reports are sent via XML.
+<br><br>
+You can also request fundamental ratios using the tickType ttFundamentRatios. Ratios will be sent as a form of TAG=VALUE;TAG2=VALUE2 ...." string in the the <a href="#OnTickGeneric">OnTickGeneric</a> event. TAGs include: (long list - see the TWS help for specifics);
+<br><br>
+Data is returned in the <a href="#OnFundamentalData">OnFundamentalData</a> event.  The event is stopped with a call to <a href="#CancelFundamentalData">CancelFundamentalData</a>
+<br>
+</blockquote>
+<br>
+<a name="CancelFundamentalData"></a>
+<hr>
+<br>
+<b>procedure</b> CancelFundamentalData(DataId: Integer);<br>
+<br>
+<br>
+<blockquote>
+Cancels a previous call to <a href="#GetFundamentalData">GetFundamentalData</a>
+<br>
+<br>
+</blockquote>
+<br>
+
+<a name="GetCurrentTime"></a>
+<hr>
+<br>
+<b>procedure</b> GetCurrentTime;<br>
+<br>
+<br>
+<blockquote>
+Request the current time from the TWS.  Result is returned in the  <a href="#OnCurrentTime">OnCurrentTime</a> event.
+<br>
+<br>
+</blockquote>
+<br>
+
+<a name="VerifyOrder"></a>
+<hr>
+<br>
+<b>function</b> VerifyOrder(Order: <a href="#TIABOrder">TIABOrder</a>): Integer;
+<br>
+<br>
+<blockquote>
+This method and associated events and properties include the functionality of the TWS API "What-If" features, and extend that capability to the testing of orders validity.  VerifyOrder is a method that allows a test order to be placed and run through the TWS API, but it will not execute or affect the account.  Verified orders do not form any part of the trading on the account - they are simply a test of the parameters, and a successful result will provide commission and margin requirements information.  
+<br>
+<br>
+A successful VerifyOrder will generate an <a href="#OnVerifiedOrder">OnVerifiedOrder</a> event.
+<br>
+<br>
+A Verified Order will be placed into the special <a href="#VerifiedOrders">VerifiedOrders</a> property list (like the <a href="#Orders">Orders</a> property for Live orders).
+<br>
+<br>
+A successful verification will set the read only TIABOrder.<a href="#Verified">Verified</a> property set to true, and the fields of the TIABOrder.<a href="#GetQueryResult">GetQueryResult</a> method record will contain valid data (commissions and margins information).  A failed verification will generate regular API error messages, and the event will not fire.
+<br>
+<br>
+An order on the VerifiedOrders list can be submitted for placement to regular live status as follows:  <i>PlaceOrder( VerifiedOrders[2] );</i>
+<br>
+<br>
+Verified Orders will remain on the VerifiedOrders List, and the VerifiedOrders list can be used as a place to store inactive Order type templates.
+</blockquote>
+<br>
+
+<a name="GetImpliedVolatility"></a>
+<a name="GetOptionPrice"></a>
+<a name="CancelImpliedVolatility"></a>
+<a name="CancelOptionPrice"></a>
+<hr>
+<br>
+<b>procedure</b> GetImpliedVolatility(DataID: Integer; Order: TIABOrder; OptionPrice, UnderPrice: Double);<br>
+<b>procedure</b> GetOptionPrice(DataID: Integer; Order: TIABOrder; Volatility, UnderPrice: Double);<br>
+<b>procedure</b> CancelImpliedVolatility(DataId: Integer);<br>
+<b>procedure</b> CancelOptionPrice(DataId: Integer);<br>
+<br>
+<br>
+<blockquote>
+GetImpliedVolatility calculates the Implied Volatility based on the user-supplied option and underlying prices.  Order is the option contract, optionPrice is the price of the option, underPrice is the price of the underlying of the option.  The calculated implied volatility is returned by <a href="#OnTickOptionComputation">OnTickOptionComputation</a> event with tick type ttCustomOptionComp.  This request is cancelled with the CancelImpliedVolatility method.<br> 
+The following tick types return values for the Greeks (delta, gamma, vega, theta), the underlying price, pvDividend and the stock and option reference price when requested: ttBidOptionComp, ttAskOptionComp, ttLastOptionComp, ttModelOption.<br><br>
+GetOptionPrice calculates the option price and greek values based on a user-supplied implied volatility and underlying prices.  Order is the option contract,  Volatility is the user-supplied implied volatility value, underPrice is the price of the underlying of the option.  The calculated option price and greek values are returned by <a href="#OnTickOptionComputation">OnTickOptionComputation</a> in the new tick type ttCustomOptionComp.  This request is cancelled with the CancelOptionPrice method.
+<br>
+<br>
+</blockquote>
+<br>
+
+<a name="RequestGlobalCancel"></a>
+<hr>
+<br>
+<b>procedure</b> RequestGlobalCancel;<br>
+<br>
+<br>
+<blockquote>
+Does a global order cancel request.
+<br>
+<br>
+</blockquote>
+<br>
+
+<a name="RequestMarketDataType"></a>
+<a name="TIABMarketDataType"></a>
+<hr>
+<br>
+<b>procedure</b> RequestMarketDataType(DataType: TIABMarketDataType);<br>
+<br>
+<br>
+<blockquote>
+TWS sends a marketDataType(type) callback to the API, where type is set to Frozen or RealTime, to announce that market data has been switched between frozen and real-time. This notification occurs only when market data switches between real-time and frozen. The marketDataType( ) callback accepts a reqId parameter and is sent per every subscription because different contracts can generally trade on a different schedule.<br />
+<br />
+During normal trading hours, the API receives real-time market data. If you use the reqMarketDataType(frozen) call, you are telling TWS to automatically switch to frozen market data after the close. Then, before the opening of the next trading day, market data will automatically switch back to real-time market data.<br />
+<br />
+Response is delivered in the <a href="#OnMarketDataType">OnMarketDataType</a> event.
+<br>
+<br>
+  TIABMarketDataType = (mdtUnset, mdtRealTime, mdtfrozen, mdtDelayed, mdtNone);
+<br>
+</blockquote>
+<br>
+
+<a name="RequestMarketDepthExchanges"></a>
+<hr>
+<br>
+<b>procedure</b> RequestMarketDepthExchanges;<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnDepthMarketDataDescripItem">OnDepthMarketDataDescripItem</a> event.
+<br>
+</blockquote>
+<br>
+
+
+<a name="RequestMarketRule"></a>
+<hr>
+<br>
+<b>procedure</b> RequestMarketRule(MarketRuleId: Integer);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnMarketRule">OnMarketRule</a> event.
+<br>
+</blockquote>
+<br>
+
+
+<a name="RequestMatchingSymbols"></a>
+<hr>
+<br>
+<b>procedure</b> RequestMatchingSymbols(DataId: Integer; Pattern: <b>string</b>);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnSymbolSample">OnSymbolSample</a> event.
+<br>
+</blockquote>
+<br>
+
+
+<a name="RequestNewsArticle"></a>
+<hr>
+<br>
+<b>procedure</b> RequestNewsArticle(DataId: Integer; ProviderCode, ArticleId, NewsArticleOptions: <b>string</b>);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnNewsArticle">OnNewsArticle</a> event.
+<br>
+</blockquote>
+<br>
+
+<a name="RequestNewsProviders"></a>
+<hr>
+<br>
+<b>procedure</b> RequestNewsProviders;<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnNewsProvider">OnNewsProvider</a> event.
+<br>
+</blockquote>
+<br>
+
+<a name="RequestPnL"></a>
+<hr>
+<br>
+<b>procedure</b> RequestPnL(DataId: Integer; Account, ModelCode: <b>string</b>);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnProfitLoss">OnProfitLoss</a> event.
+<br>
+</blockquote>
+<br>
+
+<a name="RequestPnL"></a>
+<hr>
+<br>
+<b>procedure</b> RequestPnLSingle(DataId: Integer; Account, ModelCode: <b>string;</b> ConId: Integer);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnProfitLossSingle">OnProfitLossSingle</a> event.
+<br>
+</blockquote>
+<br>
+
+<a name="RequestScan"></a>
+<hr>
+<br>
+<b>procedure</b> RequestScan(ScanId: Integer; Criteria: TIABScanCriteria);<br>
+<br>
+<br>
+<blockquote>
+This is handled internally by the <a href="helptext.html#TIABScan" target="helptext">TIABScan object</a>;
+<br>
+</blockquote>
+<br>
+
+
+<a name="RequestSecDefOptParams"></a>
+<hr>
+<br>
+<b>procedure</b> RequestSecDefOptParams(DataId: Integer; UnderlyingSymbol, FutFopExchange, UnderlyingSecType: <b>string</b>; UnderlyingConId: Integer);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnSecurityDefinitionOptionalParameter">OnSecurityDefinitionOptionalParameter</a> event.
+<br>
+Response is delivered in the <a href="#OnSecurityDefinitionOptionalParameterEnd">OnSecurityDefinitionOptionalParameterEnd</a> event.
+<br>
+</blockquote>
+<br>
+
+
+<a name="RequestSoftDollarTiers"></a>
+<hr>
+<br>
+<b>procedure</b> RequestSoftDollarTiers(DataId: Integer);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnSoftDollarTiers">OnSoftDollarTiers</a> event.
+<br>
+</blockquote>
+<br>
+
+<a name="RequestSmartComponents"></a>
+<hr>
+<br>
+<b>procedure</b> RequestSmartComponents(DataId: Integer; bboExchange: <b>string</b>);<br>
+<br>
+<br>
+<blockquote>
+Response is delivered in the <a href="#OnSmartComponent">OnSmartComponent</a> event.
+<br>
+</blockquote>
+<br>
+
+<a name="RequestWSHorizonEventsData"></a><a name="RequestWSHorizonMetaData"></a>
+<hr>
+<br>
+<b>procedure</b> RequestWSHorizonEventsData(DataID: Integer; ConID: Integer);<br>
+<br>
+<b>procedure</b> RequestWSHorizonMetaData(DataID: Integer);<br>
+<br>
+<blockquote>
+Requires a subscription to the Wall Street Horizon service.
+<br><br>
+Response is delivered in the <a href="#OnWsHorizonEvents">OnWsHorizonEvents</a> event and <a href="#OnWsHorizonMeta">OnWsHorizonMeta</a> event.
+<br>
+</blockquote>
+<br>
+
+<hr>
+<br>
+<h3><font color="#0000ff">TIABSocket Events</font></h3>
+<br>
+<br>
+<a name="OnAccountTime"></a>
+<b> property </b>OnAccountTime = <b>procedure</b>(Sender: TObject; TimeStamp: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event has the account time from the TWS.  It updates each minute or so.  To start this event, call the <a href="#GetAccountUpdates">GetAccountUpdates</a> method.  To stop the flow of data, call <a href="#CancelAccountUpdates">CancelAccountUpdates</a>.
+</blockquote>
+<br>
+<a name="OnAccountValue"></a>
+<hr>
+<br>
+<b> property </b>OnAccountValue = <b>procedure</b>(Sender: TObject; Index: Integer) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event has the Index of the value updated in the AccountValue property.  Use the Index value in the AccountValues property like so;
+<br>
+<br>
+&nbsp;&nbsp;<i>AccountString := AccountValue[Index];</i>
+<br>
+<br>
+The value returned is in the format <i>Key Data Currency</i> string, separated by a single space between elements.  See the AccountValue property for the defined Keys.
+<br>
+<br>
+See the <a href="#GetAccountUpdates">GetAccountUpdates</a> and <a href="#CancelAccountUpdates">CancelAccountUpdates</a> methods.
+</blockquote> 
+<br>
+<a name="OnConnectionState"></a><a name="TIABConnection"></a>
+<hr>
+<br>
+<b> property </b>OnConnectionState = <b>procedure</b>(Sender: TObject; State: TIABConnection) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+&nbsp;&nbsp;TIABConnection = (twsClosed,twsConnecting,twsReady,twsFailed);
+<br>
+<br>
+This event updates as the state of the connection to TWS changes.  States are
+<ul>
+<li>twsClosed:  When the connection is closed.</li>
+<li>twsConnecting:  After the property SetConnected is set true, but a connection has not yet completed.</li>
+<li>twsReady: The connection is complete, and you may commence sending orders or methods to the TWS.  Do not attempt to communicate with TWS until this State is reached.</li>
+<li>twsFailed: Connection lost, TWS forced you off, or other failure.</li>
+</ul>
+Note:  This reflects the connection state between your app and the TWS only.  In most cases, this will be across the local host, and not likely to encounter many errors.  But you may also run your app and the TWS remotely, and net errors will be more prevelant.<br>
+The connection from TWS to IAB's server is something completely different.  We are not able to have direct knowledge of this connection, however its where the real failures will occur.  The TWS does send us some error messages after a time out period though.  
+<br>
+</blockquote>
+<a name="OnEndOfStreamRead"></a>
+<hr>
+<br>
+<b> property </b>OnEndOfStreamRead: TNotifyEvent;
+<br>
+<br>
+<blockquote>
+**  <b>This is the most important event in the API.</b>  **<br><br>Your application will run much better when using this event to process data and the trading logic.<br /><br />
+This event fires at the end of each successful stream read.  Note that each stream chunk from the socket can be fragmented, or a truncation of several pieces of data.  i.e. the stream may contain several changes to a market data's bid price and size, and the OnTickPrice &amp; OnTickSize &amp; OnTickPrceAndSize events will fire several times accordingly.  Using this event, you can collect the changes to market data, and then process the final changes from here.<br />
+<br />
+For best results:  On the complex events, like history, or place where you might want to add complex code, you should instead do this:  Capture the data only in the other events.  Then use this event to process the data and decide trading logic.
+<br /><br />	
+If your code logic is to generate new orders automatically based on bid/ask and price changes, or automatically placing closing orders after a fill, then you CANNOT do those new orders here.  Instead you must use this function to save the required actions to local variables, and post yourself a message.  In that message handler, make the new orders. The purpose here is to allow the data thread and message queues from the TWS to finish and complete its tasks, and return to idle state, before issuing the TWS with new tasks.  You cannot have code that compounds instructions within instruction results to the TWS - it will lock up.  See the Sample app code for a PostMessage example.
+
+</blockquote>
+<br>
+<a name="OnError"></a>
+<hr>
+<br>
+<b> property </b>OnError = <b>procedure</b>(Sender: TObject; TempId, ErrorCode: Integer; ErrorMsg: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+TempId will be the Order's TempId when known.  See the TWS help for a description of codes and messages.  Codes above 500 apply to the API.
+</blockquote>
+<br>
+<a name="OnInstrumentSpecDetails"></a>
+<hr>
+<br>
+<b> property </b>OnInstrumentSpecDetails = <b>procedure</b>(Sender: TObject; Index: Integer) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event fires after a call to <a href="#GetInstrumentSpecs">GetInstrumentSpecs</a>.  The Index refers to the TIABInstrumentSpecItem in the <a href="#InstrumentSpecs">InstrumentSpecs</a> property.     
+</blockquote>
+<br>
+<a name="OnBondSpecDetails"></a>
+<hr>
+<br>
+<b> property </b>OnBondSpecDetails = <b>procedure</b>(Sender: TObject; Index: Integer) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event fires after a call to <a href="#GetInstrumentSpecs">GetInstrumentSpecs</a>, using the bonds Cusip or ISIN in the symbol field.  The Index refers to the TIABBondSpecItem in the <a href="#BondSpecs">BondSpecs</a> property.     
+</blockquote>
+<br>
+<a name="OnMarketDepth"></a>
+<hr>
+<br>
+<b> property </b>OnMarketDepth = <b>procedure</b>(Sender: TObject; DataId, Index, Operation, Side: Integer; Size: BigDecimal; Price: Double) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event occurs in response to the <a href="#GetMarketDepth">GetMarketDepth</a> method.  The TWS decides if this event, or the OnMarketLevel2 gets the data, depending on the symbol requested.
+<br>
+These constants are defined for use in OnMarketDepth / OnMarketLevel2<br><br>
+OPERATION_INSERT = 0;
+OPERATION_UPDATE = 1;
+OPERATION_DELETE = 2;
+SIDE_ASK = 0;
+SIDE_BID = 1;
+<br><br>
+DataId is the value of DataId passed in the GetMarketDepth method.<br>
+Index is the row that is to altered.  Index is 0 based.<br>
+Operation as per above.<br>
+Side as per above.<br>
+Size is the quantity. Note:  This will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.<br>
+Price is just that.<br> 
+</blockquote>
+<br>
+<a name="OnMarketLevel2"></a>
+<hr>
+<br>
+<b> property </b>OnMarketLevel2 = <b>procedure</b>(Sender: TObject; DataId, Index, Operation, Side: Integer; Size: BigDecimal; Price: Double; MMId: <b>string</b>; SmartDepth: Boolean) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event occurs in response to the <a href="#GetMarketDepth">GetMarketDepth</a> method.  The TWS decides if this event, or the OnMarketDepth gets the data, depending on the symbol requested.
+<br>
+These constants are defined for use in OnMarketDepth / OnMarketLevel2<br><br>
+OPERATION_INSERT = 0;
+OPERATION_UPDATE = 1;
+OPERATION_DELETE = 2;
+SIDE_ASK = 0;
+SIDE_BID = 1;
+<br><br>
+DataId is the value of DataId passed in the GetMarketDepth method.<br>
+Index is the row that is to altered.  Index is 0 based.<br>
+Operation as per above.<br>
+Side as per above.<br>
+Size is the quantity. Note:  This will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.<br>
+Price is just that.<br> 
+MMid is the string abbreviation for the Market Maker.<br>
+SmartDepth is if the data is from a combining Smart exchange data.  Set this on/off with <a href="#SmartDepthMarketData">SmartDepthMarketData</a><br/>
+</blockquote>
+<br>
+<a name="OnOpenOrder"></a>
+<hr>
+<br>
+<b> property </b>OnOpenOrder = <b>procedure</b>(Sender: TObject; Order: <a href="#TIABOrder">TIABOrder</a>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event occurs in response to the <a href="#GetOpenOrdersClient">GetOpenOrdersClient</a>, <a href="#GetOpenOrdersAccount">GetOpenOrdersAccount</a>, <a href="#GetExecutions">GetExecutions</a> methods.  Each order sent from the TWS is added to the Orders property automatically.  See also the <a href="#OnExecutionDetailsReady">OnExecutionDetailsReady</a> event.
+</blockquote>
+<br>
+<a name="OnOrderStatus"></a>
+<a name="TIABOrderState"></a>
+<hr>
+<br>
+<b> property </b>OnOrderStatus = <b>procedure</b>(Sender: TObject; Order: <a href="#TIABOrder">TIABOrder</a>; Status: TIABOrderState) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Notify any change to an order's state.  Values of  State are
+<br>
+<br>
+&nbsp;&nbsp;TIABOrderState = (osPendSubmit,osPendCancel,osPreSubmit,osSubmitted,osCancelled,osFilled);
+<br>
+<br>
+<b>Note: </b>An orders state may change - without any change in the filled quantity.  And an Order may fill in any state.  Do not rely on the State as an indication of an orders fill progress.  i.e.  A partial fill can be pending, submitted or filled.  The Cancelled and Filled states indicate that the Order is Completed, and these are the only reliable means to determine state.
+<br>
+<br>
+The filled quantity on an order can be found by checking the properties of the Order parameter.  These include
+<ul>
+<li><b>property</b> Changed: Boolean;</li>
+<li><b>property</b> Completed: Boolean;</li>
+<li><b>property</b> TempId: Integer;</li>
+<li><b>property</b> PermId: Integer;</li>
+<li><b>property</b> Filled: BigDecimal;  <font color="#00aa00">//  Double;</font></li>
+<li><b>property</b> Remaining: BigDecimal;  <font color="#00aa00">//  Double;</font></li>
+<li><b>property</b> FillPrice: Double;</li>
+<li><b>property</b> LatestFillQty: BigDecimal;  <font color="#00aa00">//  Double;</font></li>
+<li><b>property</b> LatestFillPrice: Double;</li>
+</ul>
+See the <a href="#TIABOrder">TIABOrder</a> object for a complete list and description.
+<br>
+<br>
+The data types of Filled, Remaining, Latestfill properties: <a href="#BigDecimal">BigDecimal</a> or Double, depend on your compiler choices.
+</blockquote>
+<br>
+<a name="OnPortfolioUpdate"></a>
+<hr>
+<br>
+<b> property </b>OnPortfolioUpdate = <b>procedure</b>(Sender: TObject; Index: Integer) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event is fired for each change or addition the TWS makes to the Portfolio.  The Index parameter is used in the Portfolio property.  Check the fields of each TIABPortfolioItem to read the values.  i.e.  <i>NewHoldings := Portfolio[Index].Quantity;</i>
+<br>
+<br>
+The fields of a TIABPortfolioItem are:
+<ul>
+<li>Symbol: <b>string</b>;</li>
+<li>Local: <b>string</b>;</li>
+<li>SecurityType: <a href="#TIABSecurityType">TIABSecurityType</a>;</li>
+<li>Expiry: <b>string</b>;</li>  
+<li>Strike: Double;</li>
+<li>Right: <a href="#TIABRight">TIABRight</a>;</li>
+<li>Currency: <b>string</b>;</li>
+<li>Position: BigDecimal;<font color="#008000">//Double;</font></li>
+<li>MarketPrice: Double;</li>
+<li>MarketValue: Double;</li>
+<li>AverageCost: Double;</li>
+<li>UnrealizedPNL: Double;</li>
+<li>RealizedPNL: Double;</li>
+<li>AccountName: <b>string</b>;</li>
+<li>InstrumentId: Integer;</li>
+<li>Multiplier: <b>string</b>;</li>
+<li>PrimaryExchange: <b>string</b>;</li>
+<li>TradingClass: <b>string</b>;</li>
+</ul>
+</blockquote>
+<br>
+<a name="OnRebuildFromTWS"></a>
+<hr>
+<br>
+<b> property </b>OnRebuildFromTWS = TNotifyEvent; 
+<br>
+<br>
+<blockquote>
+This event will fire after a call to <a href="#RebuildFromTWS">RebuildFromTWS</a>.  It will be called for each new element being updated, and may include several calls per order when a partial fill occurred.  The OnExecution and OnOpenOrder events are disabled whilst the rebuild is happening.   
+<br>
+<br>
+Note that there is no end of rebuild marker or event, and this event may be called many times before a full rebuild is complete.  After all data has been recieved, the TIABSocket.Orders property will reflect the TWS version of orders for this client. 
+</blockquote>
+<a name="OnTickPrice"></a>
+<a name="TIABTickType"></a>
+<hr>
+<br>
+<b> property </b>OnTickPrice = <b>procedure</b>(Sender: TObject; DataId: Integer; TickType: TIABTickType; Price: Double; TickAttrib: TIABTickAttrib) <b>of object</b>;
+<br>
+<br>
+TIABTickAttrib = <b>record</b><br>
+&nbsp;&nbsp;CanAutoExecute, PastLimit: Boolean;<br>
+end;
+<br>
+<br>
+<blockquote>
+This event is started by a call to <a href="#GetMarketData">GetMarketData</a> method.  DataId is the value used to identify this stream.  TickType identifies the type of tick data to amend, and Price is the new value.<br>  
+When running against TWS version 835.0 or higher, API version 8.2 and above (client version 17 and above) supports the reporting of whether a market data price tick is eligible for automatic execution.  On occasion, a bid or offer price tick is not available for automatic execution, which means that the market maker may or may not fill an order against it.  TWS displays such price ticks in a light purple color to distinguish them, and the AutoExecute field passes this detail into the API.  When tick type is either a ttBid or ttAsk, a AutoExecute will be a 1 when this price is eligible for automatic execution and a value of 0 when is not eligible.  ttClose and ttLast price ticks will always have a value of 0. 
+<br>
+<br>
+  TIABTickType = (ttBidSize,ttBid,ttAsk,ttAskSize,ttLast,ttLastSize,ttHigh,ttLow,ttVolume,ttClose,ttBidOptionComp,ttAskOptionComp,ttLastOptionComp,ttModelOption,
+                  ttOpen,ttLow13Week,ttHigh13Week,ttLow26Week,ttHigh26Week,ttLow52Week,ttHigh52Week,ttAvgVolume,ttOpenInterest,ttOptionHistoricalVol,ttOptionImpliedVol,
+                  ttOptionBidExch,ttOptionAskExch,ttOptionCallOpenInterest,ttOptionPutOpenInterest,ttOptionCallVolume,ttOptionPutVolume,ttIndexFuturePremium,ttBidExch,
+                  ttAskExch,ttAuctionVolume,ttAuctionPrice,ttAuctionImbalance,ttMarkPrice,
+                  ttBidEFPComp,ttAskEFPComp,ttLastEFPComp,ttOpenEFPComp,ttHighEFPComp,ttLowEFPComp,ttCloseEFPComp,
+                  ttLastTimeStamp, ttShortable, ttFundamentalRatios,
+                  ttRtVolume, ttHalted, ttBidYeild, ttAskYeild, ttLastYeild, ttCustomOptionComp,
+                  ttTradeCount, ttTradeRate, ttVolumeRate, ttLastRTHTrade,
+                  ttRtHistoricalVol,ttIbDividends,ttBondFactorMultiplier,ttRegulatoryImbalance,ttNewsTick,
+                  ttShortTermVolume3Min,ttShortTermVolume5Min,ttShortTermVolume10Min,
+                  ttDelayedBid,ttDelayedAsk,ttDelayedLast,ttDelayedBidSize,ttDelayedAskSize,ttDelayedLastSize,ttDelayedHigh,ttDelayedLow,ttDelayedVolume,ttDelayedClose,ttDelayedOpen,
+                  ttRtTrdVolume,ttCreditmanMarkPrice,ttCreditmanSlowMarkPrice,
+                  ttDelayedBidOptionComputation,ttDelayedAskOptionComputation,ttDelayedLastOptionComputation,ttDelayedModelOptionComputation,
+                  ttLastExch,ttLastRegTime,ttFuturesOpenInterest,
+                  ttAvgOptVolume,ttDelayedLastTimestamp,ttShortableShares, ttDelayedHalted, ttReuters2MutualFunds,
+                  ttETFNavClose, ttETFNavPrior, ttETFNavBid, ttETFNavAsk, ttETFNavLast, ttETFNavFrozenLast, ttETFNavHigh, ttETFNavLow,
+                  ttNotSet);
+
+</blockquote>
+<br>
+<a name="OnTickSize"></a>
+<hr>
+<br>
+<b> property </b>OnTickSize = <b>procedure</b>(Sender: TObject; DataId: Integer; TickType: TIABTickType; Size: BigDecimal) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event is started by a call to <a href="#GetMarketData">GetMarketData</a> method.  DataId is the value used to identify this stream.  TickType identifies the type of tick data to amend, and Size is the new value.
+<br>
+The ttLastTimeStamp value is delivered here also, and the Size value represents a ctime in seconds.  To change a ctime to a TDateTime value with   
+<br>
+&nbsp;&nbsp;TimeStamp := Size / 86400 + 25569;
+<br>
+<br>
+Size will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.
+<br>
+<br>
+See <a href="#TIABTickType">TIABTickType</a> above.
+</blockquote>
+<br>
+<a name="OnTickPriceAndSize"></a>
+<hr>
+<br>
+<b> property </b>OnTickPriceAndSize = <b>procedure</b>(Sender: TObject; DataId: Integer; TickType: TIABTickType; Price: Double; Size: BigDecimal) <b>of object</b>;
+<br>
+<blockquote>
+This event is started by a call to <a href="#GetMarketData">GetMarketData</a> method.  DataId is the value used to identify this stream.  TickType identifies the type of tick data to amend, and Size is the new value.
+<br>
+<br>
+Note:  This event fires in addition to the individual <a href="#OnTickPrice">OnTickPrice</a> &amp; <a href="#OnTickSize">OnTickSize</a> events.  It is best to select either this combination event, or the two seperated events.  Otherwise information will become duplicated.  Also experience shows that collecting the data from each of the seperate Price and Size events, and then acting on it in the <a href="#OnEndOfStreamRead">OnEndOfStreamRead</a> event will achieve the same result as this combination event. 
+<br>
+<br>
+Size will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.
+<br>
+<br>
+See <a href="#TIABTickType">TIABTickType</a> above.
+<br>
+</blockquote>
+<br>
+
+
+<a name="OnTickOptionComputation"></a>
+<hr>
+<br>
+<b> property </b>OnTickOptionComputation = <b>procedure</b>(Sender: TObject; DataId: Integer; TickType: TIABTickType; ImpliedVol, Delta, OptPrice, pvDividend, Gamma, Vega, Theta, undPrice: Double) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event is started by a call to <a href="#c">GetMarketData</a> method and applies to Option orders and the resulting computed values.  Also the methods <a href="#GetImpliedVolatility">GetImpliedVolatility</a> and <a href="#GetOptionPrice">GetOptionPrice</a> will return data in this event.   DataId is the value used to identify this stream.  Any of the values of ImpliedVol or Delta and Greek values may also return a null value (defined as UNSET_DOUBLE).  The TWS may send these place holder UNSET_ x if a value is "not yet computed".  This condition should to be checked for in code with each event.<br>
+The following tick types return values for the Greeks (delta, gamma, vega, theta), the underlying price, pvDividend and the stock and option reference price when requested: ttBidOptionComp, ttAskOptionComp, ttLastOptionComp, ttModelOption.
+  
+<br>
+<br>
+See <a href="#TIABTickType">TIABTickType</a> above.
+</blockquote>
+<br>
+
+<a name="OnTickGeneric"></a>
+<hr>
+<br>
+<b> property </b>OnTickGeneric = <b>procedure</b>(Sender: TObject; DataId: Integer; TickType: TIABTickType; Value: Double) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This is a multipurpose event, for a variety of special ticks and values.  Some are related to optional extended Market Data parameters (see <a href="#GetMarketData">GetMarketData</a>).
+<br>
+The Tick type ttShortable returns through here. See <a href="#GetMarketData">GetMarketData</a> on details of calling this.  This code will give details of a shortable item and the available shares for shorting. 
+<br><br>
+&nbsp;&nbsp;<b>if</b> TickType = ttShortable <b>then</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>begin</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>if</b> Value > 2.5 <b>then</b>&nbsp;&nbsp;<font color="#0000ff">// 3.0</font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#0000ff">// There are at least 1000 shares available for a short sale</font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>else if</b> Value > 1.5 <b>then</b>&nbsp;&nbsp;<font color="#0000ff">// 2.0</font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#0000ff">// This contract will be available for short sale if shares can be located</font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>else if</b> Value > 0.5 <b>then</b>&nbsp;&nbsp;<font color="#0000ff">// 1.0</font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#0000ff">// Not available for short sale</font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>else</b> <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="#0000ff">// unknown value</font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>end;</b><br>
+</blockquote>
+<br>
+
+<a name="OnTickString"></a>
+<hr>
+<br>
+<b> property </b>OnTickString = <b>procedure</b>(Sender: TObject; DataId: Integer; TickType: TIABTickType; Value: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This works with the other tick type events above (see <a href="#GetMarketData">GetMarketData</a>).  Some tick details are returned as strings.  The full list of available tick types, and which event they return through, is here: <a href="https://interactivebrokers.github.io/tws-api/tick_types.html">TWS tick types and responses</a>.
+</blockquote>
+<br>
+
+<a name="OnTickEFP"></a>
+<hr>
+<br>
+<b> property </b>OnTickEFP = <b>procedure</b>(Sender: TObject; DataId: Integer; TickType: TIABTickType;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;BasisPoints, TotalDividends, DividendImpact, DividendsToExpiry: Double;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;HoldDays: Integer; FutureExpiry, BasisPointsString: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event fires in response to a request for <a href="#GetMarketData">GetMarketData</a> method, with a TIABTickType in this range:<br>
+ttBidEFPComp,ttAskEFPComp,ttLastEFPComp,ttOpenEFPComp,ttHighEFPComp,ttLowEFPComp,ttCloseEFPComp
+</blockquote>
+<br>
+
+<a name="OnCurrentTime"></a>
+<hr>
+<br>
+<b> property </b>OnCurrentTime = <b>procedure</b>(Sender: TObject; DateTime: TDateTime) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event is created by a call to <a href="#GetCurrentTime">GetCurrentTime</a> method.  The DateTime is the current TWS date and time.   
+</blockquote>
+<br>
+
+
+
+<a name="OnNewsBulletin"></a>
+<hr>
+<br>
+<b> property </b>OnNewsBulletin = <b>procedure</b>(Sender: TObject; MsgID: Integer; Bulletin, NewsSource: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event is started by a call to <a href="#GetNewsBulletins">GetNewsBulletins</a> method.  MsgId is used to identify the message.  Bulletin is the actual message, and NewsSource will usually be an exchange name. 
+</blockquote>
+<br>
+<a name="OnExchangeStatus"></a>
+<hr>
+<br>
+<b> property </b>OnExchangeStatus = <b>procedure</b>(Sender: TObject; MsgID: Integer; Status: TIABExchangeStatus; Bulletin, NewsSource: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event is started by a call to <a href="#GetNewsBulletins">GetNewsBulletins</a> method.  MsgId is used to identify the message.  Status is the condition of the particuliar exchange.  Bulletin is the actual message, and NewsSource will usually be an exchange name.
+<br>
+<br>
+TIABExchangeStatus = (esUnknown,esAvailable,esUnAvailable);
+</blockquote>
+<br>
+<a name="OnExecution"></a>
+<hr>
+<br>
+<b> property </b>OnExecution = <b>procedure</b>(Sender: TObject;  Order: TIABOrder) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event is fire for calls to <a href="#GetExecutions">GetExecutions</a>, <a href="#GetOpenOrdersAccount">GetOpenOrdersAccount</a>, <a href="#GetOpenOrdersClient">GetOpenOrdersClient</a>.  The Order parameter is the affected order.  The <a href="#Executions">Executions</a> property of the Order has this execution attached, and will be the highest of the <a href="#ExecutionsCount">ExecutionsCount</a>.    
+<br>
+</blockquote>
+<br>
+<a name="OnManagedAccounts"></a>
+<hr>
+<br>
+<b> property </b>OnManagedAccounts = <b>procedure</b>(Sender: TObject; Details: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for a call to <a href="#GetManagedAccounts">GetManagedAccounts</a>.     
+<br>
+</blockquote>
+<br>
+<a name="OnReceiveFADetail"></a><a name="OnReplaceFAEnd"></a>
+<hr>
+<br>
+<b> property </b>OnReceiveFADetail = <b>procedure</b>(Sender: TObject; FADataType: TIABFADataType; XmlDetails: <b>string</b>) <b>of object</b>;
+<br><br>
+<b> property </b>OnReplaceFAEnd = <b>procedure</b>(Sender: TObject; DataID: Integer; DataStr: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+TIABFADataType = (faGroups,faProfiles,faAliases);
+<br>
+TIABFADataTypeStr: <b>array</b> [TIABFADataType] of <b>string</b> = ('GROUPS','PROFILES','ALIASES');
+<br>
+<blockquote>
+Event for a call in response to <a href="#RequestFA">RequestFA</a> and <a href="#ReplaceFA">ReplaceFA</a> methods.    
+<br>
+</blockquote>
+<br>
+
+<a name="OnHistoricalData"></a>
+<hr>
+<br>
+<b> property </b>OnHistoricalData = <b>procedure</b>(Sender: TObject; DataId: Integer; HistoricalChartDataElement: TIABHistoricalChartData) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+<tt>
+&nbsp;&nbsp;TIABHistoricalChartData = <b>record</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Date: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Open, High, Low, Close: Double;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WAP, Volume: BigDecimal; <font color="#00aa00">// <i>Double;</i> </font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;TradeCount: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;HasGaps: Boolean;<br>
+&nbsp;&nbsp;<b>end;</b>
+</tt><br><br>
+
+Event for a call in response to <a href="#GetHistoricalData">GetHistoricalData</a> methods.  See the <a href="#GetHistoricalData">GetHistoricalData</a> for details.   
+<br>
+<br>
+WAP and Volume will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.
+<br>
+</blockquote>
+<br>
+
+<a name="OnRealTimeData"></a>
+<hr>
+<br>
+<b> property </b>OnRealTimeData = <b>procedure</b>(Sender: TObject; DataId: Integer; RealTimeDataElement: TIABRealTimeChartData) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+<tt>
+&nbsp;&nbsp;TIABRealTimeData = <b>record</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;DateTime: TDateTime<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Open, High, Low, Close: Double;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;WAP, Volume: BigDecimal; <font color="#00aa00">// <i>Double;</i> </font><br>
+&nbsp;&nbsp;&nbsp;&nbsp;TradeCount: Integer;<br>
+&nbsp;&nbsp;<b>end;</b>
+</tt><br><br>
+
+Event for a call in response to <a href="#GetRealTimeData">GetRealTimeData</a> methods.  See the <a href="#GetRealTimeData">GetRealTimeData</a> for details.   
+<br>
+<br>
+WAP and Volume will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.
+<br>
+</blockquote>
+<br>
+
+<a name="OnFundamentalData"></a>
+<hr>
+<br>
+<b> property </b>OnFundamentalData = <b>procedure</b>Sender: TObject; DataID: Integer; xmlStrData: <b>string</b>) <b>of object</b>;
+<br>
+<blockquote>
+Event for a call in response to <a href="#GetFundamentalData">GetFundamentalData</a> methods.  See the <a href="#GetFundamentalData">GetFundamentalData</a> for details.  Cancel this event with <a href="#CancelFundamentalData">CancelFundamentalData</a>
+<br>
+<br>
+The report is in an XML format in the xmlStrData parameter. 
+<br>
+</blockquote>
+<br>
+<a name="OnOpenOrderDetailsReady"></a>
+<hr>
+<br>
+<b> property </b>OnOpenOrderDetailsReady = <b>procedure</b>Sender: TObject) <b>of object</b>;
+<br>
+<blockquote>
+The event will fire at the completion of a successful call of the following methods.  <a href="#GetOpenOrdersClient">GetOpenOrdersClient</a>, <a href="#GetOpenOrdersAccount">GetOpenOrdersAccount</a>, <a href="#BindTWSOrdersToClient">BindTWSOrdersToClient</a>.
+<br>
+</blockquote>
+<br>
+<a name="OnAccountDetailsReady"></a>
+<hr>
+<br>
+<b> property </b>OnAccountDetailsReady = <b>procedure</b>Sender: TObject; AccountName: <b>string</b>) <b>of object</b>;
+<br>
+<blockquote>
+Event for a call in response to <a href="#GetAccountUpdates">GetAccountUpdates</a> method.  Note that this event triggers just once per application run, only after the initial call to GetAccountUpdates.   
+<br>
+</blockquote>
+<br>
+<a name="OnExecutionDetailsReady"></a>
+<hr>
+<br>
+<b> property </b>OnExecutionDetailsReady = <b>procedure</b>Sender: TObject; RequestID: Integer) <b>of object</b>;
+<br>
+<blockquote>
+Event at the completion of the <a href="#GetExecutions">GetExecutions</a> method.
+<br>
+</blockquote>
+<br>
+
+<a name="OnCommissionReport"></a>
+<a name="TIABCommissionReport"></a>
+<hr>
+<br>
+<b> property </b>OnCommissionReport = <b>procedure</b>(Sender: TObject; CommissionReport: PTIABCommissionReport) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming Commision reports.  The Commission report is a pointer type to the record type TIABCommissionReport. 
+<br>
+<br>
+&nbsp;&nbsp;TIABCommissionReport = <strong>record</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;ExecID: <strong>string;</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;Commission: Double;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Currency: <strong>string;</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;RealizedPNL: Double;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;Yield: Double;<br />
+&nbsp;&nbsp;&nbsp;&nbsp;YieldRedemptionDate: Integer;  // <em>YYYYMMDD format</em><br />
+&nbsp;&nbsp;<strong>end;</strong><br />
+</blockquote>
+<br>
+<a name="OnMarketDataType"></a>
+<hr>
+<br>
+<b> property </b>OnMarketDataType = <b>procedure</b>(Sender: TObject; DataID: Integer; MarketDataType: TIABMarketDataType) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestMarketDataType">RequestMarketDataType</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OnDepthMarketDataDescripItem"></a>
+<hr>
+<br>
+<b> property </b>OnDepthMarketDataDescripItem = <b>procedure</b>(Sender: TObject; DataID, Item, Count: Integer; DepthMarketDataDescrip: TIABDepthMarketDataDescripItem) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestMarketDepthExchanges">RequestMarketDepthExchanges</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OnMarketRule"></a>
+<hr>
+<br>
+<b> property </b>OnMarketRule = <b>procedure</b>(Sender: TObject; RuleId, Item, Count: Integer; LowEdge, Increament: Double) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestMarketRules">RequestMarketRule</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OnSymbolSample"></a>
+<hr>
+<br>
+<b> property </b>OnSymbolSample = <b>procedure</b>(Sender: TObject; DataID, Item, Count: Integer; SymbolDerivative: TIABSymbolDerivativeSpecItem) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestMatchingSymbols">RequestMatchingSymbols</a>.
+<br>
+<br>
+&nbsp;&nbsp;TIABSymbolDerivativeSpecItem = <b>record</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;ContractId: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Symbol: <b>string</b>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;SecurityType: TIABSecurityType;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Currency: <b>string</b>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;PrimaryExchange: <b>string</b>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;DerivativeSecCount: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;DerivativeSecTypes: <b>string</b>;<br>
+&nbsp;&nbsp;<b>end;</b>
+<br>
+<br>
+DerivativeSecTypes will be a space delimited string, if any.
+<br>
+</blockquote>
+<br>
+<a name="OnNewsArticle"></a>
+<hr>
+<br>
+<b> property </b>OnNewsArticle = <b>procedure</b>(Sender: TObject; DataId, ArticleType: Integer; ArticleText: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestNewsArticle">RequestNewsArticle</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OnNewsProvider"></a>
+<hr>
+<br>
+<b> property </b>OnNewsProvider = <b>procedure</b>(Sender: TObject; Item, Count: Integer; ProviderCode, ProviderName: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestNewsProviders">RequestNewsProviders</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OnProfitLoss"></a>
+<hr>
+<br>
+<b> property </b>OnProfitLoss = <b>procedure</b>(Sender: TObject; DataId: Integer; DailyPnL, UnrealizedPnL: Double) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestPnL">RequestPnL</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OnProfitLossSingle"></a>
+<hr>
+<br>
+<b> property </b>OnProfitLossSingle = <b>procedure</b>(Sender: TObject; DataId, Pos: BigDecimal; DailyPnL, UnrealizedPnL, Value: Double) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestPnLSingle">RequestPnLSingle</a>.
+<br>
+<br>
+Pos parameter will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.
+<br>
+</blockquote>
+<br>
+
+
+
+<br>
+<a name="OnSecurityDefinitionOptionalParameter"></a>
+<a name="OnSecurityDefinitionOptionalParameterEnd"></a>
+<hr>
+<br>
+<b> property </b>OnSecurityDefinitionOptionalParameter = <b>procedure</b>(Sender: TObject; DataId: Integer; Exchange:string; UnderlyingConId: Integer; tradingClass, multiplier, expirations, strikes: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<b> property </b>OnSecurityDefinitionOptionalParameterEnd = <b>procedure</b>(Sender: TObject; DataId: Integer;) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestSecDefOptParams">RequestSecDefOptParams</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<br>
+<a name="OnSoftDollarTiers"></a>
+<hr>
+<br>
+<b> property </b>OnSoftDollarTiers = <b>procedure</b>(Sender: TObject; DataID, Item, Count: Integer; Name, Value, DisplayName: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestSoftDollarTiers">RequestSoftDollarTiers</a>.
+<br>
+<br>
+</blockquote>
+<br>
+
+<a name="OnNewsTick"></a>
+<hr>
+<br>
+<b> property </b>OnNewsTick = <b>procedure</b>(Sender: TObject; TickerID: Integer; TimeStamp: TDatetime; ProviderCode, ArticleId, Headline, ExtraData: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#GetNewsBulletins">GetNewsBulletins</a>.
+<br>
+<br>
+</blockquote>
+<br>
+
+
+<a name="OnSecurityDefinitionOptionalParameter"></a>
+<a name="OnSecurityDefinitionOptionalParameterEnd"></a>
+<hr>
+<br>
+<b> property </b>OnSecurityDefinitionOptionalParameter = <b>procedure</b>(Sender: TObject; DataId: Integer; Exchange:string; UnderlyingConId: Integer; tradingClass, multiplier, expirations, strikes: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<b> property </b>OnSecurityDefinitionOptionalParameterEnd = <b>procedure</b>(Sender: TObject; DataId: Integer) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestSecDefOptParams">RequestSecDefOptParams</a>.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OnSmartComponent"></a>
+<hr>
+<br>
+<b> property </b>OnSmartComponent = <b>procedure</b>(Sender: TObject; DataId: DataId, Item, Count, BitNumber: Integer; Exchange, ExchangeLetter: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestSmartComponents">RequestSmartComponents</a>.
+<br>
+<br>
+</blockquote>
+<br>
+
+<a name="OnWsHorizonEvents"></a><a name="OnWsHorizonMeta"></a>
+<hr>
+<br>
+<b> property </b>WsHorizonEvents = <b>procedure</b>(Sender: TObject; DataID: Integer; DataStr: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<b> property </b>WsHorizonMetaEvent = <b>procedure</b>(Sender: TObject; DataID: Integer; DataStr: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for incoming response to the <a href="#RequestWSHorizonEventsData">RequestWSHorizonEventsData</a> and <a href="#RequestWSHorizonMetaData">RequestWSHorizonMetaData</a> procedures.
+<br>
+</blockquote>
+<br>
+
+<br>
+<a name="TIABPortfolio"></a>
+<hr>
+<br>
+<center><h3><font color="#0000ff">TIABPortfolio object</font></h3></center>
+<br>
+The TIABPortfolio object is the Portfolio property of <a href="#TIABSocket">TIABSocket</a>.  It maintains an array of TPortfolioItem records.  New additions are made as they arrive from the TWS.  The TWS will send updates as the account holdings change, and each TIABPortfolioItem will be adjusted accordingly.  A call to <a href="#GetAccountUpdates">GetAccountUpdates</a> starts the flow from TWS.  Flow is stopped with <a href="#CancelAccountUpdates">CancelAccountUpdates</a>. 
+<br>
+<br>
+TIABPortfolio has these methods and properties to work with TIABPortfolioItem(s).
+<br>
+<br>
+&nbsp;&nbsp;TIABPortfolio = <b>class</b>(TPersistent)<br> 
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Add(IABPortfolioItem: TIABPortfolioItem): Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure </b>Insert(Index: Integer; IABPortfolioItem: TIABPortfolioItem);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> Delete(Index: Integer);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Find(IABPortfolioItem: TIABPortfolioItem): Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Count: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Items[<b>Index</b>: Integer]: TIABPortfolioItem;<br>
+&nbsp;&nbsp;<b>end;</b>
+<br>
+<br>
+The Items property is a zero based index of each TIABPortfolioItem.  Use Add, Delete, Insert, Find to manipulate the items.  
+<br>
+<br>
+<a name="TIABPortfolioItem"></a>
+Each TIABPortfolioItem has this structure
+<br>
+<br>
+&nbsp;&nbsp;TIABPortfolioItem = <b>record</b><br>
+<ul>
+<li>Symbol: <b>string</b>;</li>
+<li>Local: <b>string</b>;</li>
+<li>SecurityType: <a href="#TIABSecurityType">TIABSecurityType</a>;</li>
+<li>Expiry: <b>string</b>;</li>  
+<li>Strike: Double;</li>
+<li>Right: <a href="#TIABRight">TIABRight</a>;</li>
+<li>Currency: <b>string</b>;</li>
+<li>Position: BigDecimal;<font color="#008000">//Double;</font></li>
+<li>MarketPrice: Double;</li>
+<li>MarketValue: Double;</li>
+<li>AverageCost: Double;</li>
+<li>UnrealizedPNL: Double;</li>
+<li>RealizedPNL: Double;</li>
+<li>AccountName: <b>string</b>;</li>
+<li>InstrumentId: Integer;</li>
+<li>Multiplier: <b>string</b>;</li>
+<li>PrimaryExchange: <b>string</b>;</li>
+<li>TradingClass: <b>string</b>;</li>
+</ul>
+&nbsp;&nbsp;<b>end;</b>
+<br>
+<br>
+
+<a name="OnScannerParam"></a>
+<hr>
+<br>
+<b> property </b>OnScannerParam = <b>procedure</b>(Sender: TObject; Parameters: <b>string</b>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for a call to <a href="#GetScannerParameters">GetScannerParameters</a> of the <a href="#TIABScanner">TIABScanner</a> object.
+<br>      
+<br>
+The Parameters is a string of XML formatted text.  You will need to parse this to get the data from it.  The format is as follows
+<br>
+<pre>
+&lt;?xmlVersion="1.0" encoding="UTF-8"?&gt;
+&lt;ScanParameterResponse&gt;
+&lt;InstrumentList&gt;
+  list of instruments, including STK
+&lt;/InstrumentList&gt;
+&lt;LocationTree&gt;
+  list of locations with their own trees, including STK.NYSE
+&lt;/LocationTree&gt;
+&lt;ScanTypeList&gt;
+  list of scan types with columns, including TOP_PERC_GAIN
+&lt;/ScanTypeList&gt;
+&lt;/ScanParameterResponse&gt;
+</pre>
+These are described in more detail at <a href="#TIABScanner">TIABScanner</a>. 
+<br>
+</blockquote>
+<br>
+<a name="OnScannerData"></a>
+<hr>
+<br>
+<b> property </b>OnScannerData = <b>procedure</b>(Sender: TObject; Scan: <a href="#TIABScan">TIABScan</a>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+Event for a call to <a href="#NewScan">NewScan</a> of the <a href="#TIABScanner">TIABScanner</a> object.
+<br>      
+<br>
+This event fire each time the TWS ammends the results of a scan (every 30 seconds or so).  Each Scan object holds an array of instruments. Access this like so:
+<br>      
+<br>
+<pre>
+&nbsp;&nbsp;<b>procedure</b> IABSocket1.OnScannerData(Sender: TObject; Scan: TIABScan);
+&nbsp;&nbsp;<b>var</b> i, j; Integer; s: <b>string</b>; 
+&nbsp;&nbsp;<b>begin</b>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>for</b> i := 0 <b>to</b> Scan.Count -1 <b>do</b>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>begin</b>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j := Scan.Items[i].Rank;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s := Scan.Items[i].Symbol;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...</pre>
+<br>
+</blockquote>
+<br>
+
+<a name="OnVerifiedOrder"></a>
+<hr>
+<br>
+<b> property </b>OnVerifiedOrder = <b>procedure</b>(Sender: TObject; Order: <a href="#TIABOrder">TIABOrder</a>) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event fires in response to a successful <a href="#VerifyOrder">VerifyOrder</a> method call.  The Order will be stored on the <a href="#VerifiedOrders">VerifiedOrders</a> property list.  The Order's readonly <a href="#Verified">Verified</a> property will be true, and the <a href="#GetQueryResult">GetQueryResult</a> method will contain valid information.
+<br>
+<br>
+See the <a href="#VerifyOrder">VerifyOrder</a> method for further details.
+</blockquote>
+<br>
+
+<a name="OnDeltaNeutralValidation"></a>
+<hr>
+<br>
+<b> property </b>OnDeltaNeutralValidation = <b>procedure</b>(Sender: TObject; UnderComp: TIABUnderComp) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event fires in response to conditions of the Option state.  The UnderComp record contains the following fields.
+<br>
+<br>
+TIABUnderComp = <b>record</b><br>
+&nbsp;&nbsp;ConId: Integer;<br>
+&nbsp;&nbsp;delta, price: Double;<br>
+<b>end;</b>
+</blockquote>
+<br>
+
+<a name="OnSnapShotDataEnd"></a>
+<hr>
+<br>
+<b> property </b>OnSnapShotDataEnd = <b>procedure</b>(Sender: TObject; DataID: Integer) <b>of object</b>;
+<br>
+<br>
+<blockquote>
+This event fires in response to a successful <a href="#GetMarketSnapShot">GetMarketSnapShot</a> method call.
+<br>
+</blockquote>
+<br>
+
+
+<a name="TIABInstrumentSpec"></a>
+<hr>
+<br>
+<center><h3><font color="#0000ff">TIABInstrumentSpec object</font></h3></center>
+<br>
+The TIABInstrumentSpec object is the InstrumentSpec property of <a href="#TIABSocket">TIABSocket</a>.  It maintains an array of TInstrumentSpecItem records.  New additions are made as they arrive from the TWS.  A call to <a href="#GetInstrumentSpecs">GetInstrumentSpecs</a> creates an <a href="#OnInstrumentSpecDetails">OnInstrumentSpecDetails</a> event. 
+<br>
+<br>
+It has these methods and properties to work with the TIABInstrumentSpecItem.
+<br>
+<br>
+&nbsp;&nbsp;TIABInstrumentSpec = <b>class</b>(TPersistent)<br> 
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Add(IABInstrumentSpecItem: TIABInstrumentSpecItem): Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure </b>Insert(Index: Integer; IABInstrumentSpecItem: TIABInstrumentSpecItem);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> Delete(Index: Integer);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Find(IABInstrumentSpecItem: TIABInstrumentSpecItem): Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Count: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Items[<b>Index</b>: Integer]: TIABInstrumentSpecItem;<br>
+&nbsp;&nbsp;<b>end;</b>
+<br>
+<br>
+The Items property is a zero based index of each TIABInstrumentSpecItem.  Use Add, Delete, Insert, Find to manipulate the items.  
+<br>
+<br>
+<a name="TIABInstrumentSpecItem"></a>
+The fields of a TIABInstrumentSpecItem are:
+<ul>
+<li>MarketName: <b>string</b>;</li>
+<li>TradingClass: <b>string</b>;</li>
+<li>ContractId: Integer;</li>
+<li>Multiplier: <b>string</b>;</li>
+<li>MinimumTick: Double;</li>
+<li>OrderTypes: TIABOrderTypesSet;</li>
+<li>ValidExchanges: <b>string</b>;</li>
+<li>Symbol: <b>string</b>;</li>
+<li>SecurityType: TIABSecurityType;</li>		
+<li>Expiry: <b>string</b>;</li>
+<li>Strike: Double;</li>
+<li>Right: <a href="#TIABRight">TIABRight</a>;</li>
+<li>Exchange: <b>string</b>;</li>
+<li>Currency: <b>string</b>;</li>
+<li>LocalSymbol: <b>string</b>;</li>
+<li>PriceMagnifier: Integer;</li>
+<li>DataID: Integer;</li>
+<li>UnderConId: Integer;</li>
+<li>LongName: <b>string</b>;</li>
+<li>PrimaryExchange: <b>string</b>;</li>
+<li>ContractMonth: <b>string</b>;</li>
+<li>Industry: <b>string</b>;</li>
+<li>Category: <b>string</b>;</li>
+<li>SubCategory: <b>string</b>;</li>
+<li>TimeZoneID: <b>string</b>;</li>
+<li>TradingHours: <b>string</b>;</li>
+<li>LiquidHours: <b>string</b>;</li>
+<li>EVRule: <b>string</b>;</li>
+<li>EVMultiplier: Double;</li>
+<li>SecIdList: TIABTagValueArray;</li>
+<li>AggGroup: Integer;</li>
+<li>UnderSymbol: <b>string</b>;</li>
+<li>UnderSecType: <b>string</b>;</li>
+<li>MarketRuleIds: <b>string</b>;</li>
+<li>DerivativeSecTypes: <b>string</b>;</li>
+<li>LastTradeTime: <b>string</b>;</li>
+<li>MinSize: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SuggestedSizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+</ul>
+<br>
+Fields with type Double, or <a href="#BigDecimal">BigDecimal</a>, are depending on your compiler choices.
+<br>
+<br>
+<a name="TIABBondSpec"></a>
+<hr>
+<br>
+<center><h3><font color="#0000ff">TIABBondSpec object</font></h3></center>
+<br>
+The TIABBondSpec object is the BondSpec property of <a href="#TIABSocket">TIABSocket</a>.  It maintains an array of TBondSpecItem records.  New additions are made as they arrive from the TWS.  A call to <a href="#GetInstrumentSpecs">GetInstrumentSpecs</a>, using a Bond's Cusip or ISIN as a value in Symbol, creates an <a href="#OnBondSpecDetails">OnBondSpecDetails</a> event. 
+<br>
+<br>
+It has these methods and properties to work with the TIABBondSpecItem.
+<br>
+<br>
+&nbsp;&nbsp;TIABBondSpec = <b>class</b>(TPersistent)<br> 
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Add(IABBondSpecItem: TIABBondSpecItem): Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure </b>Insert(Index: Integer; IABBondSpecItem: TIABBondSpecItem);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> Delete(Index: Integer);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Find(IABBondSpecItem: TIABBondSpecItem): Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Count: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Items[<b>Index</b>: Integer]: TIABBondSpecItem;<br>
+&nbsp;&nbsp;<b>end;</b>
+<br>
+<br>
+The Items property is a zero based index of each TIABBondSpecItem.  Use Add, Delete, Insert, Find to manipulate the items.  
+<br>
+<br>
+
+<a name="TIABBondSpecItem"></a>
+The fields of a TIABBondSpecItem are:
+<ul>
+<li>MarketName: <b>string</b></li>
+<li>TradingClass: <b>string</b></li>
+<li>ContractId: Integer</li>
+<li>MinimumTick: Double</li>
+<li>OrderTypes: TIABOrderTypesSet</li>
+<li>ValidExchanges: <b>string</b></li>
+<li>Symbol: <b>string</b></li>
+<li>SecurityType: TIABSecurityType</li>
+<li>Cusip: <b>string</b></li>
+<li>Ratings: <b>string</b></li>
+<li>DescAppend: <b>string</b></li>
+<li>BondType: <b>string</b></li>
+<li>CouponType: <b>string</b></li>
+<li>Callable: Boolean</li>
+<li>Putable: Boolean</li>
+<li>Coupon: Double</li>
+<li>Convertible: Boolean</li>
+<li>Maturity: <b>string</b></li>
+<li>IssueDate: <b>string</b></li>
+<li>Exchange: <b>string</b></li>
+<li>Currency: <b>string</b></li>
+<li>NextOptionDate: <b>string</b></li>
+<li>NextOptionType: <b>string</b></li>
+<li>NextOptionPartial: Boolean</li>
+<li>Notes: <b>string</b></li>
+<li>LongName: <b>string</b></li>
+<li>DataId: Integer</li>
+<li>EVRule: <b>string</b>;</li>
+<li>EVMultiplier: Double;</li>
+<li>SecIdList: TIABTagValueArray;</li>
+<li>AggGroup: Integer;</li>
+<li>MarketRuleIds: <b>string</b>;</li>
+<li>TimeZoneID: <b>string</b>;</li>
+<li>LastTradeTime: <b>string</b>;</li>
+<li>MinSize: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+<li>SuggestedSizeIncrement: BigDecimal;<font color="#00aa00">// Double;</font></li>
+</ul>
+<br>
+Fields with type Double, or <a href="#BigDecimal">BigDecimal</a>, are depending on your compiler choices.
+<br>
+
+<!-- ############################################################################################# -->
+
+<a name="TIABOrder"></a>
+<hr>
+<br>
+<center><h3><font color="#0000ff">TIABOrder object</font></h3></center>
+This object represents a single order.  To generate an order, create a TIABOrder, or use the <a href="#DefOrder">DefOrder</a>, fill in the various properties, and pass it to <a href="#PlaceOrder">PlaceOrder</a>.  Access the properties of this order through the <a href="#Orders">Orders</a> property in TIABSocket.  As the order is processed, the <a href="#OnOrderStatus">OnOrderStatus</a> event fires.     
+<br>
+<br>
+<h3><font color="#0000ff">TIABOrder properties</font></h3>
+<br>
+<br>
+<a name="Changed"></a>
+<b>property</b> Changed: Boolean;
+<br>
+<br>
+<blockquote>
+Identifies if the Filled value has just changed.  Check this to indicate if the last <a href="#OnOrderStatus">OnOrderStatus</a> notification from TWS actually amended the Filled quantity.  This is more reliable than interpreting the various order status.  (read and write).
+<br>
+<br>
+The Changed property is reset to false when an order status changes, but the filled quantity does not.
+</blockquote>
+<br>
+<a name="Completed"></a>
+<hr>
+<br>
+<b>property</b> Completed: Boolean;
+<br>
+<br>
+<blockquote>
+Completed is true when an order is successfully cancelled, or an order is completely filled, otherwise false.  Value is set automatically from notifications from TWS (read and write).
+</blockquote>
+<br>
+<a name="TempId"></a>
+<hr>
+<br>
+<b>property</b> TempId: Integer;
+<br>
+<br>
+<blockquote>
+The TempId is the identity used by TWS to identify this order.  See also <a href="#ClientIdOrder">ClientId</a>.  (read and write).
+</blockquote>
+<br>
+<a name="PermId"></a>
+<hr>
+<br>
+<b>property</b> PermId: Integer;
+<br>
+<br>
+<blockquote>
+PermId is created by TWS, and is filled in by <a href="#TIABSocket">TIABSocket</a> component when first discovered.  (read and write).
+</blockquote>
+<br>
+<a name="Filled"></a>
+<hr>
+<br>
+<b>property</b> Filled: BigDecimal; <font color="#00aa00"><i>// Double;</i></font>
+<br>
+<br>
+<blockquote>
+Total volume of executed filled shares / contracts for this order.  Updated automatically.  (read and write).
+<br>
+Type Double, or <a href="#BigDecimal">BigDecimal</a>, are depending on your compiler choices.
+</blockquote>
+<br>
+<a name="Remaining"></a>
+<hr>
+<br>
+<b>property</b> Remaining: BigDecimal; <font color="#00aa00"><i>// Double;</i></font>
+<br>
+<br>
+<blockquote>
+Remaining of open volume of shares / contracts for this order.  Updated automatically.  (read and write).
+<br><br>
+Type Double, or <a href="#BigDecimal">BigDecimal</a>, are depending on your compiler choices.
+</blockquote>
+<br>
+<a name="FillPrice"></a>
+<hr>
+<br>
+<b>property</b> FillPrice: Double;
+<br>
+<br>
+<blockquote>
+Current fill price of executed shares.  This value is the average price for all fills in this order so far.  Updated automatically.  (read and write).
+</blockquote>
+<br>
+<a name="LatestFillQty"></a>
+<hr>
+<br>
+<b>property</b> LatestFillQty: BigDecimal; <font color="#00aa00"><i>// Double;</i></font>
+<br>
+<br>
+<blockquote>
+The last number of filled shares / contracts when a partial fill occurs.  Updated automatically.  (read and write).
+<br><br>
+Type Double, or <a href="#BigDecimal">BigDecimal</a>, are depending on your compiler choices.
+</blockquote> 
+<br>
+<a name="LatestFillPrice"></a>
+<hr>
+<br>
+<b>property</b> LatestFillPrice: Double;
+<br>
+<br>
+<blockquote>
+The price of the last filled shares / contracts when a partial fill occurs.  This is the price of the portion of LatestFillQty shares / contracts.  Updated automatically.
+<br>
+<br>
+Note:  API version 7.01 The TWS now sends this data.  Prior versions the TWS does not send this data - it is a calculated value from the current accumulated Price.  The TWS usually only goes to 4 decimal places, and often this isn't enough to calculate the actual price exactly of each partial fill portion.  I recommend you use some rounding on this property.  (read and write).  
+</blockquote>
+<br>
+<a name="Account"></a>
+<hr>
+<br>
+<b>property</b> Account: <b>string</b>;
+<br>
+<br>
+<blockquote>
+For institutional customers only.  Account number / name.  (read and write).
+</blockquote>
+<br>
+<a name="Action"></a>
+<a name="TIABAction"></a>
+<hr>
+<br>
+<b>property</b> Action: TIABAction;
+<br>
+<br>
+<blockquote>
+&nbsp;&nbsp;TIABAction = (iabIdle,iabBuy,iabSell,iabShort,iabExercise,iabLapse);
+<br>
+<br>
+Sets the action (buy, sell, short) for this order when passed to the PlaceOrder method.  For Options use the ExerciseOptions method and the action set to iabExercise or iabLapse.  Changing this property does not send the order.  (read and write).
+</blockquote>
+<br>
+<a name="AuxPrice"></a>
+<hr>
+<br>
+<b>property</b> AuxPrice: Double;
+<br>
+<br>
+<blockquote>
+This is the STOP price for stop-limit orders, and the offset amount for Relative orders and Trail orders. In all other cases, specify zero.  (read and write).
+</blockquote> 
+<br>
+<a name="Currency"></a>
+<hr>
+<br>
+<b>property</b> Currency: <b>string</b>;
+<br>
+<br>
+<blockquote>
+Specifies the currency. This field is only required when the SecurityType = stCash. Otherwise it is ignored.  (read and write).
+</blockquote>
+<br>
+<a name="Exchange"></a>
+<hr>
+<br>
+<b>property</b> Exchange: <b>string</b>;
+<br>
+<br>
+<blockquote>
+The order destination such as 'SMART' or 'GLOBEX'.  NOTE: When you connect to TWS using any of the API components, you must route all U.S. stock and option orders through Smart order routing.  (read and write).
+<br><br>
+Note: see also <a href="#PrimaryExchange">PrimaryExchange</a> property. 
+</blockquote>
+<br>
+<a name="Expiry"></a>
+<br>
+<hr>
+<b>property</b> Expiry: <b>string</b>;
+<br>
+<br>
+<blockquote>
+The expiration date of a Future or Option. The format is 'YYYYMM'.  (read and write).
+</blockquote>
+<br>
+<a name="LocalSymbol"></a>
+<hr>
+<br>
+<b>property</b> LocalSymbol: <b>string</b>;
+<br>
+<br>
+<blockquote>
+This is the local exchange symbol of the underlying asset.  (read and write).
+</blockquote>
+<br>
+<a name="OCAgroup"></a>
+<hr>
+<br>
+<b>property</b> OCAgroup: <b>string</b>;
+<br>
+<br>
+<blockquote>
+Identifies an OCA (one cancels all) group.  Set this to any unique string, and all open orders with same value, will be tied together.  (read and write).
+</blockquote>
+<br>
+<a name="OpenClose"></a>
+<hr>
+<br>
+<b>property</b> OpenClose: <b>string</b>;
+<br>
+<br>
+<blockquote>
+For institutional customers only.  Specifies whether the order is an open or close order. Valid values are 'O', 'C'.  (read and write, default = 'O'). 
+<br>
+<br>
+</blockquote>
+<br>
+<a name="OrderRef"></a>
+<hr>
+<br>
+<b>property</b> OrderRef: <b>string</b>;
+<br>
+<br>
+<blockquote>
+For institutional customers only.  The order reference.  (read and write).
+</blockquote>
+<br>
+<a name="OrderOrigin"></a>
+<a name="TIABOrderOrigin"></a>
+<hr>
+<br>
+<b>property</b> OrderOrigin: TIABOrderOrigin;
+<br>
+<br>
+<blockquote>
+TIABOrderOrigin = (orCustomer,orFirm,orUnknown);  (read and write).
+</blockquote>
+<br>
+<a name="OrderType"></a>
+<a name="TIABOrderType"></a>
+<hr>
+<br>
+<b>property</b> OrderType: TIABOrderType;
+<br>
+<br>
+<blockquote>
+  TIABOrderType = (otNoChange,otMarket,otLimit,otStop,otStopLimit,otPassiveRel,otVWAP,otMarketClose,otLimitClose,otTrail,
+                    otLimitOpen,otMarketOpen,otOneCancelOther,otISEBlock,
+                  	otPegMarket,otPegStock,otPegMidPt,otPegBench,otPegPrimary,otVolatility,otTrailLimit,otScale,
+                    otMarketTouch,otLimitTouch,otMarketToLimit,otAuction,otAuctionRel,otAuctionLimit,otAuctionPegStk, otSweepFill,
+                    otDiscretionary,otBoxTop,otMarketwProtect,otStopwProtect,
+                    otComboLimit,otComboMarket,otComboLimitLeg,otRelLimitCombo,otRelMktCombo,
+                  	otNone,otUnknown);
+<br>
+<br>
+Use otNoChange for a call to <a href="#ModifyOrder">ModifyOrder</a> only.
+<br>
+<br>
+See <a href="#ScaledOrder">ScaledOrder</a> for details on parametrs affecting these order types.
+</blockquote>
+<br>
+<a name="Quantity"></a>
+<hr>
+<br>
+<b>property</b> Quantity: BigDecimal; <font color="#00aa00"><i>// Double;</i></font>
+<br>
+<br>
+<blockquote>
+Order share / contract quantity.  (read and write).
+<br><br>
+Type Double, or <a href="#BigDecimal">BigDecimal</a>, are depending on your compiler choices.
+</blockquote>
+<br>
+<a name="Price"></a>
+<hr>
+<br>
+<b>property</b> Price: Double;
+<br>
+<br>
+<blockquote>
+Order limit price.  Maximum precision is 6 places.  The TWS may limit this further depending on the asset.  (read and write).
+</blockquote>
+<br>
+<a name="Right"></a>
+<a name="TIABRight"></a>
+<hr>
+<br>
+<b>property</b> Right: TIABRight;
+<br>
+<br>
+<blockquote>
+For options.
+<br>
+TIABRight = (rtNone,rtPut,rtCall);  (read and write).  Use rtNone for non Option orders.
+</blockquote>
+<br>
+<a name="SecurityType"></a>
+<a name="TIABSecurityType"></a>
+<hr>
+<br>
+<b>property</b> SecurityType: TIABSecurityType;
+<br>
+<br>
+<blockquote>
+TIABSecurityType =<br>
+&nbsp;&nbsp;(stStock,stOption,stFuture,stIndex,stFutOpt,stCash,stBag,stBond,stIOp,stCFD,stFund,stCmdty,
+&nbsp;&nbsp;&nbsp;stCrypto,stConFut,stFutConFut,stWar,stNews,stAll);<br><br>
+    (read and write).
+</blockquote>
+<br>
+<a name="Strike"></a>
+<hr>
+<br>
+<b>property</b> Strike: Double;
+<br>
+<br>
+<blockquote>
+For options.  (read and write).
+</blockquote>
+<br>
+<a name="Symbol"></a>
+<hr>
+<br>
+<b>property</b> Symbol: <b>string</b>;
+<br>
+<br>
+<blockquote>
+This is the symbol of the asset.  (read and write).
+</blockquote>
+<br>
+<a name="TrailStopPrice"></a>
+<a name="TrailingPercent"></a>
+<hr>
+<br>
+<b>property</b> TrailStopPrice: Double;<br />
+<b>property</b> TrailingPercent: Double;
+<br>
+<br>
+<blockquote>
+For Trailing stop limit orders.<br>
+<br>
+Use the order type of otTrailLimit.   When placing trailing stop limit orders, the AuxPrice property specifies the trailing amount, and the stop price is specified as this TrailStopPrice property.
+</blockquote>
+<br>
+
+<a name="ComboLegsDescrip"></a>
+<hr>
+<br>
+<b>property</b> ComboLegsDescrip: string;
+<br>
+<br>
+<blockquote>
+For Combo type orders. (Read Only)<br>
+<br>
+Information about the combo order returned by the TWS. 
+</blockquote>
+<br>
+<a name="ComboLegsUnderCompContractId"></a>
+<a name="ComboLegsUnderCompDelta"></a>
+<a name="ComboLegsUnderCompPrice"></a>
+<hr>
+<br>
+<b>property</b> DeltaNeutralContractId: Integer;<br>
+<b>property</b> DeltaNeutralContractDelta: Double;<br>
+<b>property</b> DeltaNeutralContractPrice: Double;<br>
+<br>
+<blockquote>
+Delta-Neutral Combo Orders:  Submit Delta-Neutral Combo Orders and RFQs, and request corresponding market data.<br>
+<br>
+Such combos should be constructed as follows:<br><br>
+a) OPT or FOP goes into the leg (e.g. comboLegs list contain 1 leg only)<br>
+b) Underlying (STK or FUT), delta and underlying price goes into newly added "underComp" attribute of a Contract.<br>
+</blockquote>
+<br>
+<a name="EFPBasisPoints"></a>
+<hr>
+<br>
+<b>property</b> EFPBasisPoints: Double;
+<br>
+<br>
+<blockquote>
+For use with EFP type orders. (Read Only) Default value = UNSET_DOUBLE<br>
+<br>
+</blockquote>
+<br>
+
+<a name="EFPBasisType"></a>
+<hr>
+<br>
+<b>property</b> EFPBasisType: Integer;
+<br>
+<br>
+<blockquote>
+For use with EFP type orders. (Read Only)  Default value = UNSET_INTEGER<br>
+<br>
+</blockquote>
+<br>
+
+<a name="TimeInForce"></a>
+<a name="TIABTimeInForce"></a>
+<hr>
+<br>
+<b>property</b> TimeInForce: TIABTimeInForce;
+<br>
+<br>
+<blockquote>
+TIABTimeInForce = (tifDay,tifGTC,tifIOC,tifOPG,tifGTD,tifAUC,tifFillKill,tifDTC,tifGAT,tif5Mins,tifUnknown); 
+<br>
+<br>
+Values are Day, GoodTilCancelled, ImmediateOrCancel(any portion), OPG(used with MOO and LOO), Good Till Date, AUC(used with auction order), FillorKill(entire fill), DayTillCancel, GoodAfterTime, 5Minutes,
+<br>
+<br>
+Crypto limit orders use tif5Mins.  Crypto market orders use tifIOC.
+</blockquote>
+<br>
+
+<a name="Transmit"></a>
+<hr>
+<br>
+<b>property</b> Transmit: Boolean;
+<br>
+<br>
+<blockquote>
+Specifies whether the order will be transmitted by TWS. If set to false, the order will be created at TWS but will not be sent. (read and write).
+<br>
+<br>
+</blockquote>
+<br>
+<a name="ParentId"></a>
+<hr>
+<br>
+<b>property</b> ParentId: Integer;
+<br>
+<br>
+<blockquote>
+The order ID of the parent order, used for bracket and auto trailing stop orders. (read and write).
+<br>
+<br>
+</blockquote>
+<br>
+<a name="BlockOrder"></a>
+<hr>
+<br>
+<b>property</b> BlockOrder: Boolean;
+<br>
+<br>
+<blockquote>
+If set to true, specifies that the order is an ISE Block order. (read and write).
+<br>
+<br>
+</blockquote>
+<br>
+<a name="SweepToFill"></a>
+<hr>
+<br>
+<b>property</b> SweepToFill: Boolean;
+<br>
+<br>
+<blockquote>
+If set to true, specifies that the order is a Sweep-to-Fill order. (read and write).
+<br>
+<br>
+</blockquote>
+<br>
+<a name="Multiplier"></a>
+<hr>
+<br>
+<b>property</b> Multiplier: <b>string</b>;
+<br>
+<br>
+<blockquote>
+The desired futures or options contract multiplier in any API operation that involves describing a contract.  These operations are: placing orders, requesting market data, requesting market depth, and requesting contract (instrument) specifications.  An example of when this functionality is useful is when a corporate action has resulted in more than one options contract being traded on the same underlying, with the same right (put or call), strike, and expiration.  If a contract only trades with a single multiplier (typically 100), specifying the multiplier is not necessary.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="DisplaySize"></a>
+<hr>
+<br>
+<b>property</b> DisplaySize: Integer;
+<br>
+<br>
+<blockquote>
+The publicly disclosed order size, used when placing Iceberg orders. (read and write).
+<br>
+<br>
+</blockquote>
+<br>
+<a name="ShortSaleSlot"></a>
+<hr>
+<br>
+<b>property</b> ShortSaleSlot: Integer;
+<br>
+<br>
+<blockquote>
+Retail customers set to a value of 0.
+<br><br>
+Institutional (ie non-cleared) customer specify "Short Sale Slot" information when placing an order of side "SSHORT." This information concerns the location from which shares will be delivered, and has two parameters, "Short Sale Slot" and "Designated Location." If "Short Sale Slot" is 1, then shares will be delivered from the customer's clearing firm, and no "Designated Location" is specified. If "Short Sale Slot" is 2, then shares will be delivered from a "Designated Location" clearing firm, and the value of "Designated Location" is a comma-delimitted list of possible firms.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="TriggerMethod"></a>
+<hr>
+<br>
+<b>property</b> TriggerMethod: Integer;
+<br>
+<br>
+<blockquote>
+Specifies how Simulated Stop, Stop-Limit and Trailing Stop orders are triggered. Valid values are:
+<blockquote>
+<b>O</b> - the default value. The "double bid/ask" method will be used for orders for OTC stocks and US options. All other orders will used the "last" method.
+<br>
+<br>
+<b>1</b> - use "double bid/ask" method, where stop orders are triggered based on two consecutive bid or ask prices.
+<br>
+<br>
+<b>2</b> - "last" method, where stop orders are triggered based on the last price.
+<br>
+<br>
+<b>3</b> - "double-last" method, where stop orders are triggered based on last two prices.
+<br>
+<br>
+<b>4</b> - Bid/ask function
+<br>
+<br>
+<b>7</b> - Last or bid/ask function
+<br>
+<br>
+<b>8</b> - Mid-point function
+</blockquote>
+<br>
+Trigger method's and order types are shown in this table: <a href="https://interactivebrokers.github.io/tws-api/trigger_method_limit.html">TWS trigger methods</a>.
+<br>
+</blockquote>
+<br>
+<a name="ExtendedHours"></a>
+<hr>
+<br>
+<b>property</b> ExtendedHours: Boolean;
+<br>
+<br>
+<blockquote>
+If set to true, allows triggering of orders outside of regular trading hours. (read and write).
+<br>
+<br>
+Effective API 9.40 and TWS 878 onwards.  This property now replaces the <a href="#RegTradingHoursOnly">RegTradingHoursOnly</a> property.
+<br>
+</blockquote>
+<br>
+<a name="Hidden"></a>
+<hr>
+<br>
+<b>property</b> Hidden: Boolean;
+<br>
+<br>
+<blockquote>
+If set to true, the order will not be visible when viewing the market depth. This option only applies to orders routed to the ISLAND exchange. (read and write).
+<br>
+<br>
+</blockquote>
+<br>
+<a name="ClientIdOrder"></a>
+<hr>
+<br>
+<b>property</b> ClientId: Integer;
+<br>
+<br>
+<blockquote>
+ClientId that generated this Order.  This field is filled automatically on all orders placed from the TIABSocket.  This value will normally be the TIABSocket.ClientId.
+<br>
+<br>
+It becomes relevant when calling <a href="#GetOpenOrdersAccount">GetOpenOrdersAccount</a>, to get details on orders generated by other clients, or within the TWS.    
+<br>
+<br>
+</blockquote>
+<br>
+<a name="Executions"></a>
+<hr>
+<br>
+<b>property</b> Executions[Index: Integer]: TIABExecution;
+<br>
+<br>
+<blockquote>
+This property is an index property to the array of TIABExecution records, that the TWS has sent for this order.  The count of items in the array is avaiable in the <a href="#ExecutionsCount">ExecutionsCount</a> property.  The Liquidation field will have a value of 1 if this execution is a result of a liquidation, and a value of 0 otherwise.<br>
+<br>
+Access this property like so;   <i>LastOrderExid := IABSocket.Orders[2].Executions[0].ExecutionId;</i>
+<br><br>
+&nbsp;&nbsp;TIABExecution = <b>record</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;ExecutionId: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Time: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;AcctNumber: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Exchange: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;Side: <a href="#TIABAction">TIABAction</a>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Volume: BigDecimal; <font color="#00aa00">// <i>Double;</i></font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Price: Double;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;PermId: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Liquidation: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;CumulativeQty: BigDecimal; <font color="#00aa00">// <i>Double; Integer;</i></font><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;AveragePrice: Double;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;OrderRef: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;EVRule: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;EVMultiplier: Double<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ModelCode: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;LastLiquidity: Integer;<br>
+&nbsp;&nbsp;<b>end;</b>
+<br><br>
+Volume and CumulatveQty will be of type Double, or <a href="#BigDecimal">BigDecimal</a>, depending on your compiler choices.<br>
+<br>
+</blockquote>
+
+<br>
+<a name="ExecutionsCount"></a>
+<hr>
+<br>
+<b>property</b> ExecutionsCount: Integer;
+<br>
+<br>
+<blockquote>
+This property is the number of records in the array of the <a href="#Executions">Executions</a> property;       
+<br>
+<br>
+</blockquote>
+<br>
+<a name="ComboLegs"></a><a name="ComboLegPrice"></a>
+<hr>
+<br>
+<b>property</b> ComboLegs[Index: Integer]: TIABComboLeg;
+<br>
+<br>
+<blockquote>
+This property is an index property to the array of TIABComboLeg records, that you have added to create Combination Orders (BAG).  The count of items in the array is avaiable in the <a href="#ComboLegsCount">ComboLegsCount</a> property.  Add new ComboLegs with the <a href="#AddComboLeg">AddComboLeg</a> method, and remove them with the <a href="#DeleteComboLeg">DeleteComboLeg</a> method.<br>
+<br>
+Access this property like so;&nbsp;&nbsp;<i>AComboLegContractId := IABSocket.Orders[2].ComboLegs[0].ContractId;</i>
+<br><br><br>
+<a name="TIABComboLeg"></a>
+&nbsp;&nbsp;TIABComboLeg = <b>record</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;ContractId: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Action: <a href="#TIABAction">TIABAction</a>;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Ratio: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Exchange: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;OpenClose: TIABLegOpenClose;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ShortSaleSlot: Integer;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;DesignatedLocation: <b>string;</b><br>
+&nbsp;&nbsp;&nbsp;&nbsp;ExemptCode: Integer;  <font color="#00aa00">// <i>init to -1</i></font><br />
+&nbsp;&nbsp;<b>end;</b>
+<br>
+<br>
+The ShortSalelot and DesignatedLocation fields provide support for institutional customers to specify ShortSaleSlot / DesignatedLocation for an individual leg of a COMBO order.
+Valid values specified for ShortSaleSlot are as follows:
+<br><br>
+&nbsp;&nbsp;0 - unapplicable (e.g. retail customer or not SSHORT leg (not <a href="#Action">Action</a> of iabShort)<br>
+&nbsp;&nbsp;1 - clearing broker<br>
+&nbsp;&nbsp;2 - third party<br>
+<br>
+When ShortSaleSlot = 2, a DesignatedLocation value is to be specified.  Non-empty DesignatedLocation values for all other cases will cause orders to be rejected.
+<br><br>
+TIABLegOpenClose = (locSamePos,locOpenPos,locClosePos,locUnknownPos);
+<br><br />
+Another property related is the ComboLegPrice[<strong>Index</strong>: Integer]: Double.  See also  <a href="#AddComboLegPrice">AddComboLegPrice</a>.
+<br>
+</blockquote>
+<br>
+<a name="ComboLegsCount"></a>
+<hr>
+<br>
+<b>property</b> ComboLegsCount: Integer;
+<br>
+<blockquote>
+This property is the number of records in the array of the <a href="#ComboLegs">ComboLegs</a> property;       
+<br>
+<br>
+</blockquote>
+<br>
+<a name="DiscretAmount"></a>
+<hr>
+<br>
+<b>property</b> DiscretAmount: Double;
+<br>
+<blockquote>
+Field discretionaryAmt - unknown purpose?       
+<br>
+</blockquote>
+<br>
+<a name="FAdvGroup"></a>
+<hr>
+<br>
+<b>property</b> FAdvGroup: <b>string</b>;
+<br>
+<blockquote>
+For Finacial Adviser accounts, otherwise a blank string '';    
+<br>
+<br>
+</blockquote>
+<br>
+<a name="FAdvMethod"></a>
+<hr>
+<br>
+<b>property</b> FAdvMethod: <b>string</b>;
+<br>
+<blockquote>
+For Finacial Adviser accounts, otherwise a blank string '';     
+<br>
+<br>
+</blockquote>
+<br>
+<a name="FAdvPercentage"></a>
+<hr>
+<br>
+<b>property</b> FAdvPercentage: <b>string</b>;
+<br>
+<br>
+<blockquote>
+For Finacial Adviser accounts, otherwise a blank string '';    
+<br>
+<br>
+</blockquote>
+<br>
+<a name="FAdvProfile"></a>
+<hr>
+<br>
+<b>property</b> FAdvProfile: <b>string</b>;
+<br>
+<br>
+<blockquote>
+For Finacial Adviser accounts, otherwise a blank string '';    
+<br>
+<br>
+</blockquote>
+<br>
+<a name="GoodAfterTime"></a>
+<hr>
+<br>
+<b>property</b> GoodAfterTime: <b>string</b>;
+<br>
+<br>
+<blockquote>
+The trade's "Good After Time," format "YYYYMMDD HH:MM:SS" -- use an empty String if not applicable.   
+<br>
+<br>
+</blockquote>
+<br>
+<a name="GoodTillDate"></a>
+<hr>
+<br>
+<b>property</b> GoodTillDate: <b>string</b>;
+<br>
+<br>
+<blockquote>
+The trade's "Good Till Date," format "YYYYMMDD HH:MM:SS" -- use an empty String if not applicable.   
+<br>
+<br>
+</blockquote>
+<br>
+<a name="PrimaryExchange"></a>
+<hr>
+<br>
+<b>property</b> PrimaryExchange: <b>string</b>;
+<br>
+<br>
+<blockquote>
+Specify the PrimaryExchange for Smart Routing.<br><br>
+You must specify the primary exchange when placing orders routed through SMART exchange, or when making SMART market data requests.  Specifying the primary exchange allows the API to resolve routing ambiguities for example in instances when an asset trades in the same currency on multiple exchanges (i.e. QQQ trades in US dollars on both AMEX and NYSE).<br><br>
+This can be tricky guess work sometimes.  Try looking at Contract specs, or a Symbol search, for clues on this.  There are samples in IAB API help, or the cpp sample code.
+<br>
+<br>
+</blockquote>
+
+
+<br>
+<a name="DesignatedLocation"></a>
+<hr>
+<br>
+<b>property</b> DesignatedLocation: <b>string</b>;
+<br>
+<br>
+<blockquote>
+Unknown... see TWS help.
+<br>
+<br>
+</blockquote>
+
+<br>
+<a name="OcaMethod"></a>
+<hr>
+<br>
+<b>property</b> OcaMethod: TIABOcaMethod;
+<br>
+<br>
+<blockquote>
+TIABOcaMethod = (ocaCancelWithBlock, ocaReduceWithBlock, ocaReduceNonBlock);
+<br>
+<br>
+</blockquote>
+<br>
+<a name="Rule80A"></a>
+<hr>
+<br>
+<b>property</b> Rule80A: TIABRule80A;
+<br>
+<br>
+<blockquote>
+TIABRule80A = (r80na,r80aIndividual, r80aAgency, r80aAgentOtherMember, r80aIndividualPTIA, r80aAgencyPTIA, r80aAgentOtherMemberPTIA, r80aIndividualPT, r80aAgencyPT, r80aAgentOtherMemberPT);
+<br>
+<br>
+</blockquote>
+<br>
+
+<a name="ScaledOrder"></a>
+<a name="ScaleInitLevelSize"></a>
+<a name="ScaleSubsLevelSize"></a>
+<a name="ScalePriceIncrement"></a>
+<a name="ScaleNumComponents"></a>
+<a name="ScalePriceAdjustValue"></a>
+<a name="ScalePriceAdjustInterval"></a>
+<a name="ScaleProfitOffset"></a>
+<a name="ScaleAutoReset"></a>
+<a name="ScaleInitPosition"></a>
+<a name="ScaleInitFillQty"></a>
+<a name="ScaleRandomPercent"></a>
+<hr>
+<br>
+<b>property</b> ScalePriceIncrement: Double;<br>
+<b>property</b> ScaleInitLevelSize: Integer;<br>
+<b>property</b> ScaleSubsLevelSize: Integer;<br>
+<b>property</b> ScalePriceAdjustValue: Double;<br />
+<b>property</b> ScalePriceAdjustInterval: Integer;<br />
+<b>property</b> ScaleProfitOffset: Double;<br />
+<b>property</b> ScaleAutoReset: Boolean;<br />
+<b>property</b> ScaleInitPosition: Integer;<br />
+<b>property</b> ScaleInitFillQty: Integer;<br />
+<b>property</b> ScaleRandomPercent: Boolean;<br />
+<br>
+<br>
+<blockquote>
+Parameters for the entry of a "Scale" order.  The <a href="#OrderType">OrderType</a> must be set to otScale for a Scaled order.
+<br><br>
+Either ScaleNumComponents (split order into X buckets) or ScaleComponentSize (split order so each bucket is of the size X) AND ScalePriceIncrement (price increment per bucket).
+<br><br>
+The PriceIncrement is unconditionally required, and only one of either NumComponents/ComponentSize must be specified.
+<br><br>
+</blockquote>
+<br>
+
+<a name="WhyHeld"></a>
+<hr>
+<br>
+<b>property</b> WhyHeld: <b>string</b>;
+<br>
+<br>
+<blockquote>
+This property contains the comma-separated list of reasons for order to be held. For orders being held due to SLAL , the value will be 'locate'.
+</blockquote>
+<br>
+
+<a name="OverridePercentageConstraints"></a>
+<hr>
+<br>
+<b>property</b> OverridePercentageConstraints: Boolean;
+<br>
+<br>
+<blockquote>
+Overrides TWS's order price percentage constraints, which are applied to orders that TWS sees as deviating too much from the NBBO of the contract.  This functionality was put into place to work in conjunction with the fact that TWS will no longer pop up a confirmation dialog when an API order violates the percentage constraints TWS imposes. If this is set to false, such orders going forward will be rejected. Keep in mind that orders with prices that severely depart from the contract's NBBO but would otherwise be filled will be rejected by IB's servers.<br>
+<br>
+</blockquote>
+<br>
+<a name="SettlingFirm"></a>
+<hr>
+<br>
+<b>property</b> SettlingFirm: <b>string</b>;
+<br>
+<br>
+<blockquote>
+Pertains to institutional only.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="AllOrNone"></a>
+<hr>
+<br>
+<b>property</b> AllOrNone: Boolean;
+<br>
+<br>
+<blockquote>
+Self explan.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="MinQuantity"></a>
+<hr>
+<br>
+<b>property</b> MinQuantity: Integer;
+<br>
+<br>
+<blockquote>
+Minimum quantity.
+<br>
+<br>
+</blockquote>
+<br>
+<a name="PercentOffset"></a>
+<hr>
+<br>
+<b>property</b> PercentOffset: Double;
+<br>
+<br>
+<blockquote>
+Pertains to relative orders only. 
+<br>
+<br>
+</blockquote>
+<br>
+<a name="NotHeld"></a>
+<hr>
+<br>
+<b>property</b> NotHeld: Boolean;
+<br>
+<br>
+<blockquote>
+?
+<br>
+<br>
+</blockquote>
+<br>
+<a name="AuctionStrategy"></a>
+<hr>
+<br>
+<b>property</b> AuctionStrategy: TIABAuctionStrategy;;
+<br>
+<br>
+<blockquote>
+TIABAuctionStrategy = (asUnset, asMatch, asImprovement, asTransparent);
+<br>
+<br>
+</blockquote>
+<br>
+<a name="StartingPrice"></a><a name="StockRangeUpper"></a><a name="StockRangeLower"></a><a name="Delta"></a><a name="StockRefPrice"></a>
+<hr>
+<br>
+<b>property</b> StartingPrice: Double;<br>
+<b>property</b> StockRangeUpper: Double;<br>
+<b>property</b> StockRangeLower: Double;<br>
+<b>property</b> Delta: Double;<br>
+<b>property</b> StockRefPrice: Double;<br>
+<br>
+<br>
+<blockquote>
+Pertains to BOX exchange only.
+<br>
+<br>
+</blockquote>  
+<br>
+<a name="Volatility"></a>
+<a name="VolatilityPeriod"></a>
+<a name="DeltaNeutral"></a>
+<a name="ContinuousUpdate"></a>
+<a name="ReferencePrice"></a>
+<a name="TIABVolatilityPeriod"></a>
+<a name="TIABReferencePrice"></a>
+<a name="DeltaNeutralOrderType"></a>
+<a name="DeltaNeutralAuxPrice"></a>
+<a name="DeltaNeutralSettlingFirm"></a>
+<a name="DeltaNeutralClearingAccount"></a>
+<a name="DeltaNeutralClearingIntent"></a>
+<a name="DeltaNeutralOpenClose"></a>
+<a name="DeltaNeutralShortSale"></a>
+<a name="DeltaNeutralShortSaleSlot"></a>
+<a name="DeltaNeutralDesignatedLocation"></a>
+
+<hr>
+<br>
+<b>property</b> Volatility: Double;<br>
+<b>property</b> VolatilityPeriod: TIABVolatilityPeriod;<br>
+<b>property</b> DeltaNeutralOrderType: TIABOrderType; <b>default</b> otNone<br>
+<b>property</b> DeltaNeutralAuxPrice: Double;<br>
+<b>property</b> ContinuousUpdate: Boolean;<br>
+<b>property</b> ReferencePrice: TIABReferencePrice;<br>
+<b>property</b> DeltaNeutralSettlingFirm:<b>string</b>;<br>
+<b>property</b> DeltaNeutralClearingAccount: <b>string</b>;<br>
+<b>property</b> DeltaNeutralClearingIntent: <b>string</b>;<br>
+<b>property</b> DeltaNeutralOpenClose: <b>string</b>;<br>
+<b>property</b> DeltaNeutralShortSale: Boolean;<br />
+<b>property</b> DeltaNeutralShortSaleSlot: Integer;<br />
+<b>property</b> DeltaNeutralDesignatedLocation: <b>string</b>;<br>
+<br>
+<b>type</b>  TIABVolatilityPeriod = (vpUnset,vpDaily,vpAnnual);<br>
+<b>type</b>  TIABReferencePrice = (rpUnset,rpAverage,rpBidOrAsk);<br>
+<br>
+<blockquote>
+Pertains to Dynamic Volatility Orders.<br><br>
+All volatility orders have these two parameters:
+<ul>
+<li>Volatility: What the price is computed from via TWS's options analytics. For VOL orders, the limit price sent to an exchange is not editable, as it is the output of a function. Volatility is expressed as a percentage.</li>
+<li>VolatilityPeriod: Set to vpUnSet, vpDaily or vpAnnual.</li>
+</ul>
+Dynamic volatility orders have these five additional parameters:
+<ul>
+<li>DeltaNeutral: Specifies whether TWS is supposed to do the corresponding delta trade upon full or partial execution of the option order. If delta neutral is selected, market orders in the underlier will be placed in response to executions to maintain delta-neutrality.</li>
+<li>ContinuousUpdate: Whether TWS is supposed to update the order price as the underlier moves. If Continuous Update is selected, the limit price sent to an exchange is modified by TWS if the computed price of the option changes enough to warrant doing so. This is very helpful in keeping the limit price sent to the exchange up to date as the underlier price changes.</li> 
+<li>LowWatermarkPrice:  If the underlier's reference price crosses below this price, TWS will cancel the order. Merely touching the watermark does not cancel the order.</li>
+<li>HighWatermarkPrice:  If the underlier's reference price crosses above this price, TWS will cancel the order. Merely touching the watermark does not cancel the order.</li>
+<li>ReferencePrice: rpUnSet, rpAverage or rpBidOrAsk.  Set to rpAverage for Average of National Best Bid or Ask, or set to rpBidOrAsk for National Best Bid when buying a call or selling a put, and National Best Ask when selling a call or buying a put. The reference price is used to compute the limit price sent to an exchange (whether or not Continuous Update is selected), and for watermark price monitoring.</li>
+<li>DeltaNeutralOpenClose - This string attribute specifies whether the order is an Open or a Close order and is used when the hedge involves a CFD and and the order is clearing away.</li>
+<li>DeltaNeutralShortSale - This boolean attribute is used when the hedge involves a stock and indicates whether or not it is sold short.</li>
+<li>DeltaNeutralShortSaleSlot - This integer attribute has a value of 1 (the clearing broker holds shares) or 2 (delivered from a third party). If you use 2, then you must specify a deltaNeutralDesignatedLocation.</li>
+<li>DeltaNeutralDesignatedLocation - This string attribute is used only when deltaNeutralShortSaleSlot = 2.</li>
+</ul>
+<br>
+<br>
+</blockquote>  
+<br>
+<a name="Verified"></a>
+<hr>
+<br>
+<b>property</b> Verified: Boolean;<br>
+<br>
+<br>
+<blockquote>
+Read only property.  An order that has been sent to the <a href="#VerifyOrder">VerifyOrder</a> method, and sucessfully processed, will have its Verified property set true, and the method <a href="#GetQueryResult">GetQueryResult</a> will contain valid data for commissions and margins.
+<br>
+<br>
+See the <a href="#VerifyOrder">VerifyOrder</a> method for further details.
+</blockquote>  
+<br>
+<a name="ContractId"></a>
+<hr>
+<br>
+<b>property</b> ContractId: Integer;<br>
+<br>
+<br>
+<blockquote>
+This property will contain the Id number of the trading instrument, after the order has been submitted. 
+<br>
+<br>
+</blockquote>  
+<br>
+<a name="ClearingAccount"></a><a name="ClearingIntent"></a>
+<hr>
+<br>
+<b>property</b> ClearingAccount: <b>string</b>;<br>
+<b>property</b> ClearingIntent: <b>string</b>;<br>
+<br>
+<br>
+<blockquote>
+For IBExecution Customers: Away and PTA Orders Supported (requires TWS 879)
+<br><br>
+ClearingIntent: Valid values include: IB, Away, PTA.
+<br>
+ClearingAccount: The true beneficiary of the order.This value is required to be sent on FUT/FOP orders for reporting to the exchange.
+<br>
+<br>
+</blockquote>  
+
+
+<br>
+<a name="Mifid2DecisionMaker"></a><a name="Mifid2DecisionAlgo"></a><a name="Mifid2ExecutionTrader"></a><a name="Mifid2ExecutionAlgo"></a>
+<a name="AutoCancelDate"></a><a name="Shareholder"></a><a name="CompletedTime"></a><a name="CompletedStatus"></a>
+<a name="DontUseAutoPriceForHedge"></a><a name="IsOmsContainer"></a><a name="DiscretionaryUpToLimitPrice"></a>
+<a name="ImbalanceOnly"></a><a name="RouteMarketableToBbo"></a><a name="FilledQuantity"></a><a name="MarketCapPrice"></a>
+<a name="RefFuturesConId"></a><a name="ParentPermId"></a><a name="UsePriceMgmtAlgo"></a>
+<a name="Duration"></a><a name="PostToAts"></a>
+<hr>
+<br>
+<b>property</b> Mifid2DecisionMake: <b>string</b>;<br>
+<b>property</b> Mifid2DecisionAlgo: <b>string</b>;<br>
+<b>property</b> Mifid2ExecutionTrader: <b>string</b>;<br>
+<b>property</b> Mifid2ExecutionAlgo: <b>string</b>;<br>
+<b>property</b> AutoCancelDate: <b>string</b>;<br>
+<b>property</b> Shareholder: <b>string</b>;<br>
+<b>property</b> CompletedTime: <b>string</b>;<br>
+<b>property</b> CompletedStatus: <b>string</b>;<br>
+<b>property</b> DontUseAutoPriceForHedge: Boolean;<br>
+<b>property</b> IsOmsContainer: Boolean;<br>
+<b>property</b> DiscretionaryUpToLimitPrice: Boolean;<br>
+<b>property</b> AutoCancelParent: Boolean;<br>
+<b>property</b> ImbalanceOnly: Boolean;<br>
+<b>property</b> RouteMarketableToBbo: Boolean;<br>
+<b>property</b> FilledQuantity: Double;<br>
+<b>property</b> MarketCapPrice: Double;<br>
+<b>property</b> RefFuturesConId: Integer;<br>
+<b>property</b> ParentPermId: Int64;<br>
+<b>property</b> UsePriceMgmtAlgo: Integer;<br>
+<b>property</b> Duration: Integer;<br>
+<b>property</b> PostToAts: Integer;<br>
+<br>
+<blockquote>
+Properties added in TWS API 975 and 976, and 10.10.<br/>
+<br>
+Specific purpose not known or unsure.   Check the API help for details:<br/>
+&nbsp;&nbsp;<a href="https://interactivebrokers.github.io/tws-api/">https://interactivebrokers.github.io/tws-api/</a>
+<br>
+<br>
+</blockquote>  
+
+
+
+<br>
+<a name="AlgoParams"></a><a name="AlgoStrategy"></a><a name="TIABTagValueArray"><a name="AlgoParamsCount"></a>
+<hr>
+<br>
+<b>property</b> AlgoParams[<strong>Index</strong>: Integer]: TIABTagValueArray;<br>
+<b>property</b> AlgoStrategy: <b>string</b>;<br>
+<b>property</b> AlgoParamsCount: Integer;<br />
+<br>
+<br>
+<blockquote>
+This will submit IBALGO orders using the API. The following new fields to the Order structure:<br />
+<br />
+    * String: AlgoStrategy    * Vector: AlgoParams<br />
+<br />
+Available Algos and parameters include:<br />
+For US Stocks: 	 <br />
+<ul>
+<li>Arrival Price (ArrivalPx) 	Max percentage: maxPctVol (double in a range 0.01 to 50)</li>
+<li>Urgency/Risk aversion: riskAversion (Valid values: Get Done; Aggressive; Neutral; Passive)</li>
+<li>Attempt completion by EOD: forceCompletion (boolean)</li>
+<li>Percentage of Volume (PctVol) 	Target Percentage: pctVol (double in a range 0.01 to 50)<li>Volume-Weighted Average Price (Vwap) 	Max Percentage: maxPctVol (double in a range 0.01 to 50)</li>
+<li>Time-Weighted Average Price (Twap) 	Trade when: strategyType (Valid values: Marketable; Matching Midpoint; Matching Same Side; Matching Last)</li>
+</ul>
+For US Options: 	 <br />
+<ul>
+<li>Balance Impact and Risk (maxPctVol) 	Max percentage: maxPctVol (double in a range 0.01 to 50)</li>
+<li>Urgency/Risk aversion: riskAversion (Valid values: Get Done; Aggressive; Neutral; Passive)</li>
+<li>Attempt completion by EOD: forceCompletion (boolean)</li>
+<li>Minimize Impact (minImpact) 	Max Percentage: maxPctVol (double in a range 0.01 to 50)</li>
+</ul><br>
+See also the methods: <a href="#AddAlgoParams">AddAlgoParams</a> and <a href="#ClearAlgoParams">ClearAlgoParams</a>.
+<br>
+<br />
+&nbsp;&nbsp;TIABTagValueArray = <strong>record</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;Tag, Value: <strong>string;</strong><br />
+&nbsp;&nbsp;<strong>end;</strong><br />
+<br>
+</blockquote>  
+
+
+<br>
+<a name="SmartComboRoutingParams"></a><a name="SmartComboRoutingParamsCount"></a>
+<hr>
+<br>
+<b>property</b> SmartComboRoutingParams[<strong>Index</strong>: Integer]: TIABTagValueArray;<br>
+<b>property</b> SmartComboRoutingParamsCount: Integer;<br />
+<br>
+<br>
+<blockquote>
+You can now add smartComboRoutingParams to an order. smartComboRoutingParams is similar to AlgoParams in that it makes use of tag/value pairs to add parameters to combo orders. The new parameters cover the following capabilities:
+
+<ul>
+    <li>Priority - User can specify which leg to be executed first.
+      Tag = LeginPrio
+      Values = -1, 0 or 1</li>
+    <li>Discretionary Amount - When one leg is executed, we can adjust the other leg by up to a discretionary amount.
+      Tag = MaxSegSize
+      Value = An amount</li>
+    <li>Market-If-Touched Timeout - For Market-If-Touched combo orders, we record the firstTradeTime of the first fill of the first leg to execute, and the lastTradeTime of the last partial fill. For these kinds of orders, you can now specify timeout values of the last fill and the timeout since the first fill, in seconds.
+      Tags = ChangeToMktTime1 is the timeout after the last fill, and ChangeToMktTime2 is the timeout after the first fill.
+      Value = Number of seconds</li>
+    <li>Market-If-Touched Stop-Loss - Specify an absolute stop-loss amount per combo. If specified and if the implied execution price of the combo (based on a leg that has already been executed and current market data) exceeds the combo price plus the stop-oss amount, we convert the order from LMT to MKT immediately in order to finish executing the combo order. If the stop-loss amount is specified but timeouts have not been specified, we will continue to try to execute the second leg at the calculated LMT price until it either executes or the stop-loss amount is reached.
+      Tag = ChangeToMktOffset
+      Value = An amount.</li>
+    <li>Maximum Leg-In Size - Specify the maximum allowed leg-in size per segment.
+      Tag = MaxSegSize
+      Value = Unit of combo size</li>
+    <li>Discretionary Percentage = Specify a percentage of the combo price. This applies to scale combos in which the discretionary amount is calculated from the current scale level. When the discretionary amount is entered as a percentage, the API will convert that to a dollar amount according to the combo. This amount will be updated when the order price changes or for scale orders for each level. You can enter a value for this parameter or for the Discretionary Amt extended attribute one at a time, but not both at the same time.
+      Tag = DiscretionaryPct
+      Value = A value between 0 and 100.</li>
+</ul>
+
+<br>
+See also the methods: <a href="#SmartComboRoutingParams">SmartComboRoutingParams</a> and <a href="#ClearSmartComboRoutingParams">ClearSmartComboRoutingParams</a>.
+<br>
+<br />
+&nbsp;&nbsp;TIABTagValueArray = <strong>record</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;Tag, Value: <strong>string;</strong><br />
+&nbsp;&nbsp;<strong>end;</strong><br />
+<br>
+</blockquote>  
+
+
+
+
+
+<br>
+<a name="MktDataOptions"></a><a name="MktDataOptionsCount"></a>
+<a name="OrderMiscOptions"></a><a name="OrderMiscOptionsCount"></a>
+<hr>
+<br>
+<b>property</b> MktDataOptions[<strong>Index</strong>: Integer]: TIABTagValueArray;<br>
+<b>property</b> MktDataOptionsCount: Integer;<br />
+<b>property</b> OrderMiscOptions[<strong>Index</strong>: Integer]: TIABTagValueArray;<br>
+<b>property</b> OrderMiscOptionsCount: Integer;<br />
+<br>
+<br>
+<blockquote>
+<br>
+See also the methods: <a href="#SmartComboRoutingParams">SmartComboRoutingParams</a> and <a href="#ClearSmartComboRoutingParams">ClearSmartComboRoutingParams</a>.
+<br>
+<br />
+&nbsp;&nbsp;TIABTagValueArray = <strong>record</strong><br />
+&nbsp;&nbsp;&nbsp;&nbsp;Tag, Value: <strong>string;</strong><br />
+&nbsp;&nbsp;<strong>end;</strong><br />
+<br>
+</blockquote>  
+
+
+
+
+
+<br>
+<a name="OptOutSmartRouting"></a>
+<hr>
+<br>
+<b>property</b> OptOutSmartRouting: Boolean;<br />
+<br>
+<blockquote>
+Opt Out of Default SmartRouting for ASX-Directed Orders<br />
+<br />
+ASX exchange regulations require that SmartRouting be selected by default for orders routed directly to ASX, and require that any opting-out of SmartRouting be done on an order by order basis.<br />
+<br />
+You can opt out of default SmartRouting for orders routed directly to ASX by using a new boolean Order attribute optOutSmartRouting. This new attribute defaults to false unless explicitly set to true. When optOutSmartRouting is set to false, orders routed directly to ASX will NOT use SmartRouting. When the attribute is set to true, orders routed directly to ASX orders WILL use SmartRouting.<br />
+<br />
+When developing your own custom API application, you must not allow orders to be routed directly to ASX by default, and you must require opting out of SmartRouting on an order by order basis. For more information on these regulations, see the ASX website.
+<br />
+<br>
+</blockquote>  
+
+
+<br>
+<a name="ExemptCode"></a>
+<hr>
+<br>
+<b>property</b> ExemptCode: Integer;<br />
+<br>
+<blockquote>
+Support for SSHORTX, Short Sale Exempt action, has been added. When this is implemented, you will use SSHORTX the same way you use SSHORT.<br />
+SSHORTX allows some orders to be marked as exempt from the new SEC Rule 201, which goes has not yet gone into effect. The API code will also include a code specifying the reason for the exemption.<br />
+<br />
+<br>
+</blockquote> 
+
+<br>
+<a name="HedgeParam"></a><a name="HedgeType"></a><a name="TIABHedgeType"></a>
+<hr>
+<br>
+<b>property</b> HedgeParam: <strong>string;</strong><br />
+<b>property</b> HedgeType: TIABHedgeType;<br />
+<br>
+<blockquote>
+Hedge orders are child orders that take additional fields. There are four types of hedging orders supported by the API:<br />
+<br />
+&nbsp;&nbsp;* Delta&nbsp;&nbsp;* Beta&nbsp;&nbsp;* FX&nbsp;&nbsp;* Pair<br />
+<br />
+To support these orders, the following fields have been added to order properties:<br />
+<br />
+HedgeType: TIABHedgeType = (htUnset, htDelta, htBeta, htFX, htPair);<br />
+<br />
+HedgeParam: string; value depends on the hedgeType; sent from the API only if hedgeType is NOT htUnset (default). HedgeParam is required for Pair hedge order, optional for Beta hedge orders, and ignored for Delta and FX hedge orders.<br />
+<br />
+The following rules apply:<br />
+<ul>
+<li>All hedge orders must have a parent order submitted first. The hedge order will provide the parent order ID.</li>
+<li>If the hedgeType is Beta, the beta sent in the hedgeParm can be zero, which means it is not used.</li>
+<li>Delta is only valid if the parent order is an option and the child order is a stock.</li>
+</ul>
+TIABHedgeType = (htUnset, htDelta, htBeta, htFX, htPair);
+<br />
+<br>
+</blockquote>  
+
+<br>
+<a name="TradingClass"></a>
+<hr>
+<br>
+<b>property</b> TradingClass: <strong>string;</strong><br />
+<br>
+<blockquote>
+Used with mini options orders.  Specifically, the tradingClass string attribute has been added to the Contract structure and removed from the ContractDetails structure in order to support mini options requested by the API. The following requests and callbacks that include the Contract structure as a parameter can now handle the tradingClass and multiplier attributes for mini options. Also, some of these requests can now use the conId attribute to identify a security.
+<br>
+</blockquote>  
+
+
+<br>
+<a name="ScaleTable"></a>
+<hr>
+<br>
+<b>property</b> ScaleTable: <strong>string;</strong><br />
+<br>
+<blockquote>
+Used with Scale orders.
+<br>
+</blockquote>  
+
+<br>
+<a name="AlgoId"></a>
+<hr>
+<br>
+<b>property</b> AlgoID: <strong>string;</strong><br />
+<br>
+<blockquote>
+Not known at this time.
+<br>
+</blockquote>  
+
+
+
+<br>
+<a name="ActiveStartTime"></a><a name="ActiveStopTime"></a>
+<hr>
+<br>
+<b>property</b> ActiveStartTime: <strong>string;</strong><br />
+<b>property</b> ActiveStopTime: <strong>string;</strong><br />
+<br>
+<blockquote>
+Used with GTC orders.
+<br>
+</blockquote>  
+
+
+
+<!-- ############################################################################################# -->
+
+
+<br>
+<hr>
+<br>
+<h3><font color="#0000ff">TIABOrder methods</font></h3>
+<br>
+<br>
+<a name="Assign"></a>
+<b>procedure</b> Assign(Source: TPersistent); override;
+<br>
+<br>
+<blockquote>
+Assign the values of one TIABOrder to another.  Use this to copy one TIABOrder to another.
+</blockquote>
+<br>
+<hr>
+<br>
+<a name="AddComboLeg"></a><a name="AddComboLegPrice"></a><a name="ClearComboLegPrice"></a></a>
+<b>function</b> AddComboLeg(ComboLeg: TIABComboLeg): Integer;<br />
+<b>function</b> AddComboLegPrice(Price: Double): Integer;<br />
+<b>procedure</b> ClearComboLegPrice;
+<br>
+<br>
+<blockquote>
+Adds a <a href="#TIABComboLeg">TIABComboLeg</a> to the Order.<a href="#ComboLegs">ComboLegs</a> property.  The return value is the Index of this ComboLeg.  These are used in Combination orders, and require the Order Type set to otBag. <br />
+AddComboLegPrice is a second array, this with just with Double values.  Not sure what this does.   ClearComboLegPrice will clear the array.<br />
+<a href="#ComboLegPrice">ComboLegPrice</a>[<strong>Index</strong>: Integer] is the property.
+</blockquote>
+
+<br>
+<hr>
+<br>
+<a name="DeleteComboLeg"></a>
+<b>procedure</b> DeleteComboLeg(Index: Integer);
+<br>
+<br>
+<blockquote>
+Deletes an existing <a href="#TIABComboLeg">TIABComboLeg</a> from the Order.<a href="#ComboLegs">ComboLegs</a> property.  Calling this procedure with a value of -1 will delete all ComboLegs from this Order.
+</blockquote>
+
+<br>
+<a name="GetQueryResult"></a>
+<hr>
+<br>
+<b>function</b> GetQueryResult: TIABOrderQueryResult;<br>
+<br>
+<br>
+<blockquote>
+An order that has been sent to the <a href="#VerifyOrder">VerifyOrder</a> method, and sucessfully processed, will have its <a href="#Verified">Verified</a> property set true, and the method GetQueryResult will contain valid data for commissions and margins.
+<br>
+<br>
+This method returns a record of type TIABOrderQueryResult.
+<br>
+<pre>
+&nbsp;&nbsp;TIABOrderQueryResult = <b>record</b>
+&nbsp;&nbsp;&nbsp;&nbsp;Status: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;InitMarginAfter: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;MaintMarginAfter: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;EquityWithLoanAfter: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;InitMarginBefore: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;MaintMarginBefore: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;EquityWithLoanBefore: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;InitMarginChange: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;MaintMarginChange: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;EquityWithLoanChange: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;Commission: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;MinCommission: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;MaxCommission: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;CommissionCurrency: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;WarningText: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;CompletedTime: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;CompletedStatus: <b>string</b>;
+&nbsp;&nbsp;<b>end</b>;
+</pre>
+<br>
+<br>
+See the <a href="#VerifyOrder">VerifyOrder</a> method for further details.
+</blockquote>  
+
+<br>
+<hr>
+<br>
+<a name="AddAlgoParams"></a><a name="ClearAlgoParams"></a>
+<strong>function</strong> AddAlgoParams(TagValue: TIABTagValue): Integer;<br />
+<b>procedure</b> ClearAlgoParams;<br />
+<br>
+<br>
+<blockquote>
+AddAlgoParams will append a TIABTagValue object and return the index position.<br />
+ClearAlgoParams will clear all saved objects.<br />
+<br />
+See also <a href="#AlgoParams">AlgoParams</a> and <a href="#AlgoStrategy">AlgoStrategy</a> and <a href="#AlgoParamsCount">AlgoParamsCount</a><br />
+</blockquote>
+
+
+<br>
+<hr>
+<br>
+<a name="AddSmartComboRoutingParams"></a>
+<a name="AddMktDataOptions"></a>
+<a name="AddOrderMiscOptions"></a>
+<a name="ClearSmartComboRoutingParams"></a>
+<a name="ClearMktDataOptions"></a>
+<a name="ClearOrderMiscOptions"></a>
+<strong>function</strong> AddSmartComboRoutingParams(TagValue: TIABTagValue): Integer;<br />
+<b>procedure</b> ClearSmartComboRoutingParams;<br />
+<strong>function</strong> AddMktDataOptions(TagValue: TIABTagValue): Integer;<br />
+<b>procedure</b> ClearMktDataOptions;<br />
+<strong>function</strong> AddOrderMiscOptions(TagValue: TIABTagValue): Integer;<br />
+<b>procedure</b> ClearOrderMiscOptions;<br />
+
+<br>
+<br>
+<blockquote>
+Some parameters are controlled by a pair of "tag=value" attributes.  These allows for expansion of future settings.  These are contained in a TIABTagValue record:
+<br>
+<br>
+<pre>
+&nbsp;&nbsp;TIABTagValueArray = <strong>record</strong>
+&nbsp;&nbsp;&nbsp;&nbsp;Tag, Value: <strong>string;</strong>
+&nbsp;&nbsp;<strong>end;</strong>
+</pre>
+The above functions will append a TIABTagValue object and return the index position.  Clear...  will clear all saved objects.<br />
+<br />
+
+The values for SmartComboRouting, is explained in the link at <a href="#SmartComboRoutingParams">SmartComboRoutingParams</a><br>
+The other object values allowed in the above is not explained by IAB at this time.<br>
+
+<br />
+See also <a href="#SmartComboRoutingParams">SmartComboRoutingParams</a> and <a href="#SmartComboRoutingParamsCount">SmartComboRoutingParamsCount</a><br />
+</blockquote>
+
+
+
+
+<!-- ############################################################################################# -->
+
+<br>
+<hr>
+<br>
+<h3><font color="#0000ff">TIABOrder Events</font></h3>
+<br>
+<br>
+<a name="OnFill"></a>
+<b>property</b> OnFill: TNotifyEvent;
+<br>
+<br>
+<blockquote>
+Fires each time an order has a fill (partial or full).  This event is not assigned in the <a href="#TIABSocket">TIABSocket</a> component.  Instead use the <a href="#OnOrderStatus">OnOrderStatus</a> event and check the Order's Changed property.
+</blockquote>
+<br>
+<a name="OnCompleted"></a>
+<hr>
+<br>
+<b>property</b> OnCompleted: TNotifyEvent
+<br>
+<br>
+<blockquote>
+Fires when the order has been cancelled or completely filled.  This event is not assigned in the <a href="#TIABSocket">TIABSocket</a> component.  Instead use the <a href="#OnOrderStatus">OnOrderStatus</a> event and check the Order's Completed property.
+</blockquote>
+<br>
+<a name="TIABOrders"></a>
+<hr>
+<br>
+<center><h3><font color="#0000ff">TIABOrders object</font></h3></center>
+This object manages the various TIABOrder objects.  Access to a single order is done through this object via the <a href="#Orders">Orders</a> property in TIABSocket.  The object will normally handle all adding and deleting of orders as they are sent, or arrive.  There are methods to add orders manually, should you wish to add orders from a previous session.  Also FindDuplicatePermIds is required to deal with some extra orders the TWS may generate.      
+<br>
+<br>
+<h3><font color="#0000ff">TIABOrders properties</font></h3>
+<br>
+<br>
+<br>
+<a name="Count"></a>
+<b>property</b> Count: Integer;
+<br>
+<br>
+<blockquote>
+Number of <a href="#TIABOrder">TIABOrder</a> objects in the TIABOrders object.  Based on 1. (read only).
+</blockquote>
+<br>
+<a name="Items"></a>
+<hr>
+<br>
+<b>property</b> Items[Index: Integer]: <a href="#TIABOrder">TIABOrder</a>;
+<br>
+<br>
+<blockquote>
+Each individual TIABOrder item.  Index is zero based.  This is the default property of TIABOrders. (read and write).
+</blockquote> 
+<br>
+<hr>
+<br>
+<h3><font color="#0000ff">TIABOrders methods</font></h3>
+<br>
+<br>
+<a name="Add"></a>
+<b>function</b> Add(TempId, ClientId, PermId: Integer; IABOrder: <a href="#TIABOrder">TIABOrder</a>): Integer;
+<br>
+<br>
+<blockquote>
+Adds an order to the array.  Return value is the Index.  This is normally done by TIABSocket.  The Add method takes ownership of the IABOrder object.
+</blockquote>
+<br>
+<a name="Insert"></a>
+<hr>
+<br>
+<b>procedure</b> Insert(Index, TempId, ClientId, PermId: Integer; IABOrder: <a href="#TIABOrder">TIABOrder</a>);
+<br>
+<br>
+<blockquote>
+Inserts an order into the array.  Return value is the Index.  This is normally done by TIABSocket.  The Insert method takes ownership of the IABOrder object.
+</blockquote>
+<br>
+<a name="Delete"></a>
+<hr>
+<br>
+<b>procedure</b> Delete(Index: Integer);
+<br>
+<br>
+<blockquote>
+Deletes a <a href="#TIABOrder">TIABOrder</a> object from the array.  Index is zero based.  The TIABSocket normally does this. 
+</blockquote>
+<br>
+<a name="FindDuplicatePermIds"></a>
+<hr>
+<br>
+<b>function</b> FindDuplicatePermIds(var Index1, Index2: Integer): Boolean;
+<br>
+<br>
+<blockquote>
+Locates duplicate orders based on the PermId value.  Index1 and Index2 will show the locations in the array.  This method does not make any changes - you will need to combine, or delete the duplicate orders.
+<br>
+<br>
+Call this method after the GetExecutions, GetOpenOrdersClient,  GetOpenOrdersAccount methods.    
+<br>
+<br>
+This function returns false when all duplicates are removed.  Note that this function finds the first duplicates encountered - and does not change them.
+</blockquote>
+<br>
+<a name="IndexOfTempId"></a>
+<hr>
+<br>
+<b>function</b> IndexOfTempId(TempId, ClientId: Integer): Integer;
+<br>
+<br>
+<blockquote>
+Find an Order by its TempId / ClientId pair.  Result is Index or -1;
+</blockquote>
+<br>
+<a name="IndexOfPermId"></a>
+<hr>
+<br>
+<b>function</b> IndexOfPermId(PermId: Integer): Integer;
+<br>
+<br>
+<blockquote>
+Find an Order by its PermId.  Result is Index or -1;
+</blockquote>
+<br>
+<a name="TempToPermId"></a>
+<hr>
+<br>
+<b>function</b> TempToPermId(TempId, ClientId: Integer): Integer;
+<br>
+<br>
+<blockquote>
+Finds the PermId of an order by its TempID and ClientId pair.  Result is PermId or -1;
+</blockquote>
+<br>
+<a name="SetPermId"></a>
+<hr>
+<br>
+<b>procedure</b> SetPermId(TempId, ClientId, PermId: Integer);
+<br>
+<br>
+<blockquote>
+Sets the PermId of an order.  The <a href="#TIABSocket">TIABSocket</a> normally does this when it first discovers the PermId of the order.
+</blockquote>
+<br>
+<a name="GetOrder"></a>
+<hr>
+<br>
+<b>procedure</b> GetOrder(TempId, ClientId: Integer): <a href="#TIABOrder">TIABOrder</a>;
+<br>
+<br>
+<blockquote>
+Retrieves an order based on TempId and ClientId.
+</blockquote>
+<br>
+<hr>
+
+<!-- ############################################################################################# -->
+
+<a name="TIABScanner"></a><a name="TIABScan"></a><a name="TIABScanResultItem"></a><a name="GetScannerParameters"></a><a name="TIABScanCriteria"></a><a name="InitializeScanCriteria"></a><a name="NewScan"></a><a name="CancelScan"></a>
+<br>
+<center><h3><font color="#0000ff">TIABScanner  &amp;  TIABScan object,  TIABScanResultItem record</font></h3></center>
+<blockquote>
+The scanner system allows API client to make TWS market scanning calls based on the criteria given.  The API allows for 50 returned items and these are updated every 30 seconds.  Multiple queries can run concurrently.  More details at TWS API <a href="https://interactivebrokers.github.io/tws-api/market_scanners.html">here</a>.
+<br><br>
+The TIABScanner object is a manager for the various TIABScan objects.  A TIABScan object represents a single scanner Query, and it contains TIABScanResultItem records.  This TIABScanner object is accessed as the <a href="#Scanner">Scanner</a> property of TIABSocket component.  The primary methods are:
+<br><br>
+<u>1/ Find available parameters of scanner;</u>   
+<pre>&nbsp;&nbsp;IABSocket1.Scanner.GetScannerParameters;</pre>
+The return information is an XML string of parameters descibing the attributes of the Scanner - see <a href="#OnScannerParam">OnScannerParam</a>.  You will need to parse this data string further.  Use the data to construct a Query for a scan.
+<br><br> 
+<u>2/ Start a scan;</u>
+<pre>&nbsp;&nbsp;IABSocket1.Scanner.InitializeScanCriteria(ScanCriteria);
+&nbsp;&nbsp;IABSocket1.Scanner.NewScan(ScanId, ScanCriteria);</pre>
+The call to InitializeScanCriteria is required to format the data in various fields for the TWS.  Create your scan query by setting the fields of the ScanCriteria record as required.  All unused fields should left with the default initialized values.  The ScannerSettingPairs field has this special purpose:  Scanner setting pairs are delimited by slashes, making this parameter open ended as further developments occur. The "Annual,true" pairing would cause the "Top Option Implied Vol % Gainers" scan to return annualized volatilites.   
+<br>
+ScanId is a unique number used to ID this query.  
+<br><br>
+
+The ScanCriteria used in the request above, has these fields;
+<br><br><pre>
+&nbsp;&nbsp;TIABScanCriteria = <b>record</b>
+&nbsp;&nbsp;&nbsp;&nbsp;NumberOfRows: Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;Instrument: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;LocationCode: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;ScanCode: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;AbovePrice: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;BelowPrice: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;AboveVolume: Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;MarketCapAbove: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;MarketCapBelow: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;MoodyRatingAbove: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;MoodyRatingBelow: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;SPRatingAbove: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;SPRatingBelow: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;MaturityDateAbove: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;MaturityDateBelow: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;CouponRateAbove: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;CouponRateBelow: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;ExcludeConvertible: Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;AverageOptionVolumeAbove: Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;ScannerSettingPairs: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;StockTypeFilter: <b>string;</b>
+&nbsp;&nbsp;&nbsp;&nbsp;SubscriptionOptions: TIABTagValueArray;
+&nbsp;&nbsp;&nbsp;&nbsp;FilterOptions: TIABTagValueArray;
+&nbsp;&nbsp;<b>end;</b>
+</pre>
+
+
+
+The results will return via the <a href="#OnScannerData">OnScannerData</a> event every 30 seconds or so.<pre>
+&nbsp;&nbsp;<b>procedure</b> IABSocket1.OnScannerData(Sender: TObject; Scan: TIABScan);
+&nbsp;&nbsp;<b>var</b> i, j; Integer; s: <b>string</b>; 
+&nbsp;&nbsp;<b>begin</b>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>for</b> i := 0 <b>to</b> Scan.Count -1 <b>do</b>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>begin</b>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j := Scan.Items[i].Rank;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s := Scan.Items[i].Symbol;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...</pre>
+<u>3/ Cancel a scan;</u>
+<pre>&nbsp;&nbsp;IABSocket1.Scanner.CancelScan(ScanId);</pre>
+<br>
+The component set will intercept incomming ammendments to each TIABScan object and a new event will fire.  All TIABScanResultItem data in this TIABScan object is overwritten with each update  Do not rely on persistant data in these objects - they will change frequently as market conditions change. 
+<br><br><br>
+<pre>
+&nbsp;&nbsp;<i>&nbsp;&nbsp;//  the scanner objects manager</i>
+&nbsp;&nbsp;TIABScanner = <b>class</b>(TPersistent)
+&nbsp;&nbsp;<b>public</b>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Add(IABScan: TIABScan): Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> CancelScan(ScanId: Integer);
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> Delete(Index: Integer);
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> GetScannerParameters;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> Insert(Index: Integer; IABScan: TIABScan);
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> InitializeScanCriteria(PDetails: PTIABScanCriteria);
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> IndexOfScanId(ScanId: Integer): Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> NewScan(ScanId: Integer; Details: TIABScanCriteria): Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Count: Integer <b>read</b> GetCount;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Items[<b>Index</b>: Integer]: TIABScan <b>read</b> GetItems; default;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Parameters: <b>string</b> <b>read</b> FParameters;
+&nbsp;&nbsp;<b>end;</b>
+
+
+&nbsp;&nbsp;<i>&nbsp;&nbsp;//  An individual scan query</i>
+&nbsp;&nbsp;<i>&nbsp;&nbsp;//  accessed as Items property of TIABScanner</i>
+&nbsp;&nbsp;TIABScan = <b>class</b>(TPersistent)
+&nbsp;&nbsp;<b>public</b>
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Add(IABScanResultItem: TIABScanResultItem): Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> Insert(Index: Integer; IABScanResultItem: TIABScanResultItem);
+&nbsp;&nbsp;&nbsp;&nbsp;<b>procedure</b> Delete(Index: Integer);
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> Find(IABScanResultItem: TIABScanResultItem): Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>function</b> QueryCriteria: TIABScanCriteria;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Count: Integer <b>read</b> GetCount;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> Items[<b>Index</b>: Integer]: TIABScanResultItem <b>read</b> GetItems <b>write</b> SetItems; default;
+&nbsp;&nbsp;&nbsp;&nbsp;<b>property</b> ScanId: Integer <b>read</b> FScanId;
+&nbsp;&nbsp;<b>end;</b>
+
+
+&nbsp;&nbsp;<i>&nbsp;&nbsp;//  an instrument that meets the current criteria</i>
+&nbsp;&nbsp;<i>&nbsp;&nbsp;//  accessed as Items property of TIABScan</i>
+&nbsp;&nbsp;TIABScanResultItem = <b>record</b>
+&nbsp;&nbsp;&nbsp;&nbsp;Rank: Integer;
+&nbsp;&nbsp;&nbsp;&nbsp;Symbol: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;SecurityType: TIABSecurityType;
+&nbsp;&nbsp;&nbsp;&nbsp;Expiry: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;Strike: Double;
+&nbsp;&nbsp;&nbsp;&nbsp;Right: TIABRight;
+&nbsp;&nbsp;&nbsp;&nbsp;Exchange: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;Currency: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;LocalSymbol: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;MarketName: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;TradingClass: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;Distance: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;Benchmark: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;Projection: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;LegsString: <b>string</b>;
+&nbsp;&nbsp;&nbsp;&nbsp;ContractId: Integer;
+&nbsp;&nbsp;<b>end;</b>
+</pre>
+<br><br>
+</blockquote>
+
+
+
+<a name="BigDecimal"></a>
+<hr>
+<br>
+<b>type</b>&nbsp;&nbsp;BigDecimal;
+<br>
+<br>
+<blockquote>
+
+
+ In version 10.10, the TWS API added a large decimal math capability.  This became necessary as some
+   instruments (namely bitcoins), are able to be traded down to 0.000000001 of a share.  This is beyond the
+   reliable range of using floats as decimals.  The TWS chose the Intel&reg; Decimal Floating-Point Math Library,
+   but this is only available in C and is too complex to convert to pascal.<br><br>
+
+ Fortunately a BigDecimal style library is available in pascal, thanks to the work of Rudy Velthuis.  It is
+   available here:<br><br>
+
+     &nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/rvelthuis/DelphiBigNumbers">https://github.com/rvelthuis/DelphiBigNumbers</a><br><br>
+
+ A backup copy is here:    <a href="https://www.hhssoftware.com/iabsocketapi/download/DelphiBigNumbers-master.zip">https://www.hhssoftware.com/iabsocketapi/download/DelphiBigNumbers-master.zip</a><br><br>
+
+ This API can be compiled both with or without using the DelphiBigNumbers feature.  If you do not trade
+   bitcoins or small fractions of shares, then there is little need for BigDecimal support.<br><br>
+
+ If the DelphiBigNumbers library is not used, then the type BigDecimal in this API is a simple
+   redefinition of type Double.  The properties and fields involved are mostly the Size of ticks and
+   Filled and Quantity of orders, and share sizes.  In old API's, these were defined as a mix of integer
+   and double.  In this API forwards, they are either a double or BigDecimal.  Existing application code
+   from old API's will need some amending to compile.<br><br><br>
+
+
+   *******************<br><br>
+
+ To include the DelphiBigNumbers library code into this API ( requires XE2 or higher ) :<br><br>
+
+   1/  Download the DelphiBigDecimal zip file from the link above, and extract the contents to your favorite
+         extra code or third party add-on file location,<br><br>
+
+   2/  Add the path of the "source" subfolder to your XE enviroment: menu, Tools, Options, Enviroment, Delphi options,
+         Library, add to both the library path and browse paths, for 32 and 64 bits,<br><br>
+
+   3/  Add a USE_BIGDECIMAL define to the project: menu, Project, options, Delphi compiler, Conditional defines,
+         for 32 and 64 - all configs,<br><br>
+
+   4/  Add the unit "Velthuis.BigDecimals" to the uses clause of your app anywhere that type BigDecimals are used.<br><br>
+
+   5/  With the installed TIABSocket API components file (.dpk), Open, uninstall, add the USE_BIGDECIMAL define to the
+         components file, per step 3 above, compile, and reinstall.<br><br>
+
+   6/  In your application modify / replace the 5 (if used - see below) affected event function / procedure headers
+         with the BigDecimal versions.  This can get messy: try to comment out the event declaration and code from
+         both the interface and implementation sections. Save the form, confirm delete unused references.  Now create
+         new the required event handlers and move your existing code into these.<br><br>
+
+   7/  Adjust your application code to use BigDecimal routines for conversion and variables.<br><br>
+
+
+  See the included pdf help files with the DelphiBigNumbers library.  This includes new routines for conversion of
+    BigDecimal to Integers and strings.<br><br>
+
+  Using BigDecimals directly affects 5 Event procedures in TIABSocket API.  These are OnTickSize, OnTickPriceAndSize,
+    OnMarketDepth, OnMarketLevel2, OnHistogramData, OnProfitLossSingle.  Many other properties have changed too,
+    mostly volume, quantity and bid/ask sizes.<br><br>
+
+   *******************<br><br>
+   
+  If the Big decimal library is not used, then the type BigDecimal is re-defined as a double per below.  Therefore all BigDecimal declarations can be treated as Double's.<br><br>
+
+  <font color="#55aaff">{$IFNDEF USE_BIGDECIMAL}</font><br>
+  <b>type</b> BigDecimal = Double;<br>
+  <font color="#55aaff">{$ENDIF}</font><br>
+
+</blockquote>
+<br>
+<br>
+<hr>
+
+<hr>
+<font color="#c0c0c0" size="-1">Updated on November 20th, 2021.&nbsp;&nbsp;API v10.11</font><br>
+</body>
+</html>
+
+

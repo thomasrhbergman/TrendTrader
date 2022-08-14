@@ -1,0 +1,2 @@
+object CustomForm: TCustomForm
+end

@@ -1,0 +1,28 @@
+
+For updating from 9.xx, to 10.11 or more, some extra work is needed beyond just replacing the .pas files.
+
+Make a decision... do you want to use the BigDecimal library?  Are you going to trade bitcion, or other tiny
+fractions of shares?   
+
+  Yes?  then read the bigdecimal.txt file
+  No?   then BigDecimal is not needed.
+
+But still you need to adjust your forms, and the event parameters to match the adjusted API declarations, like so:
+
+1/  Copy the new API files over the old.
+
+2/  With the installed TIABSocket API components file (.dpk), Open, uninstall, compile, and reinstall.
+
+3/  In your application modify / replace the 5 (if used - see below) affected event function / procedure headers
+      with the BigDecimal versions. This can get messy: try to comment out the event declaration and code from both
+      the interface and implementation sections. Save the form, confirm delete unused references. Now create new the
+      required event handlers and move your existing code into these.
+
+4/  Adjust your application code for some fields and parameter that went from Integer to Double.
+
+
+Affected events: TIABSocket API. These are OnTickSize, OnTickPriceAndSize, OnMarketDepth, OnMarketLevel2,
+  OnHistogramData, OnProfitLossSingle
+
+You will see a new type of BigDecimal, but without the BigDecimal library, this type is simply a redefinition of
+  type Double, and can be treated as Double in your code.

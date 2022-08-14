@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899-12-30 00:00:00.000.840,=C:\Users\Thomas Bergman\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.006,=C:\Users\Thomas Bergman\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.097,=C:\TrendTrader\Unit4.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.037,C:\TrendTrader\Unit1.pas=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.190,=C:\TrendTrader\Unit6.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.765,=C:\Users\Thomas Bergman\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.342,=C:\TrendTrader\Unit3.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.115,=C:\TrendTrader\Unit5.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.887,=C:\Users\Thomas Bergman\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.810,=C:\Users\Thomas Bergman\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.398,=C:\Users\Thomas Bergman\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.676,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.800,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.037,C:\TrendTrader\Unit1.dfm=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.853,C:\TrendTrader\Project1.dproj=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.118,=C:\TrendTrader\Unit2.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.386,=C:\TrendTrader\Unit7.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.016,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.247,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.636,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.088,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.690,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899-12-30 00:00:00.000.671,=C:\Users\Thomas Bergman\OneDrive\Dokument\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+  </Transactions>
+	<ProjectSortOrder AutoSort="0" SortType="0">
+    <File Path="Unit5.pas"/>
+    <File Path="Unit5.dfm"/>
+    <File Path="Unit1.pas"/>
+    <File Path="Unit1.dfm"/>
+    <File Path="Unit2.pas"/>
+    <File Path="Unit2.dfm"/>
+    <File Path="Unit3.pas"/>
+    <File Path="Unit3.dfm"/>
+    <File Path="Unit4.pas"/>
+    <File Path="Unit4.dfm"/>
+    <File Path="Unit6.pas"/>
+    <File Path="Unit6.dfm"/>
+    <File Path="Unit7.pas"/>
+    <File Path="Unit7.dfm"/>
+  </ProjectSortOrder>
+</BorlandProject>

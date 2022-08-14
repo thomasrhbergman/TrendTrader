@@ -1,0 +1,59 @@
+{
+    BigDecimals
+
+ In version 10.10, the TWS API added a large decimal math capability.  This became necessary as some
+   instruments (namely bitcoins), are able to be traded down to 0.000000001 of a share.  This is beyond the
+   reliable range of using floats as decimals.  The TWS chose the Intel® Decimal Floating-Point Math Library,
+   but this is only available in C and is too complex to convert to pascal.
+
+ Fortunately a BigDecimal style library is available in pascal, thanks to the work of Rudy Velthuis.  It is
+   available here:
+
+     https://github.com/rvelthuis/DelphiBigNumbers
+
+ A backup copy is here:    https://www.hhssoftware.com/iabsocketapi/download/DelphiBigNumbers-master.zip
+
+ This API can be compiled both with or without using the DelphiBigNumbers feature.  If you do not trade
+   bitcoins or small fractions of shares, then there is little need for BigDecimal support.
+
+ If the DelphiBigNumbers library is not used, then the type BigDecimal in this API is a simple
+   redefinition of type Double.  The properties and fields involved are mostly the Size of ticks and
+   Filled and Quantity of orders, and share sizes.  In old API's, these were defined as a mix of integer
+   and double.  In this API forwards, they are either a double or BigDecimal.  Existing application code
+   from old API's will need some amending to compile.
+
+
+   *******************
+
+ To include the DelphiBigNumbers library code into this API ( requires XE2 or higher ) :
+
+   1/  Download the DelphiBigDecimal zip file from the link above, and extract the contents to your favorite
+         extra code or third party add-on file location,
+
+   2/  Add the path of the "source" subfolder to your XE enviroment: menu, Tools, Options, Enviroment, Delphi options,
+         Library, add to both the library path and browse paths, for 32 and 64 bits,
+
+   3/  Add a USE_BIGDECIMAL define to the project: menu, Project, options, Delphi compiler, Conditional defines,
+         for 32 and 64 - all configs,
+
+   4/  Add the unit "Velthuis.BigDecimals" to the uses clause of your app anywhere that type BigDecimals are used.
+
+   5/  With the installed TIABSocket API components file (.dpk), Open, uninstall, add the USE_BIGDECIMAL define to the
+         components file, per step 3 above, compile, and reinstall.
+
+   6/  In your application modify / replace the 5 (if used - see below) affected event function / procedure headers
+         with the BigDecimal versions.  This can get messy: try to comment out the event declaration and code from
+         both the interface and implementation sections. Save the form, confirm delete unused references.  Now create
+         new the required event handlers and move your existing code into these.
+
+   7/  Adjust your application code to use BigDecimal routines for conversion and variables.
+
+
+  See the included pdf help files with the DelphiBigNumbers library.  This includes new routines for conversion of
+    BigDecimal to Integers and strings.
+
+  Using BigDecimals directly affects 5 Event procedures in TIABSocket API.  These are OnTickSize, OnTickPriceAndSize,
+    OnMarketDepth, OnMarketLevel2, OnHistogramData, OnProfitLossSingle.  Many other properties have changed too,
+    mostly volume, quantity and bid/ask sizes.
+
+}

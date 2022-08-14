@@ -1,0 +1,51 @@
+object frmSplashScreen: TfrmSplashScreen
+  Left = 0
+  Top = 0
+  BorderIcons = []
+  BorderStyle = bsNone
+  ClientHeight = 369
+  ClientWidth = 664
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  Position = poScreenCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object imgLogo: TImage
+    Left = 0
+    Top = 0
+    Width = 664
+    Height = 369
+    Align = alClient
+    AutoSize = True
+  end
+  object lblVersion: TLabel
+    Left = 22
+    Top = 323
+    Width = 56
+    Height = 16
+    Caption = 'lblVersion'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clNavy
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lblInfo: TLabel
+    Left = 22
+    Top = 344
+    Width = 35
+    Height = 16
+    Caption = 'lblInfo'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clNavy
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+end
