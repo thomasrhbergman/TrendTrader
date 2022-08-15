@@ -1,0 +1,7 @@
+
+  Special note to BCB (Borland C++ Builder)  users.
+********************************************************
+
+
+At the top of the API unit is a compiler directive for use with BCB.  Un-comment this to 
+have the unit compiled in a BCB friendly manner.

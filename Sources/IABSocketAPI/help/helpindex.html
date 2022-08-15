@@ -1,0 +1,400 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta name="Description" content="TIABSocket API help file">
+<link rel="shortcut icon" href="/images/iabsocketapi.ico" type="image/x-icon">
+<title>TIABSocket component Index</title>
+</head>
+<body>
+<basefont size="2"/>
+<a href="helptext.html#Introduction" target="helptext">Introduction</a>
+<br>  
+<br>  
+<a href="helptext.html#TIABSocket" target="helptext">TIABSocket</a>
+<br>  
+<blockquote>
+<font color="#008000">Properties</font><br>
+<a href="helptext.html#AccountValues" target="helptext">AccountValues</a><br>
+<a href="helptext.html#BondSpecs" target="helptext">BondSpecs</a><br>
+<a href="helptext.html#ConnectAtServerTime" target="helptext">ConnectAtServerTime</a><br>
+<a href="helptext.html#Connected" target="helptext">Connected</a><br>
+<a href="helptext.html#ClientID" target="helptext">ClientID</a><br>
+<a href="helptext.html#DefOrder" target="helptext">DefOrder</a><br>
+<a href="helptext.html#InstrumentSpecs" target="helptext">InstrumentSpecs</a><br>
+<a href="helptext.html#Orders" target="helptext">Orders</a><br>
+<a href="helptext.html#Portfolio" target="helptext">Portfolio</a><br>
+<a href="helptext.html#ReserveIDs" target="helptext">ReserveIDs</a><br>
+<a href="helptext.html#Scanner" target="helptext">Scanner</a><br>
+<a href="helptext.html#TWSHostAddress" target="helptext">TWSHostAddress</a><br>
+<a href="helptext.html#TWSPort" target="helptext">TWSPort</a><br>
+<a href="helptext.html#VerifiedOrders" target="helptext">VerifiedOrders</a><br>
+<a href="helptext.html#v100plusAPICalls" target="helptext">v100plusAPICalls</a><br>
+<a href="helptext.html#ClientMaxVerOverride" target="helptext">ClientMaxVerOverride</a><br><br>
+<a href="helptext.html#SmartDepthMarketData" target="helptext">SmartDepthMarketData</a><br><br>
+
+<font color="#008000">Methods</font><br>
+<a href="helptext.html#BindTWSOrdersToClient" target="helptext">BindTWSOrdersToClient</a><br>
+<a href="helptext.html#CancelAccountUpdates" target="helptext">CancelAccountUpdates</a><br>
+<a href="helptext.html#CancelFundamentalData" target="helptext">CancelFundamentalData</a><br>
+<a href="helptext.html#CancelHeadTimestamp" target="helptext">CancelHeadTimestamp</a><br>
+<a href="helptext.html#CancelHistogramData" target="helptext">CancelHistogramData</a><br>
+<a href="helptext.html#CancelHistoricalData" target="helptext">CancelHistoricalData</a><br>
+<a href="helptext.html#CancelImpliedVolatility" target="helptext">CancelImpliedVolatility</a><br>
+<a href="helptext.html#CancelMarketData" target="helptext">CancelMarketData</a><br>
+<a href="helptext.html#CancelMarketDepth" target="helptext">CancelMarketDepth</a><br>
+<a href="helptext.html#CancelNewsBulletins" target="helptext">CancelNewsBulletins</a><br>
+<a href="helptext.html#CancelOptionPrice" target="helptext">CancelOptionPrice</a><br>
+<a href="helptext.html#CancelOrder" target="helptext">CancelOrder</a><br>
+<a href="helptext.html#CancelPnl" target="helptext">CancelPnl</a><br>
+<a href="helptext.html#CancelPnlSingle" target="helptext">CancelPnlSingle</a><br>
+<a href="helptext.html#CancelRealTimeData" target="helptext">CancelRealTimeData</a><br>
+<a href="helptext.html#CancelScan" target="helptext">CancelScan</a><br>
+<a href="helptext.html#CancelTickByTickData" target="helptext">CancelTickByTickData</a><br>
+<a href="helptext.html#ExerciseOptions" target="helptext">ExerciseOptions</a><br>
+<a href="helptext.html#GetAccountUpdates" target="helptext">GetAccountUpdates</a><br>
+<a href="helptext.html#GetCurrentTime" target="helptext">GetCurrentTime</a><br>
+<a href="helptext.html#GetExecutions" target="helptext">GetExecutions</a><br>
+<a href="helptext.html#GetFundamentalData" target="helptext">GetFundamentalData</a><br>
+<a href="helptext.html#GetHistoricalData" target="helptext">GetHistoricalData</a><br>
+<a href="helptext.html#GetHistoricalTickData" target="helptext">GetHistoricalTickData</a><br>
+<a href="helptext.html#GetImpliedVolatility" target="helptext">GetImpliedVolatility</a><br>
+<a href="helptext.html#GetInstrumentSpecs" target="helptext">GetInstrumentSpecs</a><br>
+<a href="helptext.html#GetManagedAccounts" target="helptext">GetManagedAccounts</a><br>
+<a href="helptext.html#GetMarketData" target="helptext">GetMarketData</a><br>
+<a href="helptext.html#GetMarketDepth" target="helptext">GetMarketDepth</a><br>
+<a href="helptext.html#GetMarketSnapShot" target="helptext">GetMarketSnapShot</a><br>
+<a href="helptext.html#GetNewsBulletins" target="helptext">GetNewsBulletins</a><br>
+<a href="helptext.html#GetOpenOrdersClient" target="helptext">GetOpenOrdersClient</a><br>
+<a href="helptext.html#GetOpenOrdersAccount" target="helptext">GetOpenOrdersAccount</a><br>
+<a href="helptext.html#GetOptionPrice" target="helptext">GetOptionPrice</a><br>
+<a href="helptext.html#GetRealTimeData" target="helptext">GetRealTimeData</a><br>
+<a href="helptext.html#GetScannerParameters" target="helptext">GetScannerParameters</a><br>
+<a href="helptext.html#GetTickByTickData" target="helptext">GetTickByTickData</a><br>
+<a href="helptext.html#ModifyOrder" target="helptext">ModifyOrder</a><br>
+<a href="helptext.html#PlaceOrder" target="helptext">PlaceOrder</a><br>
+<a href="helptext.html#RebuildFromTWS" target="helptext">RebuildFromTWS</a><br>
+<a href="helptext.html#ReplaceFA" target="helptext">ReplaceFA</a><br>
+<a href="helptext.html#RequestGlobalCancel" target="helptext">RequestGlobalCancel</a><br>
+<a href="helptext.html#RequestHeadTimestamp" target="helptext">RequestHeadTimestamp</a><br>
+<a href="helptext.html#RequestHistogramData" target="helptext">RequestHistogramData</a><br>
+<a href="helptext.html#RequestFA" target="helptext">RequestFA</a><br>
+<a href="helptext.html#RequestMarketDataType" target="helptext">RequestMarketDataType</a><br>
+<a href="helptext.html#RequestMarketDepthExchanges" target="helptext">RequestMarketDepthExchanges</a><br>
+<a href="helptext.html#RequestMarketRule" target="helptext">RequestMarketRule</a><br>
+<a href="helptext.html#RequestMatchingSymbols" target="helptext">RequestMatchingSymbols</a><br>
+<a href="helptext.html#RequestNewsArticle" target="helptext">RequestNewsArticle</a><br>
+<a href="helptext.html#RequestNewsProviders" target="helptext">RequestNewsProviders</a><br>
+<a href="helptext.html#RequestPnL" target="helptext">RequestPnL</a><br>
+<a href="helptext.html#RequestPnLSingle" target="helptext">RequestPnLSingle</a><br>
+<a href="helptext.html#RequestScan" target="helptext">RequestScan</a><br>
+<a href="helptext.html#RequestSecDefOptParams" target="helptext">RequestSecDefOptParams</a><br>
+<a href="helptext.html#RequestSmartComponents" target="helptext">RequestSmartComponents</a><br>
+<a href="helptext.html#RequestSoftDollarTiers" target="helptext">RequestSoftDollarTiers</a><br>
+<a href="helptext.html#RequestWSHorizonEventsData" target="helptext">RequestWSHorizonEventsData</a><br>
+<a href="helptext.html#RequestWSHorizonMetaData" target="helptext">RequestWSHorizonMetaData</a><br>
+<a href="helptext.html#SetServerLogLevel" target="helptext">SetServerLogLevel</a><br>
+<a href="helptext.html#RequestSmartComponents" target="helptext">RequestSmartComponents</a><br>
+<a href="helptext.html#VerifyOrder" target="helptext">VerifyOrder</a><br>
+
+<br><font color="#008000">Events</font><br>
+<a href="helptext.html#OnAccountDetailsReady" target="helptext">OnAccountDetailsReady</a><br>
+<a href="helptext.html#OnAccountTime" target="helptext">OnAccountTime</a><br>
+<a href="helptext.html#OnAccountValue" target="helptext">OnAccountValue</a><br>
+<a href="helptext.html#OnBondSpecDetails" target="helptext">OnBondSpecDetails</a><br>
+<a href="helptext.html#OnCommissionReport" target="helptext">OnCommissionReport</a><br>
+<a href="helptext.html#OnConnectionState" target="helptext">OnConnectionState</a><br>
+<a href="helptext.html#OnCurrentTime" target="helptext">OnCurrentTime</a><br>
+<a href="helptext.html#OnDeltaNeutralValidation" target="helptext">OnDeltaNeutralValidation</a><br>
+<a href="helptext.html#OnDepthMarketDataDescripItem" target="helptext">OnDepthMarketDataDescripItem</a><br>
+<a href="helptext.html#OnEndOfStreamRead" target="helptext">OnEndOfStreamRead</a><br>
+<a href="helptext.html#OnError" target="helptext">OnError</a><br>
+<a href="helptext.html#OnExchangeStatus" target="helptext">OnExchangeStatus</a><br>
+<a href="helptext.html#OnExecution" target="helptext">OnExecution</a><br>
+<a href="helptext.html#OnExecutionDetailsReady" target="helptext">OnExecutionDetailsReady</a><br>
+<a href="helptext.html#OnFundamentalData" target="helptext">OnFundamentalData</a><br>
+<a href="helptext.html#OnHeadTimestamp" target="helptext">OnHeadTimestamp</a><br>
+<a href="helptext.html#OnHistoricalData" target="helptext">OnHistoricalData</a><br>
+<a href="helptext.html#OnHistoricalDataUpdate" target="helptext">OnHistoricalDataUpdate</a><br>
+<a href="helptext.html#OnHistogramData" target="helptext">OnHistogramData</a><br>
+<a href="helptext.html#OnHistoricalNews" target="helptext">OnHistoricalNews</a><br>
+<a href="helptext.html#OnHistoricalNewsEnd" target="helptext">OnHistoricalNewsEnd</a><br>
+<a href="helptext.html#OnHistoricalTickData" target="helptext">OnHistoricalTickData</a><br>
+<a href="helptext.html#OnInstrumentSpecDetails" target="helptext">OnInstrumentSpecDetails</a><br>
+<a href="helptext.html#OnInstrumentSpecDetailsReady" target="helptext">OnInstrumentSpecDetailsReady</a><br>
+<a href="helptext.html#OnManagedAccounts" target="helptext">OnManagedAccounts</a><br>
+<a href="helptext.html#OnMarketDataType" target="helptext">OnMarketDataType</a><br>
+<a href="helptext.html#OnMarketDepth" target="helptext">OnMarketDepth</a><br>
+<a href="helptext.html#OnMarketLevel2" target="helptext">OnMarketLevel2</a><br>
+<a href="helptext.html#OnMarketRule" target="helptext">OnMarketRule</a><br>
+<a href="helptext.html#OnNewsArticle" target="helptext">OnNewsArticle</a><br>
+<a href="helptext.html#OnNewsBulletin" target="helptext">OnNewsBulletin</a><br>
+<a href="helptext.html#OnNewsProvider" target="helptext">OnNewsProvider</a><br>
+<a href="helptext.html#OnNewsTick" target="helptext">OnNewsTick</a><br>
+<a href="helptext.html#OnOpenOrder" target="helptext">OnOpenOrder</a><br>
+<a href="helptext.html#OnOpenOrderDetailsReady" target="helptext">OnOpenOrderDetailsReady</a><br>
+<a href="helptext.html#OnSmartComponent" target="helptext">OnSmartComponent</a><br>
+<a href="helptext.html#OnOrderStatus" target="helptext">OnOrderStatus</a><br>
+<a href="helptext.html#OnProfitLoss" target="helptext">OnProfitLoss</a><br>
+<a href="helptext.html#OnProfitLossSingle" target="helptext">OnProfitLossSingle</a><br>
+<a href="helptext.html#OnPortfolioUpdate" target="helptext">OnPortfolioUpdate</a><br>
+<a href="helptext.html#OnRebuildFromTWS" target="helptext">OnRebuildFromTWS</a><br>
+<a href="helptext.html#OnReceiveFADetail" target="helptext">OnReceiveFADetail</a><br>
+<a href="helptext.html#OnReplaceFAEnd" target="helptext">OnReplaceFAEnd</a><br>
+<a href="helptext.html#OnRerouteMarketDataReq" target="helptext">OnRerouteMarketDataReq</a><br>
+<a href="helptext.html#OnRerouteMarketDepthReq" target="helptext">OnRerouteMarketDepthReq</a><br>
+<a href="helptext.html#OnSecurityDefinitionOptionalParameter" target="helptext">OnSecurityDefinitionOptionalParameter</a><br>
+<a href="helptext.html#OnSecurityDefinitionOptionalParameterEnd" target="helptext">OnSecurityDefinitionOptionalParameterEnd</a><br>
+<a href="helptext.html#OnSoftDollarTiers" target="helptext">OnSoftDollarTiers</a><br>
+<a href="helptext.html#OnSnapShotDataEnd" target="helptext">OnSnapShotDataEnd</a><br>
+<a href="helptext.html#OnSymbolSample" target="helptext">OnSymbolSample</a><br>
+<a href="helptext.html#OnTickByTickData" target="helptext">OnTickByTickData</a><br>
+<a href="helptext.html#OnTickEFP" target="helptext">OnTickEFP</a><br>
+<a href="helptext.html#OnTickGeneric" target="helptext">OnTickGeneric</a><br>
+<a href="helptext.html#OnTickOptionComputation" target="helptext">OnTickOptionComputation</a><br>
+<a href="helptext.html#OnTickPrice" target="helptext">OnTickPrice</a><br>
+<a href="helptext.html#OnTickPriceAndSize" target="helptext">OnTickPriceAndSize</a><br>
+<a href="helptext.html#OnTickReqParams" target="helptext">OnTickReqParams</a><br>
+<a href="helptext.html#OnTickSize" target="helptext">OnTickSize</a><br>
+<a href="helptext.html#OnTickString" target="helptext">OnTickString</a><br>
+<a href="helptext.html#OnWsHorizonEvents" target="helptext">OnWsHorizonEvents</a><br>
+<a href="helptext.html#OnWsHorizonMeta" target="helptext">OnWsHorizonMeta</a><br>
+<a href="helptext.html#OnVerifiedOrder" target="helptext">OnVerifiedOrder</a><br>
+</blockquote>
+<br>  
+<br>  
+<a href="helptext.html#TIABOrder" target="helptext">TIABOrder object</a>
+<br>  
+<blockquote>
+
+<font color="#008000">Properties</font><br>  
+<a href="helptext.html#Account" target="helptext">Account</a><br>
+<a href="helptext.html#Action" target="helptext">Action</a><br>
+<a href="helptext.html#ActiveStartTime" target="helptext">ActiveStartTime</a><br>
+<a href="helptext.html#ActiveStopTime" target="helptext">ActiveStopTime</a><br>
+<a href="helptext.html#AdjustedOrderType" target="helptext">AdjustedOrderType</a><br>
+<a href="helptext.html#AdjustedStopLimitPrice" target="helptext">AdjustedStopLimitPrice</a><br>
+<a href="helptext.html#AdjustedStopPrice" target="helptext">AdjustedStopPrice</a><br>
+<a href="helptext.html#AdjustedTrailingAmount" target="helptext">AdjustedTrailingAmount</a><br>
+<a href="helptext.html#AdjustedTrailingUnit" target="helptext">AdjustedTrailingUnit</a><br>
+<a href="helptext.html#AlgoId" target="helptext">AlgoId</a><br>
+<a href="helptext.html#AlgoParams" target="helptext">AlgoParams</a><br>
+<a href="helptext.html#AlgoParamsCount" target="helptext">AlgoParamsCount</a><br>
+<a href="helptext.html#AlgoStrategy" target="helptext">AlgoStrategy</a><br>
+<a href="helptext.html#AllOrNone" target="helptext">AllOrNone</a><br>
+<a href="helptext.html#AuctionStrategy" target="helptext">AuctionStrategy</a><br>
+<a href="helptext.html#AutoCancelDate" target="helptext">AutoCancelDate</a><br>
+<a href="helptext.html#AuxPrice" target="helptext">AuxPrice</a><br>
+<a href="helptext.html#BlockOrder" target="helptext">BlockOrder</a><br>
+<a href="helptext.html#CashQuantity" target="helptext">CashQuantity</a><br>
+<a href="helptext.html#Changed" target="helptext">Changed</a><br>
+<a href="helptext.html#ClearingAccount" target="helptext">ClearingAccount</a><br>
+<a href="helptext.html#ClearingIntent" target="helptext">ClearingIntent</a><br>
+<a href="helptext.html#ClientIdOrder" target="helptext">ClientId</a><br>
+<a href="helptext.html#ComboLegs" target="helptext">ComboLegs</a><br>
+<a href="helptext.html#ComboLegsCount" target="helptext">ComboLegsCount</a><br>
+<a href="helptext.html#ComboLegsDescrip" target="helptext">ComboLegsDescrip</a><br>
+<a href="helptext.html#ComboLegPrice" target="helptext">ComboLegPrice</a><br>
+<a href="helptext.html#ComboLegPriceCount" target="helptext">ComboLegPriceCount</a><br>
+<a href="helptext.html#Completed" target="helptext">Completed</a><br>
+<a href="helptext.html#CompletedTime" target="helptext">CompletedTime</a><br>
+<a href="helptext.html#CompletedStatus" target="helptext">CompletedStatus</a><br>
+<a href="helptext.html#ContinuousUpdate" target="helptext">ContinuousUpdate</a><br>
+<a href="helptext.html#ContractId" target="helptext">ContractId</a><br>
+<a href="helptext.html#Currency" target="helptext">Currency</a><br>
+<a href="helptext.html#Delta" target="helptext">Delta</a><br>
+<a href="helptext.html#DeltaNeutralAuxPrice" target="helptext">DeltaNeutralAuxPrice</a><br>
+<a href="helptext.html#DeltaNeutralOrderType" target="helptext">DeltaNeutralOrderType</a><br>
+<a href="helptext.html#DesignatedLocation" target="helptext">DesignatedLocation</a><br>
+<a href="helptext.html#DeltaNeutralSettlingFirm" target="helptext">DeltaNeutralSettlingFirm</a><br>
+<a href="helptext.html#DeltaNeutralClearingAccount" target="helptext">DeltaNeutralClearingAccount</a><br>
+<a href="helptext.html#DeltaNeutralClearingIntent" target="helptext">DeltaNeutralClearingIntent</a><br>
+<a href="helptext.html#Duration" target="helptext">Duration</a><br>
+<a href="helptext.html#ComboLegsUnderCompContractId" target="helptext">DeltaNeutralContractId</a><br>
+<a href="helptext.html#ComboLegsUnderCompDelta" target="helptext">DeltaNeutralContractDelta</a><br>
+<a href="helptext.html#ComboLegsUnderCompPrice" target="helptext">DeltaNeutralContractPrice</a><br>
+<a href="helptext.html#DeltaNeutralOpenClose" target="helptext">DeltaNeutralOpenClose</a><br>
+<a href="helptext.html#DeltaNeutralShortSale" target="helptext">DeltaNeutralShortSale</a><br>
+<a href="helptext.html#DeltaNeutralShortSaleSlot" target="helptext">DeltaNeutralShortSaleSlot</a><br>
+<a href="helptext.html#DeltaNeutralDesignatedLocation" target="helptext">DeltaNeutralDesignatedLocation</a><br>
+<a href="helptext.html#DiscretAmount" target="helptext">DiscretAmount</a><br>
+<a href="helptext.html#DiscretionaryUpToLimitPrice" target="helptext">DiscretionaryUpToLimitPrice</a><br>
+<a href="helptext.html#DisplaySize" target="helptext">DisplaySize</a><br>
+<a href="helptext.html#DontUseAutoPriceForHedge" target="helptext">DontUseAutoPriceForHedge</a><br>
+<a href="helptext.html#EFPBasisPoints" target="helptext">EFPBasisPoints</a><br>
+<a href="helptext.html#EFPBasisType" target="helptext">EFPBasisType</a><br>
+<a href="helptext.html#Exchange" target="helptext">Exchange</a><br>
+<a href="helptext.html#Executions" target="helptext">Executions</a><br>
+<a href="helptext.html#ExecutionsCount" target="helptext">ExecutionsCount</a><br>
+<a href="helptext.html#ExemptCode" target="helptext">ExemptCode</a><br>
+<a href="helptext.html#ExtendedHours" target="helptext">ExtendedHours</a><br>
+<a href="helptext.html#ExtOperator" target="helptext">ExtOperator</a><br>
+<a href="helptext.html#Expiry" target="helptext">Expiry</a><br>
+<a href="helptext.html#Filled" target="helptext">Filled</a><br>
+<a href="helptext.html#FillPrice" target="helptext">FillPrice</a><br>
+<a href="helptext.html#FilledQuantity" target="helptext">FilledQuantity</a><br>
+<a href="helptext.html#FAdvGroup" target="helptext">FAdvGroup</a><br>
+<a href="helptext.html#FAdvMethod" target="helptext">FAdvMethod</a><br>
+<a href="helptext.html#FAdvPercentage" target="helptext">FAdvPercentage</a><br>
+<a href="helptext.html#FAdvProfile" target="helptext">FAdvProfile</a><br>
+<a href="helptext.html#GoodAfterTime" target="helptext">GoodAfterTime</a><br>
+<a href="helptext.html#GoodTillDate" target="helptext">GoodTillDate</a><br>
+<a href="helptext.html#HedgeParam" target="helptext">HedgeParam</a><br>
+<a href="helptext.html#HedgeType" target="helptext">HedgeType</a><br>
+<a href="helptext.html#Hidden" target="helptext">Hidden</a><br>
+<a href="helptext.html#ImbalanceOnly" target="helptext">ImbalanceOnly</a><br>
+<a href="helptext.html#IsOmsContainer" target="helptext">IsOmsContainer</a><br>
+<a href="helptext.html#IsPeggedChangeAmountDecrease" target="helptext">IsPeggedChangeAmountDecrease</a><br>
+<a href="helptext.html#LatestFillPrice" target="helptext">LatestFillPrice</a><br>
+<a href="helptext.html#LatestFillQty" target="helptext">LatestFillQty</a><br>
+<a href="helptext.html#LmtPriceOffset" target="helptext">LmtPriceOffset</a><br>
+<a href="helptext.html#LocalSymbol" target="helptext">LocalSymbol</a><br>
+<a href="helptext.html#MarketCapPrice" target="helptext">MarketCapPrice</a><br>
+<a href="helptext.html#Mifid2DecisionMaker" target="helptext">Mifid2DecisionMaker</a><br>
+<a href="helptext.html#Mifid2DecisionAlgo" target="helptext">Mifid2DecisionAlgo</a><br>
+<a href="helptext.html#Mifid2ExecutionTrader" target="helptext">Mifid2ExecutionTrader</a><br>
+<a href="helptext.html#Mifid2ExecutionAlgo" target="helptext">Mifid2ExecutionAlgo</a><br>
+<a href="helptext.html#MinQuantity" target="helptext">MinQuantity</a><br>
+<a href="helptext.html#MktDataOptions" target="helptext">MktDataOptions</a><br>
+<a href="helptext.html#MktDataOptionsCount" target="helptext">MktDataOptionsCount</a><br>
+<a href="helptext.html#ModelCode" target="helptext">ModelCode</a><br>
+<a href="helptext.html#Multiplier" target="helptext">Multiplier</a><br>
+<a href="helptext.html#NotHeld" target="helptext">NotHeld</a><br>
+<a href="helptext.html#OCAgroup" target="helptext">OCAgroup</a><br>
+<a href="helptext.html#OcaMethod" target="helptext">OCAMethod</a><br>
+<a href="helptext.html#OpenClose" target="helptext">OpenClose</a><br>
+<a href="helptext.html#OptOutSmartRouting" target="helptext">OptOutSmartRouting</a><br>
+<a href="helptext.html#OrderMiscOptions" target="helptext">OrderMiscOptions</a><br>
+<a href="helptext.html#OrderMiscOptionsCount" target="helptext">OrderMiscOptionsCount</a><br>
+<a href="helptext.html#OrderRef" target="helptext">OrderRef</a><br>
+<a href="helptext.html#OrderOrigin" target="helptext">OrderOrigin</a><br>
+<a href="helptext.html#OrderType" target="helptext">OrderType</a><br>
+<a href="helptext.html#Quantity" target="helptext">Quantity</a><br>
+<a href="helptext.html#OverridePercentageConstraints" target="helptext">OverridePercentageConstraints</a><br>
+<a href="helptext.html#PeggedChangeAmount" target="helptext">PeggedChangeAmount</a><br>
+<a href="helptext.html#PercentOffset" target="helptext">PercentOffset</a><br>
+<a href="helptext.html#PermId" target="helptext">PermId</a><br>
+<a href="helptext.html#PostToAts" target="helptext">PostToAts</a><br>
+<a href="helptext.html#Price" target="helptext">Price</a><br>
+<a href="helptext.html#PrimaryExchange" target="helptext">PrimaryExchange</a><br>
+<a href="helptext.html#RandomizePrice" target="helptext">RandomizePrice</a><br>
+<a href="helptext.html#RandomizeSize" target="helptext">RandomizeSize</a><br>
+<a href="helptext.html#ReferenceChangeAmount" target="helptext">ReferenceChangeAmount</a><br>
+<a href="helptext.html#ReferenceContractId" target="helptext">ReferenceContractId</a><br>
+<a href="helptext.html#ReferenceExchangeId" target="helptext">ReferenceExchangeId</a><br>
+<a href="helptext.html#ReferencePrice" target="helptext">ReferencePrice</a><br>
+<a href="helptext.html#RefFuturesConId" target="helptext">RefFuturesConId</a><br>
+<a href="helptext.html#Remaining" target="helptext">Remaining</a><br>
+<a href="helptext.html#Right" target="helptext">Right</a><br>
+<a href="helptext.html#RouteMarketableToBbo" target="helptext">RouteMarketableToBbo</a><br>
+<a href="helptext.html#Rule80A" target="helptext">Rule80A</a><br>
+<a href="helptext.html#ScaleInitLevelSize" target="helptext">ScaleInitLevelSize</a><br>
+<a href="helptext.html#ScaleSubsLevelSize" target="helptext">ScaleSubsLevelSize</a><br>
+<a href="helptext.html#ScalePriceIncrement" target="helptext">ScalePriceIncrement</a><br>
+<a href="helptext.html#ScalePriceAdjustValue" target="helptext">ScalePriceAdjustValue</a><br>
+<a href="helptext.html#ScalePriceAdjustInterval" target="helptext">ScalePriceAdjustInterval</a><br>
+<a href="helptext.html#ScaleProfitOffset" target="helptext">ScaleProfitOffset</a><br>
+<a href="helptext.html#ScaleAutoReset" target="helptext">ScaleAutoReset</a><br>
+<a href="helptext.html#ScaleInitPosition" target="helptext">ScaleInitPosition</a><br>
+<a href="helptext.html#ScaleInitFillQty" target="helptext">ScaleInitFillQty</a><br>
+<a href="helptext.html#ScaleRandomPercent" target="helptext">ScaleRandomPercent</a><br>
+<a href="helptext.html#ScaleTable" target="helptext">ScaleTable</a><br>
+<a href="helptext.html#SecurityID" target="helptext">SecurityID</a><br>
+<a href="helptext.html#SecurityIDType" target="helptext">SecurityIDType</a><br>
+<a href="helptext.html#SecurityType" target="helptext">SecurityType</a><br>
+<a href="helptext.html#SettlingFirm" target="helptext">SettlingFirm</a><br>
+<a href="helptext.html#Shareholder" target="helptext">Shareholder</a><br>
+<a href="helptext.html#SmartComboRoutingParams" target="helptext">SmartComboRoutingParams</a><br>
+<a href="helptext.html#SmartComboRoutingParamsCount" target="helptext">SmartComboRoutingParamsCount</a><br>
+<a href="helptext.html#SoftDollarTier" target="helptext">SoftDollarTier</a><br>
+<a href="helptext.html#Solicited" target="helptext">Solicited</a><br>
+<a href="helptext.html#StockRangeLower" target="helptext">StockRangeLower</a><br>
+<a href="helptext.html#StockRangeUpper" target="helptext">StockRangeUpper</a><br>
+<a href="helptext.html#StockRefPrice" target="helptext">StockRefPrice</a><br>
+<a href="helptext.html#ShortSaleSlot" target="helptext">ShortSaleSlot</a><br>
+<a href="helptext.html#StartingPrice" target="helptext">StartingPrice</a><br>
+<a href="helptext.html#Strike" target="helptext">Strike</a><br>
+<a href="helptext.html#Symbol" target="helptext">Symbol</a><br>
+<a href="helptext.html#TempId" target="helptext">TempId</a><br>
+<a href="helptext.html#TimeInForce" target="helptext">TimeInForce</a><br>
+<a href="helptext.html#TradingClass" target="helptext">TradingClass</a><br>
+<a href="helptext.html#TrailingPercent" target="helptext">TrailingPercent</a><br>
+<a href="helptext.html#TrailStopPrice" target="helptext">TrailStopPrice</a><br>
+<a href="helptext.html#Transmit" target="helptext">Transmit</a><br>
+<a href="helptext.html#TriggerPrice" target="helptext">TriggerPrice</a><br>
+<a href="helptext.html#ParentId" target="helptext">ParentId</a><br>
+<a href="helptext.html#ParentPermId" target="helptext">ParentPermId</a><br>
+<a href="helptext.html#SweepToFill" target="helptext">SweepToFill</a><br>
+<a href="helptext.html#TriggerMethod" target="helptext">TriggerMethod</a><br>
+<a href="helptext.html#UsePriceMgmtAlgo" target="helptext">UsePriceMgmtAlgo</a><br>
+<a href="helptext.html#Verified" target="helptext">Verified</a><br>
+<a href="helptext.html#Volatility" target="helptext">Volatility</a><br>
+<a href="helptext.html#VolatilityPeriod" target="helptext">VolatilityPeriod</a><br>
+<a href="helptext.html#WhyHeld" target="helptext">WhyHeld</a><br>
+
+<br><font color="#008000">Methods</font><br>
+<a href="helptext.html#Assign" target="helptext">Assign</a><br>
+<a href="helptext.html#AddAlgoParams" target="helptext">AddAlgoParams</a><br>
+<a href="helptext.html#AddComboLeg" target="helptext">AddComboLeg</a><br>
+<a href="helptext.html#AddComboLegPrice" target="helptext">AddComboLegPrice</a><br>
+<a href="helptext.html#AddMktDataOptions" target="helptext">AddMktDataOptions</a><br>
+<a href="helptext.html#AddOrderMiscOptions" target="helptext">AddOrderMiscOptions</a><br>
+<a href="helptext.html#AddSmartComboRoutingParams" target="helptext">AddSmartComboRoutingParams</a><br>
+<a href="helptext.html#ClearAlgoParams" target="helptext">ClearAlgoParams</a><br>
+<a href="helptext.html#ClearComboLegPrice" target="helptext">ClearComboLegPrice</a><br>
+<a href="helptext.html#ClearMktDataOptions" target="helptext">ClearMktDataOptions</a><br>
+<a href="helptext.html#ClearOrderMiscOptions" target="helptext">ClearOrderMiscOptions</a><br>
+<a href="helptext.html#ClearSmartComboRoutingParams" target="helptext">ClearSmartComboRoutingParams</a><br>
+<a href="helptext.html#DeleteComboLeg" target="helptext">DeleteComboLeg</a><br>
+<a href="helptext.html#GetQueryResult" target="helptext">GetQueryResult</a><br>
+
+<br><font color="#008000">Events</font><br>
+<a href="helptext.html#OnCompleted" target="helptext">OnCompleted</a><br>
+<a href="helptext.html#OnFill" target="helptext">OnFill</a><br>
+</blockquote>
+<br>  
+<br>  
+<a href="helptext.html#TIABOrders" target="helptext">TIABOrders object</a>
+<br>  
+<blockquote>
+<font color="#008000">Properties</font><br>
+<a href="helptext.html#Count" target="helptext">Count</a><br>
+<a href="helptext.html#Items" target="helptext">Items</a><br>
+<br><font color="#008000">Methods</font><br>
+<a href="helptext.html#Add" target="helptext">Add</a><br>
+<a href="helptext.html#Delete" target="helptext">Delete</a><br>
+<a href="helptext.html#FindDuplicatePermIds" target="helptext">FindDuplicatePermIds</a><br>
+<a href="helptext.html#GetOrder" target="helptext">GetOrder</a><br>
+<a href="helptext.html#IndexOfTempId" target="helptext">IndexOfTempId</a><br>
+<a href="helptext.html#IndexOfPermId" target="helptext">IndexOfPermId</a><br>
+<a href="helptext.html#Insert" target="helptext">Insert</a><br>
+<a href="helptext.html#TempToPermId" target="helptext">TempToPermId</a><br>
+<a href="helptext.html#SetPermId" target="helptext">SetPermId</a><br>
+</blockquote>
+
+<a href="helptext.html#TIABPortfolio" target="helptext">TIABPortfolio object</a>
+<br>  
+<br>  
+<a href="helptext.html#TIABInstrumentSpec" target="helptext">TIABInstrumentSpec object</a>
+<br>  
+<br>  
+<a href="helptext.html#TIABBondSpec" target="helptext">TIABBondSpec object</a>
+<br>  
+<br>  
+<a href="helptext.html#TIABScanner" target="helptext">TIABScanner object</a><br>
+<br>  
+<blockquote>
+<font color="#008000">Methods</font><br>
+<a href="helptext.html#CancelScan" target="helptext">CancelScan</a><br>
+<a href="helptext.html#NewScan" target="helptext">NewScan</a><br>
+<a href="helptext.html#GetScannerParameters" target="helptext">GetScannerParameters</a><br>
+</blockquote>
+<a href="helptext.html#TIABScan" target="helptext">TIABScan object</a><br>
+<br>
+<a href="helptext.html#TIABScanCriteria" target="helptext">TIABScanCriteria object</a><br>
+<br>  
+<a href="helptext.html#BigDecimal" target="helptext">BigDecimal type</a>
+
+<br><br>
+</body>
+</html>

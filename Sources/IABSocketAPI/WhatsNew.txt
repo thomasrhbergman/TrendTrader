@@ -1,0 +1,1270 @@
+API 10.11 - November 2021.
+************************
+
+  Significant changes to accommodate BigDecimal library additions.
+
+  These Types were extended with new values:
+     TIABSecurityType
+     TIABTimeInForce
+     TIABTickType
+
+  TIABSocket
+    
+    added
+      procedure RequestWSHorizonEventsData
+      procedure RequestWSHorizonMetaData
+
+    Events
+      property OnReplaceFAEnd
+      property OnWsHorizonEvent
+      property OnWsHorizonMeta
+
+    Removed
+      property ETradeOnly: Boolean
+      property FirmQuoteOnly: Boolean
+      property NBBOPriceCap: Double
+
+    Changed parameter types
+      property OnTickSize = procedure(Sender: TObject; DataId: Integer; TickType: TIABTickType; Size: BigDecimal) of object;
+      property OnTickPriceAndSize = procedure(Sender: TObject; DataId: Integer; TickType: TIABTickType; Price: Double; Size: BigDecimal) of object;
+      property OnMarketDepthEvent = procedure(Sender: TObject; DataId, Index, Operation, Side: Integer; Size: BigDecimal; Price: Double) of object;
+      property OnMarketLevel2Event = procedure(Sender: TObject; DataId, Index, Operation, Side: Integer; Size: BigDecimal; Price: Double; MMId: string; SmartDepth: Boolean) of object;
+      property OnHistogramDataEvent = procedure(Sender: TObject; DataId, Item, Count: Integer; Price: Double; Size: BigDecimal) of object;
+      property OnProfitLossSingleEvent = procedure(Sender: TObject; DataId: Integer; Pos: BigDecimal; DailyPnL, UnrealizedPnL, RealizedPnL, Value: Double) of object;
+
+      procedure GetMarketData( ....  TradingClass: string = ''; 
+
+  TIABOrder
+
+    added
+      property Duration: Integer
+      property PostToAts: Integer
+
+    removed
+      property ShareAllocation
+
+    renamed
+      property ComboLegsUnderCompContractId to DeltaNeutralContractId
+      property ComboLegsUnderCompDelta to DeltaNeutralContractDelta
+      property ComboLegsUnderCompPrice to DeltaNeutralContractPrice
+
+    Changed property types
+      property Quantity: BigDecimal
+      property Filled: BigDecimal
+      property Remaining: BigDecimal
+      property LatestFillQty: BigDecimal
+      property FilledQuantity: BigDecimal
+
+
+  Record type changes
+
+    TIABInstrumentSpecItem  and  TIABBondSpecItem
+      added
+        MinSize: BigDecimal;
+        SizeIncrement: BigDecimal;
+        SuggestedSizeIncrement: BigDecimal;
+
+    TIABRealTimeData
+      adjusted data types
+        WAP, Volume: BigDecimal;
+
+    TIABTickData
+      adjusted data types
+        Size: BigDecimal;
+        BidSize: BigDecimal;
+        AskSize: BigDecimal;
+
+    TIABExecution
+      adjusted data types
+        Volume: BigDecimal;
+        CumulativeQty: BigDecimal
+
+    TIABHistoricalChartData
+      adjusted data types
+        WAP, Volume: BigDecimal;
+
+    TIABRealTimeData
+      adjusted data types
+        WAP, Volume: BigDecimal;
+
+
+
+API 9.76-01 - June 2020.
+************************
+    release 2
+
+    tidy up of some issues
+	MaxDouble define is not consistent across D / XE versions - defined our own.
+	Winsock u_long type not consistent across D / XE versions - rectified.
+
+
+
+API 9.76-01 - January 2020.
+************************
+
+
+  TIABSocket
+
+Added
+    property SmartDepthMarketData: Boolean;
+
+    procedure GetHistoricalTicks();
+    procedure GetTickByTickData();
+    procedure CancelTickByTickData();
+
+   Events
+    property OnCompletedOrders
+    property OnCompletedOrdersEnd
+    property OnHistoricalTickData
+    property OnTickByTickData
+
+Adjusted
+   procedure procedure GetMarketDepth();
+
+
+  TIABOrder  prop
+
+Added
+    property Mifid2DecisionMaker
+    property Mifid2DecisionAlgo
+    property Mifid2ExecutionTrader
+    property Mifid2ExecutionAlgo
+    property DontUseAutoPriceForHedge
+    property IsOmsContainer
+    property DiscretionaryUpToLimitPrice
+    property AutoCancelDate
+    property FilledQuantity
+    property RefFuturesConId
+    property AutoCancelParent
+    property Shareholder
+    property ImbalanceOnly
+    property RouteMarketableToBbo
+    property ParentPermId
+    property UsePriceMmgtAlgo
+
+
+Record types
+Added
+
+  TIABTickDataType = (tdNone, tdLast, tdAllLast, tdBidAsk, tdMidPoint);
+
+  TIABTickData = record
+    TickType: TIABTickDataType;
+    Time: TDateTime;
+    // tdLast, tdAllLast
+    PastLimit: Boolean;
+    Unreported: Boolean;
+    Price: Double;
+    Size: Integer;
+    Exchange: string;
+    SpecialConditions: string;
+    // tdBidAsk
+    BidPrice: Double;
+    AskPrice: Double;
+    BidSize: Integer;
+    AskSize: Integer;
+    BidPastLow: Boolean;
+    AskPastHigh: Boolean;
+    // tdMidPoint
+    MidPoint: Double;
+  end;
+
+  TIABContract = record
+	  ContractId: Integer;
+	  Symbol: string;
+	  SecType: TIABSecurityType;
+	  LastTradeDateOrContractMonth: string;
+	  Strike: Double;
+	  Right: TIABRight;
+	  Multiplier: string;
+	  Exchange: string;
+	  PrimaryExchange: string; // pick an actual (ie non-aggregate) exchange that the contract trades on.  DO NOT SET TO SMART.
+	  Currency: string;
+	  LocalSymbol: string;
+	  TradingClass: string;
+	  IncludeExpired: Boolean;
+	  SecIdType: string;		// CUSIP;SEDOL;ISIN;RIC
+	  SecId: string;
+  	// COMBOS
+	  ComboLegsDescrip: string; // received in open order 14 and up for all combos
+  	  ComboLegList: TIABComboLegArray;
+	  // delta neutral contract
+   	DeltaNeutralContract: TIABDeltaNeutralContract;
+  end;
+  PTIABContract = ^TIABContract;
+
+  procedure InitIABContract(var contract: TIABContract);
+
+
+    TickDataTypeString: array [TIABTickDataType] of string = ('', 'Last', 'AllLast', 'BidAsk', 'MidPoint');
+
+
+
+
+
+
+API 9.73 - 2017.
+************************
+
+  TIABSocket
+
+Added
+   Events
+    property OnProfitLoss
+    property OnProfitLossSingle
+
+
+API 9.71_3 - October 2014.
+************************
+
+
+Added
+
+  TIABOrder
+    property ActiveStartTime: string read FActiveStartTime write FActiveStartTime;
+    property ActiveStopTime: string read FActiveStopTime write FActiveStopTime;
+    property AlgoId: string read FAlgoId write FAlgoId;
+    property ScaleTable: string read FScaleTable write FScaleTable;
+    property TradingClass: string read FTradingClass write FTradingClass;
+
+    function AddOrderMiscOptions(TagValue: TIABTagValue): Integer;
+    procedure ClearOrderMiscOptions;
+    property OrderMiscOptions[Index: Integer]: TIABTagValue read GetOrderMiscOptions write SetOrderMiscOptions;
+    property OrderMiscOptionsCount: Integer read GetOrderMiscOptionsCount;
+
+    function AddMktDataOptions(TagValue: TIABTagValue): Integer;
+    procedure ClearMktDataOptions;
+    property MktDataOptions[Index: Integer]: TIABTagValue read GetMktDataOptions write SetMktDataOptions;
+    property MktDataOptionsCount: Integer read GetMktDataOptionsCount;
+
+
+
+Changed
+
+  TIABSocket
+    GetHistoricalData()
+    GetRealTimeData()
+
+
+    TIABScanCriteria = record
+      SubscriptionOptions: TIABTagValueArray;  added
+
+    TIABPortfolioItem = record
+      TradingClass: string;   added
+
+
+
+
+
+
+
+
+API 9.68 - November 2012.
+************************
+
+
+Added
+
+  Tick types:   ttTradeCount, ttTradeRate, ttVolumeRate, ttLastRTHTrade,
+  
+  TIABHedgeType = (htUnset, htDelta, htBeta, htFX, htPair);
+
+
+  TIABComboLeg = record
+    ExemptCode: Integer;  // init to -1
+
+  TIABTagValue = record
+    Tag, Value: string;
+  end;
+
+  TIABInstrumentSpecItem = record
+    EVRule: string;
+    EVMultiplier: Double;
+    SecIdList: TIABTagValueArray;
+
+  TIABBondSpecItem = record
+    EVRule: string;
+    EVMultiplier: Double;
+    SecIdList: TIABTagValueArray;
+
+  TIABExecution = record
+    OrderRef: string;
+    EVRule: string;
+    EVMultiplier: Double;
+
+  TIABOrderQueryResult = record
+    Status: string;
+    InitMargin: string;
+    MaintMargin: string;
+    EquityWithLoan: string;
+    Commission: Double;
+    MinCommission: Double;
+    MaxCommission: Double;
+    CommissionCurrency: string;
+    WarningText: string;
+  end;
+  PTIABOrderQueryResult = ^TIABOrderQueryResult;
+
+  TIABCommissionReport = record
+    ExecID: string;
+    Commission: Double;
+    Currency: string;
+    RealizedPNL: Double;
+    Yield: Double;
+    YieldRedemptionDate: Integer;  // YYYYMMDD format
+  end;
+
+
+  TIABOrder
+    property DeltaNeutralSettlingFirm: string;
+    property DeltaNeutralClearingAccount: string;
+    property DeltaNeutralClearingIntent: string;
+    property DeltaNeutralOpenClose: string;
+    property DeltaNeutralShortSale: Boolean;
+    property DeltaNeutralShortSaleSlot: Integer;
+    property DeltaNeutralDesignatedLocation: string;
+    property TrailingPercent: Double;
+
+    property ScalePriceAdjustValue: Double;
+    property ScalePriceAdjustInterval: Integer;
+    property ScaleProfitOffset: Double;
+    property ScaleAutoReset: Boolean;
+    property ScaleInitPosition: Integer;
+    property ScaleInitFillQty: Integer;
+    property ScaleRandomPercent: Boolean;
+
+    property ExemptCode: Integer;
+    property OptOutSmartRouting: Boolean;
+    property HedgeType: TIABHedgeType;  // 'D' - delta, 'B' - beta, 'F' - FX, 'P' - pair
+    property HedgeParam: string; // 'beta=X' value for beta hedge, 'ratio=Y' for pair hedge
+    property AlgoStrategy: string;
+    property AlgoParams: TIABTagValueArray;
+    property SmartComboRoutingParams: TIABTagValueArray;
+    property ComboLegPrice: array of Double;
+
+    function AddAlgoParams(TagValue: TIABTagValue): Integer;
+    procedure ClearAlgoParams;
+    function AddSmartComboRoutingParams(TagValue: TIABTagValue): Integer;
+    procedure ClearSmartComboRoutingParams;
+    function AddComboLegPrice(Price: Double): Integer;
+    procedure ClearComboLegPrice;
+
+
+  TIABSocket
+    procedure RequestGlobalCancel;
+    procedure RequestMarketDataType(DataType: TIABMarketDataType);
+
+    property OnMarketDataType: TIABMarketDataTypeEvent read FOnMarketDataType write FOnMarketDataType;
+    property OnCommissionReport: TIABCommissionReportEvent read FOnCommissionReport write FOnCommissionReport;
+
+
+
+API 9.64 - November 4th 2010.
+************************
+
+
+Added
+
+  Tick types:  ttRtVolume, ttHalted, ttBidYeild, ttAskYeild, ttLastYeild,
+
+  TIABInstrumentSpecItem. 
+        LongName: string;
+        PrimaryExchange: string;
+        ContractMonth: string;
+        Industry: string;
+        Category: string;
+        SubCategory: string;
+        TimeZoneID: string;
+        TradingHours: string;
+        LiquidHours: string;
+
+  TIABBondSpecItem.LongName    field
+
+  TIABUnderComp = record
+    ConId: Integer;
+    delta, price: Double;
+  end;
+
+  TIABOrder.SecurityID     property
+  TIABOrder.SecurityIDType property
+  TIABOrder.NotHeld        property
+
+
+  TIABSocket.OnSnapShotDataEnd          event 
+  TIABSocket.OnDeltaNeutralValidation   event
+
+  TIABSocket.GetImpliedVolatility        method
+  TIABSocket.GetOptionPrice              method    
+  TIABSocket.CancelImpliedVolatility     method
+  TIABSocket.CancelOptionPrice           method
+
+
+
+
+Changed
+
+
+  TIABSocket.TickOptionComputation   event - added more fields
+
+
+
+
+
+API 9.61 - January 28th 2009.
+************************
+
+
+No changes to API.  9.61 was an update by IAB
+to include other compiler platforms only.
+
+Adjusted code in three places to compile in
+Delphi 2009 with unicode.
+
+
+
+API 9.60 - August 26th 2008.
+************************
+
+Added 
+
+  TIABSocket.OnOpenOrderDetailsReady  event
+  TIABSocket.OnAccountDetailsReady    event
+  TIABSocket.OnExecutionDetailsReady  event
+
+  TIABInstrumentSpecItem.UnderConId   field
+
+
+Changed 
+
+  TIABSocket.GetExecutions  from a procedure to a function
+
+
+
+
+API 9.51 - April 30th 2008.
+************************
+
+No changes.  API 9.51 is an update by IAB
+to correct for some errors in their own API.
+Does not affect this API.
+
+
+API 9.50.2 - April 16th 2008.
+************************
+
+Added code to deal with some TWS errors
+
+ 1/ Detect and remove duplicate OrderStatus events.
+ 2/ TWS is now sending open ored upon every execution, and when logging
+    on each time. Code added to Lock out these un-requested OpenOrder events.
+    OpenOrders events now only occur when requested.
+
+
+
+API 9.50 - April 10th 2008.
+************************
+
+Added
+
+  TIABOrder.ComboLegsUnderCompContractId   property
+  TIABOrder.ComboLegsUnderCompDelta        property
+  TIABOrder.ComboLegsUnderCompPrice        property
+
+  TIABOrder.ScaleInitLevelSize       property - replaces ScaleNumComponents / ScaleComponentSize
+  TIABOrder.ScaleSubsLevelSize       property - replaces ScaleNumComponents / ScaleComponentSize
+
+
+  TIABSocket.GetFundamentalData      method
+  TIABSocket.CancelFundamentalData   method
+  TIABSocket.OnFundamentalData       event
+
+
+  TIABPortfolioItem.InstrumentId     field
+  TIABPortfolioItem.Multiplier       field
+  TIABPortfolioItem.PrimaryExchange  field
+
+
+  TIABInstrumentSpecItem.PriceMagnifier   field
+  TIABInstrumentSpecItem.DataID           field
+
+
+  TIABBondSpecItem.DataID           field
+
+
+  TIABExecution.CumulativeQty     field
+  TIABExecution.AveragePrice      field  
+
+
+
+changed
+ 
+  TIABSocket.GetInstrumentSpecs    method - requires DataId parameter.
+
+
+Disabled
+
+  TIABOrder.ScaleNumComponents   property << deprecated in 9.50 - usage will create exception
+  TIABOrder.ScaleComponentSize   property << deprecated in 9.50 - usage will create exception
+
+
+
+
+API 9.40 - November 12th 2007.
+************************
+
+Added
+
+  TIABSocket.VerifiedOrders   property
+
+  TIABSocket.OnVerifiedOrder  event
+
+  TIABSocket.VerifyOrder      method
+
+  TIABOrder.ContractId       property
+  TIABOrder.ClearingAccount  property
+  TIABOrder.ClearingIntent   property
+  TIABOrder.Verified         property readonly
+
+  TIABOrder.GetQueryResult   method
+
+  TIABOrderQueryResult       record
+
+
+Disabled
+
+  TIABOrder.ShareAllocation     << deprecated in 9.40 - usage will create exception
+  TIABOrder.RegTradingHoursOnly  << deprecated in 9.40 - usage will create exception
+
+
+API 9.30 - August 5th 2007.
+************************
+
+
+Added
+  
+  TIABOrder.ScaleNumComponents  property
+  TIABOrder.ScaleComponentSize  property
+  TIABOrder.ScalePriceIncrement  property
+
+  TIABSocket.GetMarketSnapShot  method
+
+  TIABOrderType ... otScale
+
+
+
+
+API 9.20 - August 4th 2007.
+************************
+
+
+Added
+  
+  TIABOrder.WhyHeld  property
+
+  
+  TIABSocket.GetRealTimeData  method 
+  TIABSocket.CancelRealTimeData  method
+  TIABSocket.GetCurrentTime  method
+
+  TIABSocket.OnCurrentTime  event
+  TIABSocket.OnRealTimeData  event
+
+  TIABRealTimeData  record
+
+  Error message types from #528 - #531
+
+  TIABTickType  ttLastTimeStamp, ttShortable,
+
+
+
+API 9.10 - February 7th 2007.
+************************
+
+
+Added
+  
+  TIABOrder.OnTickEFP event
+
+  TIABOrder.ComboLegsDescrip property
+  TIABOrder.EFPBasisPoints property
+  TIABOrder.EFPBasisType property
+
+  TIABScanResultItem.LegsString record item
+
+
+
+API 9.00 - October 23rd 2006.
+************************
+
+Added
+  
+  Error message types from #522 - #527
+
+  TIABTickType fields   extended to 37 values
+
+  TIABExMktData  -  for Extended market data requests
+
+
+  TIABBondSpecItem.NextOptionDate
+  TIABBondSpecItem.NextOptionType
+  TIABBondSpecItem.NextOptionPartial
+  TIABBondSpecItem.Notes
+
+  TIABHistoricalChartData.TradeCount
+
+  TIABSocket.OnTickString    event
+  TIABSocket.OnTickValue   event
+
+
+Changed
+
+  TIABSocket.GetMarketData       added  ExMarketData    param
+
+  TIABSocket.GetHistoricalData   added  IncludeExpired  param
+
+  TIABSocket.GetInstrumentSpecs  added  IncludeExpired  param
+
+
+
+API 8.91 - August 6th 2006.
+************************
+
+Added the property
+
+  TIABOrder.TrailLimitPrice
+
+
+
+API 8.90 - July 22nd 2006.
+************************
+
+Additions to the Option tick types only.
+
+changed
+
+  TIABTickType  type
+  TIABTickOptionComputation  event
+
+
+
+API 8.85 - May 12th 2006.
+************************
+
+No changes - this update was for IAB's demo programs/DDE only.
+
+
+API 8.84 - April 23rd 2006.
+************************
+
+Another small change by IAB to the Volatility orders.
+
+Removed
+
+  TIABOrder.FDeltaNeutral
+
+Added
+
+  TIABOrder.FDeltaNeutralOrderType
+  TIABOrder.FDeltaNeutralAuxPrice
+
+
+
+
+API 8.83 - April 8th 2006.
+************************
+
+This API corrected some problems with version matching.
+IAB included the corrections we suggested to fix these problems.
+
+I consolidated the PlaceOrder and ModifyOrder code - no changes
+required.
+
+
+
+API 8.82 - April 7th 2006.
+************************
+
+The release removed two fields added in 880,
+Extended the TIABTickType,
+Added to the scanner parameters
+Extended historical request periods to go back a year
+New Tick event for TickOptionComputation
+
+
+        REMOVED
+
+  TIABOrder.LowWatermarkPrice: Double;
+  TIABOrder.HighWatermarkPrice: Double;
+
+  
+Added
+
+  TIABTickType = (...,ttBidOptionComp,ttAskOptionComp,ttLastOptionComp,...)
+ 
+  TIABScanCriteria = record
+    ...
+    StockTypeFilter: string;
+
+
+  TIABSocket.OnTickOptionComputation
+
+
+const
+  IAB_TIME_UNIT_YEAR = 4;
+  IAB_TIME_UNIT_MONTH = 3;
+
+
+
+
+API 8.80 - March 22nd 2006.
+************************
+
+The release added Dynamic Volatility Orders otVol (VOL).
+And improved on the Scanner abilities.
+
+Added
+
+  TIABOrder.Volatility: Double;
+  TIABOrder.VolatilityPeriod: TIABVolatilityPeriod;
+  TIABOrder.DeltaNeutral: Boolean;
+  TIABOrder.ContinuousUpdate: Boolean;
+  TIABOrder.LowWatermarkPrice: Double;
+  TIABOrder.HighWatermarkPrice: Double;
+  TIABOrder.ReferencePrice: TIABReferencePrice;
+
+  TIABScanCriteria = record
+    ...
+    AverageOptionVolumeAbove: Integer;
+    ScannerSettingPairs: string;
+
+
+API 8.71 - Dec 5th 2005.
+************************
+
+Fixed a bug that prevented multiple instances on the
+API component from conneting to the TWS
+
+
+
+API 8.71 - Nov 25th 2005.
+*************************
+
+
+This API release added the Scanner abilities and a 
+CancelHistoricalData call.
+
+New:
+
+  TIABScan            object
+  TIABScanner         object
+  TIABScanResultItem  record
+
+  TIABSocket
+    cancelHistoricalData  method
+
+
+The component will need to be recompiled into
+the library for these changes to be effective.
+
+
+
+API 8.61(2) - Nov 9th, 2005.
+****************************
+
+However, this second release of 8.61(2) provides some 
+changes and bug fixes.  This is a major rewrite on the 
+internal socket connection used.  The older API had 
+problems on Dual Core and Intel HT 4 processors.
+
+If you have a dual Core or Hyper Threaded CPU, and 
+experienced sudden and unexplained connection going dead, 
+then this will repair that situation.  This fix now 
+allows for multiple CPU affinity usage.
+
+Delphi 4 and 5 - if this affects you, then see the text 
+file in this file package for extra procedures that affect you.
+
+Overwrite and reinstall the IABSocketAPI.pas file into your 
+library.  You may be asked to include the inet.dcp file as well.
+
+No changes in the functions or API or it's operation.
+
+** However **  The actual placement and conditions for 
+the OnConnectionStatus event may have changed a little.
+Your project may be affected by the condition of properties 
+at this time.  Double check your code in the OnConnectionStatus 
+event after doing this update.
+
+
+
+API 8.61 - Oct 19th 2005.
+*******************
+
+Nothing... the update affected the Active X side only.
+
+
+API 8.60 - Oct 2nd 2005.
+***********************************
+
+
+TIABOrder 
+  new prop 
+  OverridePercentageConstraints: Boolean;
+
+
+
+TIABInstrumentSpecItem
+  new field
+    Pricemagnifier: Integer;
+
+TIABSocket
+  new event
+    OnBondSpecs
+
+
+New:
+  TIABBondSpecs, TIABBondSpecItem
+    These two handle Bond contract specification details.
+
+
+
+API 8.52(2) - Sep 13th 2005.
+***********************************
+
+This addresses changes made in the TWS API specs.
+Some of the newest TWS 851 default params have changed,
+along with some documentation errors on integer values.
+
+This build addresses these.
+
+Rule 80 default values,
+Integer values of OCA Types
+defaults of Electronic and Firm Quotes.
+
+
+Update to API 8.52 - July 25th 2005.
+***********************************
+
+API 8.52 added a single method
+
+  TIABSocket.ExerciseOptions
+
+
+
+Update to API 8.51 - July 8th 2005.
+***********************************
+
+API 8.51 added two properties to the TIABSocket component
+
+  ServerVersion
+  ConnectAtServerTime
+
+Interactive Brokers did a major overhaul of the chart data system.
+They removed all reference to IntradDayData, and replaced it with
+the more capabale system of HistoricalData.
+
+All methods, events, and types that had the "IntradDayData" have been
+changed to "HistoricalData".
+
+The method GetIntraDaydata has been removed, and replaced with GetHistoricalData
+The parameters for this method have changed.
+
+
+  *WARNING*
+
+  This update will take some effort to insert!
+
+  We need to remove the references to IntradayData in various places in your project.
+  These get replaced with HistoricalData later.
+
+
+1/  Open your existing projects. Highlight IABSocket component, and then in the
+    Object Inspector (F11), the events tab.  
+    Delete the function name for the OnIntradDayData event. (if you used this)
+    (your code is safe)
+
+2/  Save your project and exit it.
+
+3/  Insert the new API file, and overwrite the old.
+
+4/  Open up the libraray file that contained this API, rebuild it, Install it, Save it.
+
+5/  Open your project, (if you used the event) create an OnHistoricalData event in the 
+    Object inspector, and shift you old code from IABSocket1IntraDayData() event 
+    into this new event.
+
+6/  Delete the procedure headers for IABSocket1IntraDayData()  from your code and the type
+    at top.  (if you used this)
+
+7/  If you used GetIntraDayData() method.  Replace the call with the GetHistoricalData method.
+    See the help file for the ammended parameters.
+
+8/  Go though you code and change all text "IntraDayData" to read "HistoricalData".
+
+9/  Compile you project.
+
+
+
+
+Update to API 8.50 - May 29th 2005.
+************************************
+
+ NEW  IABSocketAPI.pas   file.. 
+
+This file now does Delphi, BCB and Kylix.
+Same file name, look for it in the  "API_all_env" folder.
+
+
+
+API 8.50 made some additions to the Order properties and minor changes.
+
+properties
+  TIABOrder.OcaMethod
+  TIABOrder.RegTradingHoursOnly
+  TIABOrder.Rule80A
+  TIABOrder.SettlingFirm
+  TIABOrder.AllOrNone
+  TIABOrder.MinQuantity
+  TIABOrder.PercentOffset
+  TIABOrder.ETradeOnly
+  TIABOrder.FirmQuoteOnly
+  TIABOrder.NBBOPriceCap
+  TIABOrder.AuctionStrategy
+  TIABOrder.StartingPrice
+  TIABOrder.StockRefPrice
+  TIABOrder.Delta
+  TIABOrder.StockRangeLower
+  TIABOrder.StockRangeUpper
+
+changes
+  TIABSocket.GetMarketDepth
+
+
+
+
+Update to API 8.41 - March 24th 2005.
+************************************
+
+API 8.41 made minor updates
+
+
+properties
+  TIABOrder.ShortSaleSlot
+  TIABOrder.DesignatedLocation
+
+changes
+  extra param onto GetIntraDaydata method
+
+
+
+
+Update to API 8.40 - March 9th 2005.
+************************************
+
+API 8.40 introduced access to Intraday data.
+
+
+properties 
+  nil;
+
+methods
+  GetIntradayData
+
+events
+  OnIntraDayData
+
+
+
+Update to API 8.30 - January 13th 2005.
+************************************
+
+API 8.30 added:
+
+properties
+  TIABOrder.Multiplier
+
+method
+  GetMarketData, GetMarketDepth added optional parameter
+    Multiplier: string = '';
+
+
+****************************************
+
+API 8.21 added:
+
+  Improved SocketRead procedure; 
+    corrects for occasional 550 error.
+    better stream chunk handling - less processing.
+
+  Improved RebuildFromTWS procedure; 
+    deletion of all prior portfolio data.
+
+  No API changes by IAB - update to OCX package only.
+
+
+
+
+
+Update to API 8.20 - October 22nd 2004.
+************************************
+
+API 8.20 added:
+
+properties
+  TIABOrder.PrimaryExchange
+
+methods
+
+events
+
+changed
+  OnTickPrice event parameters
+  GetMarketData method parameters
+
+Note that the component needs to be re-installed
+into the library for changes to be effective.
+
+
+
+
+Update to API 8.1 - June 21st 2004.
+************************************
+
+API 8.1 added:
+
+Nothing - all changes were for the
+ActiveX and VB codes.
+
+
+
+Update to API 8.0 - April 26th 2004.
+************************************
+
+API 8.0 added:
+
+properties
+  TIABOrder.GoodTillDate
+
+
+methods
+  TIABSocket.ReplaceFA
+  TIABSocket.RequestFA
+
+
+events  
+  TIABSocket.OnReceiveFADetail
+
+
+Changes
+  The OnAccountValue event:
+    now has a 4th value appended to the string:
+    the Account name.
+
+
+The TIABPortFolio record type
+  AccountName: string  added.
+
+
+
+
+
+Update to API 7.6 - March 8th 2004.
+************************************
+
+ 
+API 7.6 added:
+
+properties
+
+  TIABOrder.DiscretAmount
+  TIABOrder.GoodAfterTime
+  TIABOrder.FAdvGroup
+  TIABOrder.FAdvProfile
+  TIABOrder.FAdvMethod
+  TIABOrder.FAdvPercentage
+
+
+methods
+
+  none
+
+events
+
+  OnTickPriceAndSize
+
+
+
+
+Update to API 7.3 - June 15th 2003.
+************************************
+
+  For upgrading - see seperate file up_to_73.txt
+
+
+API 7.3 added:
+
+properties
+
+  TIABOrder.ClientId
+  TIABOrder.ShareAllocation
+
+methods
+
+  GetOpenOrdersClient
+  GetOpenOrdersAccount
+  GetOpenOrdersTWS
+  CancelAccountUpdates
+  GetManagedaccounts  
+  TIABOrders.GetOrder
+
+events
+
+  OnManagedAccounts
+
+
+API 7.3 dropped:
+
+  OpenOrders
+  TIABOrders.TempIndex[]
+
+
+
+
+Update to API v7.2 - May 29th 2003.
+************************************
+API 7.2 added:
+
+3 methods
+   
+    GetNewsBulletins
+    CancelNewsBulletins
+    SetServerLogLevel
+
+2 events
+
+    OnNewsBulletin
+    OnExchangeStatus
+
+
+
+Update to API v7.1 - May 10th 2003.
+************************************
+API 7.1 added:
+
+3 new fields to the portfolio item.
+    
+    AverageCost: Double;
+    UnrealizedPNL: Double;
+    RealizedPNL: Double;
+
+Introduced the ability to place Combination Orders (BAG).  Do this by adding
+ComboLeg records to the order, set its type to BAG, and then place the order.
+
+New properties in TIABOrder are
+
+  ComboLegs
+  ComboLegsCount
+
+New methods in TIABOrder are
+
+  AddComboLeg
+  DeleteComboLeg
+
+
+
+Maintenance release - March 28th 2003.
+**************************************
+
+Repaired a bug that prevented GetOpenOrder from delivering Stop orders corectly.
+
+Added new procedure  RebuildFromTWS
+  This will reset the Orders property to match the TWS.
+  Use this when you have held positions / open orders and restarted the TWS, or your application.
+
+Added new event  OnRebuildFromTWS
+  Will fire for each new elemet above.
+
+
+
+Update to API v7.01 - February 24th 2003.
+***************************************
+API 7.01 added the Hidden property to orders, perm id to executions
+
+TIABOrder
+
+new property
+    Hidden
+
+
+
+Bug fix for European decimals - Feb 12th 2003.
+***************************************
+Include code to handle TWS or Java bug!
+TWS or Java is built around the Americam decimal point '.' only. 
+They cannot handle a comma ','
+
+Delphi of course reads in the proper decimal seperator from the 
+system and acts accordingly.
+
+This fix locks the decimal to the point only '.'
+
+
+
+Update to API v7.0 - January 25th 2003.
+***************************************
+API 7.0 added market Depth and level 2 data
+
+TIABSocket
+
+new method 
+    GetMarketDepth
+
+new Events
+    OnMarketDepth
+    OnMarketLevel2
+
+
+
+Update to API v6.1 - January 12th 2003.
+***************************************
+API 6.1 added Contract details, more fields to Orders.
+
+
+TIABSocket
+
+new property  (same as ContractDetails in API)
+
+    property InstrumentSpecs: TIABInstrumentSpec read FInstrumentSpecs write FInstrumentSpecs;
+
+new method
+
+    GetInstrumentSpecs 
+
+new event
+    
+    OnInstrumentSpecDetails
+
+Slight change to error handling with addition of new EIABSocket exception
+
+
+
+TIABOrder
+
+new properties - 
+
+    property ParentId: Integer read FParentId write FParentId;
+    property BlockOrder: Boolean read FBlockOrder write FBlockOrder;
+    property SweepToFill: Boolean read FSweepToFill write FSweepToFill;
+    property DisplaySize: Integer read FDisplaySize write FDisplaySize;
+    property TriggerMethod: Integer read FTriggerMethod write FTriggerMethod;
+    property ExtendedHours: Boolean read FExtendedHours write FExtendedHours;
+
+
+
+New object
+
+  TIABInstrumentSpec = class(TPersistent)
+
+New records
+
+  TIABInstrumentSpecItem = record
