@@ -44,6 +44,10 @@ type
     class procedure SaveRelationTree(aTree: TBaseVirtualTree; aNode: PVirtualNode; aIsNewGroup: Boolean = False);
     class procedure SetIcon(aNode: PVirtualNode; aTree: TBaseVirtualTree); inline;
     class procedure SetTickTypesForChildFactors(const aTree: TBaseVirtualTree; const aNode: PVirtualNode; const aConditionDoc: TConditionDoc = nil);
+
+    class procedure DeleteOrderTemplateRelations(const aTemplateId: Integer);
+    class function LoadOrderTemplateRelationTree(const aTemplateId: Integer; const aParentId: Integer; aTree: TBaseVirtualTree; aParentNode: PVirtualNode; aBeforeProc: TBeforeEachDocumentProc = nil; aAfterProc: TAfterLoadEachDocumentProc = nil): PVirtualNode;
+    class procedure SaveOrderTemplateRelationTree(const aTemplateId: integer; aTree: TBaseVirtualTree; aNode: PVirtualNode; aIsNewGroup: Boolean = False);
   end;
 
 const
@@ -327,6 +331,82 @@ begin
   Data^.RecordId := -1;
   SetIcon(Result, aTree);
 end;*)
+
+class procedure TTreeDocument.DeleteOrderTemplateRelations(
+  const aTemplateId: Integer);
+resourcestring
+  C_SQL_SELECT_TEXT             = 'SELECT * FROM ORDER_TEMPLATE_RELATIONS WHERE ORDER_TEMPLATE_ID=:TemplateId';
+  C_SQL_DEL_ORDERGROUP          = 'DELETE FROM ORDER_GROUP WHERE ID=:RecordId';
+  C_SQL_DEL_ORDERS              = 'DELETE FROM ORDERS WHERE ID=:RecordId';
+  C_SQL_DEL_CONDITION           = 'DELETE FROM CONDITION WHERE ID=:RecordId';
+  C_SQL_DEL_RELATIONS           = 'DELETE FROM ORDER_TEMPLATE_RELATIONS WHERE ID=:RecordId';
+
+  procedure DeleteRow(aSQLText: string; aRecordId: Integer);
+  var
+    Query: TFDQuery;
+  begin
+    if (aRecordId > 0) then
+    begin
+      Query := TFDQuery.Create(nil);
+      try
+        DMod.CheckConnect;
+        Query.Connection := DMod.ConnectionStock;
+        Query.Transaction := Query.Connection.Transaction;
+        Query.SQL.Text := aSQLText;
+        Query.ParamByName('RecordId').AsInteger := aRecordId;
+        try
+          Query.Prepare;
+          Query.ExecSQL;
+          Query.Transaction.CommitRetaining;
+        except
+          on E: Exception do
+          begin
+            TPublishers.LogPublisher.Write([ltLogWriter], ddError, 'TTreeDocument.DeleteOrderTemplateRelations', 'MonitorTypes', E.Message + TDModUtils.GetQueryInfo(Query));
+            raise;
+          end;
+        end;
+      finally
+        FreeAndNil(Query);
+      end;
+    end;
+  end;
+var
+  Query: TFDQuery;
+  DocType: TDocType;
+  RecordId: Integer;
+  RelationId: Integer;
+begin
+  if (aTemplateId > 0) then
+  begin
+    Query := TFDQuery.Create(nil);
+    try
+      DMod.CheckConnect;
+      Query.Connection := DMod.ConnectionStock;
+      Query.SQL.Text := C_SQL_SELECT_TEXT;
+      Query.ParamByName('TemplateId').Value := aTemplateId;
+      Query.Open;
+      Query.First;
+      while not Query.Eof do
+      begin
+        DocType    := TDocType(Query.FieldByName('DOC_TYPE').AsInteger);
+        RecordId   := Query.FieldByName('RECORD_ID').AsInteger;
+        RelationId := Query.FieldByName('ID').AsInteger;
+        case DocType of
+          ntOrderGroup:
+            DeleteRow(C_SQL_DEL_ORDERGROUP, RecordId);
+          ntOrder:
+            DeleteRow(C_SQL_DEL_ORDERS, RecordId);
+          ntCondition:
+            DeleteRow(C_SQL_DEL_CONDITION, RecordId);
+        end;
+        DeleteRow(C_SQL_DEL_RELATIONS, RelationId);
+        Query.Next;
+      end;
+    finally
+      FreeAndNil(Query);
+    end;
+  end;
+end;
 
 class procedure TTreeDocument.DeleteRelations(const aRecordId: Integer);
 resourcestring
@@ -872,6 +952,114 @@ begin
   end;
 end;
 
+class function TTreeDocument.LoadOrderTemplateRelationTree(const aTemplateId,
+  aParentId: Integer; aTree: TBaseVirtualTree; aParentNode: PVirtualNode;
+  aBeforeProc: TBeforeEachDocumentProc;
+  aAfterProc: TAfterLoadEachDocumentProc): PVirtualNode;
+resourcestring
+  C_SQL_PARENT = 'SELECT DISTINCT * FROM ORDER_TEMPLATE_RELATIONS WHERE PARENT_ID=:ID';
+  C_SQL_RECORD = 'SELECT DISTINCT * FROM ORDER_TEMPLATE_RELATIONS WHERE ORDER_TEMPLATE_ID=:ID AND PARENT_ID=-1';
+var
+  Data: PTreeData;
+  Node: PVirtualNode;
+  DocType: TDocType;
+  Query: TFDQuery;
+  RecordId: Integer;
+  RelationId: Integer;
+  IsCreate: Boolean;
+begin
+  Result := nil;
+  if not Assigned(aTree) or ((aParentId <= 0) and (aTemplateId <= 0)) then
+    Exit(nil);
+
+  Query := TFDQuery.Create(nil);
+  try
+    DMod.CheckConnect;
+    Query.Connection := DMod.ConnectionStock;
+    Query.SQL.Clear;
+    if (aParentId > 0) then
+    begin
+      Query.SQL.Text := C_SQL_PARENT;
+      Query.ParamByName('ID').AsInteger := aParentId;
+    end
+    else
+    begin
+      Query.SQL.Text := C_SQL_RECORD;
+      Query.ParamByName('ID').AsInteger := aTemplateId;
+    end;
+
+    try
+      Query.Open;
+      Query.First;
+      while not Query.Eof do
+      begin
+        Node := nil;
+        DocType    := TDocType(Query.FieldByName('DOC_TYPE').AsInteger);
+        RecordId   := Query.FieldByName('RECORD_ID').AsInteger;
+        RelationId := Query.FieldByName('ID').AsInteger;
+
+        IsCreate := True;
+        if Assigned(aBeforeProc) then
+          IsCreate := aBeforeProc(DocType, RelationId, RecordId, aParentId);
+        if IsCreate then
+          case DocType of
+            TDocType.ntOrderGroup:
+              begin
+                Node := TTreeDocument.CreateOrderGroup(aParentNode, aTree);
+                Data := Node^.GetData;
+                Data^.OrderGroupDoc.FromDB(RecordId);
+                Data^.OrderGroupDoc.OwnerNode := Node;
+              end;
+            TDocType.ntOrder:
+              begin
+                Node := TTreeDocument.CreateOrder(aParentNode, aTree, GetOrderBroker(RecordId));
+                Data := Node^.GetData;
+                Data^.OrderDoc.FromDB(RecordId);
+                case Data^.OrderDoc.BrokerType of
+                  brIB:
+                    TOrderIBDoc(Data^.OrderDoc).FromDB(RecordId);
+                  brNN:
+                    TOrderNNDoc(Data^.OrderDoc).FromDB(RecordId);
+                end;
+                Data^.OrderDoc.OwnerNode := Node;
+                TTreeDocument.SetIcon(Node, aTree);
+              end;
+            TDocType.ntCondition:
+              begin
+                Node := TTreeDocument.CreateCondition(aParentNode, aTree);
+                Data := Node^.GetData;
+                Data^.ConditionDoc.FromDB(RecordId);
+                Data^.ConditionDoc.OwnerNode := Node;
+              end;
+          end;
+        if Assigned(Node) then
+        begin
+          Result := Node;
+          Data := Node^.GetData;
+          if Assigned(Data) then
+          begin
+            Data^.RecordId     := RecordId;
+            Data^.RelationId   := Query.FieldByName('ID').AsInteger;
+            Data^.CreationType := TCreationType(Query.FieldByName('CREATION_TYPE').AsInteger);
+          end;
+          if Assigned(aAfterProc) then
+            aAfterProc(Node);
+          LoadOrderTemplateRelationTree(-1, Data^.RelationId, aTree, Node, aBeforeProc, aAfterProc);
+        end;
+        Query.Next;
+      end;
+    except
+      on E: Exception do
+      begin
+        TPublishers.LogPublisher.Write([ltLogWriter], ddError, 'LoadOrderTemplateRelationTree', 'OrderTemplate', E.Message + TDModUtils.GetQueryInfo(Query));
+        raise;
+      end;
+    end;
+  finally
+    FreeAndNil(Query);
+  end;
+end;
+
 class function TTreeDocument.LoadRelationTree(const aRecordId: Integer; const aParentId: Integer; aTree: TBaseVirtualTree; aParentNode: PVirtualNode; aBeforeProc: TBeforeEachDocumentProc = nil; aAfterProc: TAfterLoadEachDocumentProc = nil): PVirtualNode;
 resourcestring
   C_SQL_PARENT = 'SELECT DISTINCT * FROM DOC_RELATIONS WHERE PARENT_ID=:ID';
@@ -1009,6 +1197,89 @@ begin
     end;
   finally
     FreeAndNil(Query);
+  end;
+end;
+
+class procedure TTreeDocument.SaveOrderTemplateRelationTree(
+  const aTemplateId: integer; aTree: TBaseVirtualTree; aNode: PVirtualNode; aIsNewGroup: Boolean);
+resourcestring
+  C_SQL_INSERT_TEXT = 'INSERT INTO ORDER_TEMPLATE_RELATIONS ( ID, PARENT_ID, RECORD_ID, DOC_TYPE, CREATION_TYPE, ORDER_TEMPLATE_ID) ' +
+                      '                              VALUES (:ID,:ParentId, :RecordId, :DocType, :CreationType, :OrderTemplateId)';
+var
+  Data       : PTreeData;
+  ParentData : PTreeData;
+  ParentNode : PVirtualNode;
+  ParentId   : Integer;
+  Query      : TFDQuery;
+begin
+  while Assigned(aNode) do
+  begin
+    ParentId := -1;
+    if (aTree.GetNodeLevel(aNode) > 0) and Assigned(aNode.Parent) then
+    begin
+      ParentData := aNode.Parent^.GetData;
+      ParentId   := ParentData^.RelationId;
+    end;
+    Data := aNode^.GetData;
+    Data^.RelationId := DMod.GetNextValue('GEN_ORDER_TEMPLATE_RELATIONS_ID');
+
+    case Data^.DocType of
+      ntOrderGroup:
+        begin
+          if (Data^.RecordId <= 0) or aIsNewGroup then
+            Data^.RecordId := DMod.GetNextValue('GEN_DOCUMENT_ID');
+          Data^.OrderGroupDoc.SaveToDB;
+        end;
+      ntOrder:
+        begin
+          if (Data^.RecordId <= 0) or aIsNewGroup then
+            Data^.RecordId := DMod.GetNextValue('GEN_DOCUMENT_ID');
+          case Data^.OrderDoc.BrokerType of
+            brIB:
+              if (Data^.OrderDoc is TOrderIBDoc) then
+                TOrderIBDoc(Data^.OrderDoc).SaveToDB;
+            brNN:
+              if (Data^.OrderDoc is TOrderNNDoc) then
+                TOrderNNDoc(Data^.OrderDoc).SaveToDB;
+          end;
+        end;
+      ntCondition:
+        begin
+          if (Data^.RecordId <= 0) or aIsNewGroup then
+            Data^.RecordId := DMod.GetNextValue('GEN_DOCUMENT_ID');
+          Data^.ConditionDoc.SaveToDB;
+        end;
+    end;
+
+    Query := TFDQuery.Create(nil);
+    try
+      DMod.CheckConnect;
+      Query.Connection := DMod.ConnectionStock;
+      Query.Transaction := Query.Connection.Transaction;
+      Query.SQL.Text := C_SQL_INSERT_TEXT;
+      Query.ParamByName('CreationType').AsInteger     := Integer(Data^.CreationType);
+      Query.ParamByName('DocType').AsInteger          := Integer(Data^.DocType);
+      Query.ParamByName('ID').AsInteger               := Data^.RelationId;
+      Query.ParamByName('ParentId').AsInteger         := ParentId;
+      Query.ParamByName('RecordId').AsInteger         := Data^.RecordId;
+      Query.ParamByName('OrderTemplateId').AsInteger  := aTemplateId;
+      try
+        Query.Prepare;
+        Query.ExecSQL;
+        Query.Transaction.CommitRetaining;
+      except
+        on E: Exception do
+        begin
+          TPublishers.LogPublisher.Write([ltLogWriter], ddError, 'SaveOrderTemplateRelationTree', 'OrderTemplate', E.Message + TDModUtils.GetQueryInfo(Query));
+          raise;
+        end;
+      end;
+    finally
+      FreeAndNil(Query);
+    end;
+    SaveOrderTemplateRelationTree(aTemplateId, aTree, aNode.FirstChild, aIsNewGroup);
+    DMod.TransactionStock.CommitRetaining;
+    aNode := aNode.NextSibling;
   end;
 end;
 

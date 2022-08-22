@@ -4,7 +4,7 @@ object frmQuantityEdit: TfrmQuantityEdit
   BorderStyle = bsDialog
   Caption = 'Quantity'
   ClientHeight = 239
-  ClientWidth = 360
+  ClientWidth = 356
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -22,18 +22,17 @@ object frmQuantityEdit: TfrmQuantityEdit
   object pnlBottom: TPanel
     Left = 0
     Top = 194
-    Width = 360
+    Width = 356
     Height = 45
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitTop = 336
-    ExplicitWidth = 617
+    ExplicitWidth = 360
     DesignSize = (
-      360
+      356
       45)
     object btnSave: TBitBtn
-      Left = 258
+      Left = 254
       Top = 2
       Width = 100
       Height = 40
@@ -48,10 +47,10 @@ object frmQuantityEdit: TfrmQuantityEdit
       Images = DMImage.vil32
       ParentFont = False
       TabOrder = 0
-      ExplicitLeft = 515
+      ExplicitLeft = 258
     end
     object btnCancel: TBitBtn
-      Left = 157
+      Left = 153
       Top = 2
       Width = 100
       Height = 40
@@ -67,19 +66,21 @@ object frmQuantityEdit: TfrmQuantityEdit
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
-      ExplicitLeft = 414
+      ExplicitLeft = 157
     end
   end
   object pnlTypeCondition: TPanel
     Left = 0
     Top = 0
-    Width = 360
+    Width = 356
     Height = 194
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitTop = -4
-    ExplicitHeight = 185
+    ExplicitWidth = 360
+    DesignSize = (
+      356
+      194)
     object lblName: TLabel
       Left = 17
       Top = 7
@@ -141,6 +142,7 @@ object frmQuantityEdit: TfrmQuantityEdit
       Top = 29
       Width = 320
       Height = 21
+      Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
     end
     object edTotalOrderAmount: TNumberBox

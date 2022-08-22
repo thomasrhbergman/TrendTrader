@@ -124,6 +124,7 @@ begin
       if TfrmQualifierEdit.ShowDocument(Data^.Qualifier, dmUpdate) = mrOk then
       begin
         Data := Node.GetData;
+        Data.Qualifier.SaveToDB;
         //Data^.QualifierCondition.SaveToDB;
       end;
   end;

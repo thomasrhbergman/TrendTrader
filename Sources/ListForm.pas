@@ -251,10 +251,7 @@ begin
         FOrderTemplate := TOrderTemplate.Create;
         try
           if (TfrmOrderTemplateEdit.ShowDocument(FOrderTemplate, dmInsert) = mrOk) then
-          begin
-            FOrderTemplate.SaveToDB;
             PopulateList(FOrderTemplate.RecordId);
-          end;
         finally
           FOrderTemplate.Free;
         end;

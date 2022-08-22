@@ -3,6 +3,8 @@
 {$WARN UNIT_PLATFORM OFF}
 {$WARN SYMBOL_PLATFORM OFF}
 
+{$DEFINE HIDE_OLD}
+
 interface
 
 {$REGION 'Region uses'}
@@ -636,7 +638,8 @@ begin
   IABFunctions.IABClient.OnProfitLoss      := OnProfitLoss;
   IABFunctions.IABClient.OnQueueOverflow   := OnQueueOverflow;
 
-
+  {$IFNDEF HIDE_OLD}
+  pnlTopOld.Visible := true;
   if not Assigned(frmDockFormTotalController) then
   begin
     frmDockFormTotalController := TfrmDockFormTotalController.Create(Self);
@@ -734,6 +737,7 @@ begin
     frmLogView.DragMode := dmAutomatic;
     frmLogView.ManualDock(pgcMain, pgcMain, alClient);
   end;
+  {$ENDIF}
 end;
 
 procedure TfrmMonitor.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -813,6 +817,7 @@ begin
   aUseIB.Checked := General.XMLFile.ReadBool(TGeneral.C_SECTION_COMMON_PARAMS, TGeneral.C_KEY_USE_IB, True);
 
   TMonitorTree.Initialize(vstMonitor);
+  {$IFNDEF HIDE_OLD}
   frameActivityLog.Initialize;
   frmDockFormAccountInfo.Initialize;
   frmDockFormAccountPnL.Initialize;
@@ -826,6 +831,7 @@ begin
   frmDockFormTotalController.Initialize;
   frmLogView.Initialize;
   frmMonitorFilter.Initialize;
+  {$ENDIF}
 end;
 
 procedure TfrmMonitor.Deinitialize;
@@ -844,6 +850,7 @@ begin
   TPublishers.SecurityDefinitionOptionalParameterPublisher.Unsubscribe(SokidList);
   TPublishers.TickByTickPublisher.Unsubscribe(SokidList);
 
+  {$IFNDEF HIDE_OLD}
   frameActivityLog.Deinitialize;
   frmDockFormAccountInfo.Deinitialize;
   frmDockFormAccountPnL.Deinitialize;
@@ -857,10 +864,12 @@ begin
   frmDockFormTotalController.Deinitialize;
   frmLogView.Deinitialize;
   frmMonitorFilter.Deinitialize;
+  {$ENDIF}
 end;
 
 procedure TfrmMonitor.FormShow(Sender: TObject);
 begin
+  {$IFNDEF HIDE_OLD}
   frmDockFormAccountInfo.Show;
   frmDockFormAccountPnL.Show;
   frmDockFormActiveOrders.Show;
@@ -873,6 +882,7 @@ begin
   frmDockFormTotalController.Show;
   frmLogView.Show;
   frmMonitorFilter.Show;
+  {$ENDIF}
 end;
 
 function TfrmMonitor.GetIABClient: TIABSocket;
@@ -2455,8 +2465,8 @@ begin
         begin
           for var CondValue := Low(TConditionType) to High(TConditionType) do
             frmEditCondition.ValueArray[CondValue] := Data^.ConditionDoc.ValueArray[CondValue];
-          for var MinMaxValue := Low(TConditionDoc.TMinMaxValue) to High(TConditionDoc.TMinMaxValue) do
-            frmEditCondition.MinMaxValueArray[MinMaxValue] := Data^.ConditionDoc.MinMaxValueArray[MinMaxValue];
+//          for var MinMaxValue := Low(TConditionDoc.TMinMaxValue) to High(TConditionDoc.TMinMaxValue) do
+//            frmEditCondition.MinMaxValueArray[MinMaxValue] := Data^.ConditionDoc.MinMaxValueArray[MinMaxValue];
         end;
 
         if (OldRes <> Data^.ConditionDoc.IsCondition) or Data^.ConditionDoc.Bypass then
@@ -7203,6 +7213,7 @@ resourcestring
 var
   Qualifier: TQualifier;
 begin
+  Qualifier := TQualifier.Create;
   Qualifier.FromDB(DMod.fbtAccounts.FieldByName('QUALIFIERID').AsInteger);
   Qualifier.InstanceNum := General.GetNextInstanceNum;
   Qualifier.State := tsSuspended;

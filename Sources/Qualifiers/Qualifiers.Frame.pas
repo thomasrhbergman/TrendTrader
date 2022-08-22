@@ -123,7 +123,7 @@ end;
 procedure TframeQualifiers.vstTreeBeforeCellPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
 var
   Data: PQualifierData;
-  State: TTradesState;
+  //State: TTradesState;
 begin
   inherited;
   Data := Node^.GetData;
@@ -339,7 +339,7 @@ end;
 procedure TframeQualifiers.UpdateState(const aQualifier: TQualifier);
 var
   Data: PQualifierData;
-  Node: PVirtualNode;
+  //Node: PVirtualNode;
   ParentNode: PVirtualNode;
 begin
   if Application.Terminated then
@@ -386,7 +386,7 @@ begin
     if ((Node.CheckType = ctCheckBox) and (Node.CheckState = csCheckedNormal)) or
         (Node.CheckType <> ctCheckBox) then
     begin
-      Data := Node^.GetData;
+//      Data := Node^.GetData;
 //      if (Data^.DocType = ntQualifierCondition) then
 //        Node := Node.Parent;
 

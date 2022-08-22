@@ -18,6 +18,11 @@ type
   TOrderStatusQueue = class;
   TCustomOrderDoc = class;
 
+  TInstrument = record
+    SokidInfo     : TSokidInfo;
+    procedure AssignFrom(const aInstrument: TInstrument);
+  end;
+
   TCustomDocument = class
   private
     FAutoTradesID       : Integer;
@@ -165,6 +170,7 @@ type
     function IsPossibleToBuyOrder(aNode: PVirtualNode): Boolean; virtual; abstract;
     procedure SetOrderType(const Value: TIABOrderType); virtual;
   public
+    Instrument: TInstrument;
     procedure AddPrice(const Price: Double; const Quantity: Integer);
     procedure AssignFrom(const aSource: TCustomDocument); overload; override;
     procedure AssignFrom(const aSource: TSokidInfo); reintroduce; overload;
@@ -416,6 +422,7 @@ type
   protected
     procedure SetValueItem(Index: TIABTickType; const Value: Double); override;
   private
+    FName: String;
     FActivationValue: Double;
     FActive: Boolean;
     FCalcValue: Currency;
@@ -455,6 +462,7 @@ type
     FTypeOperation: TTypeOperation;
     FUpProc: Integer;
     FValueArray: TValueArray;
+    FGradientValue: Double;
     function GetMinMaxValueArrayItem(Index: TMinMaxValue): Double;
     function GetValueArrayItem(Index: TConditionType): Double;
     procedure AddConditionHistory;
@@ -463,6 +471,7 @@ type
     procedure SetMinMaxValueArrayItem(Index: TMinMaxValue; const Value: Double);
     procedure SetValueArrayItem(Index: TConditionType; const Value: Double);
   public
+    Instrument: TInstrument;
     ValueList: TObjectDictionary<TDateTime, TPrice>;
     function ToValueString: string; override;
     function ToString: string; override;
@@ -475,6 +484,7 @@ type
     constructor Create;
     destructor Destroy; override;
 
+    property Name                   : String                   read FName                   write FName;
     property ActivationValue        : Double                   read FActivationValue        write FActivationValue;
     property Active                 : Boolean                  read FActive                 write SetActive;
     property CalcValue              : Currency                 read FCalcValue              write FCalcValue;
@@ -515,6 +525,7 @@ type
     property ValueArray[Index: TConditionType]    : Double     read GetValueArrayItem       write SetValueArrayItem;
     property MinMaxValueArray[Index: TMinMaxValue]: Double     read GetMinMaxValueArrayItem write SetMinMaxValueArrayItem;
     property TickValue[Index: TIABTickType]       : Double     read GetValueItem            write SetValueItem;
+    property GradientValue          : Double                   read FGradientValue          write FGradientValue;
   end;
 
   TAlgosDoc = class(TCustomDocument)
@@ -1226,6 +1237,9 @@ begin
           Self.OrderAction := iabBuy
         else
           Self.OrderAction := iabSell;
+        Self.Instrument.SokidInfo.ContractId := Query.FieldByName('INSTRUMENT').AsInteger;
+        if SokidList.ContainsKey(Self.Instrument.SokidInfo.ContractId) then
+          Self.Instrument.SokidInfo.AssignFrom(SokidList.Items[Self.Instrument.SokidInfo.ContractId]);
       end;
     end;
   finally
@@ -1359,13 +1373,15 @@ resourcestring
                       'SECURITY_TYPE       = :SecurityType, '      +
                       'TRAIL_STP_PRICE     = :TrailStopPrice, '    +
                       'IS_FINAL            = :IsFinal, '           +
-                      'TRIGGER_METHOD      = :TriggerMethod '      +
+                      'TRIGGER_METHOD      = :TriggerMethod, '      +
+                      'INSTRUMENT          = :Instrument '      +
                       ' WHERE ID = :RecordId';
   C_SQL_INSERT_TEXT =  'INSERT INTO ORDERS '+
                       '(ID,ADVANCED_ORDER_TYPE,DESCRIPTION,ORDER_ACTION,CONTRACT_ID,DECIMALS,INSTRUMENT_NAME,QUANTITY,'+
                       'LIMIT_PRICE,AUX_PRICE,TRAIL_STP_PRICE,TRAILING_PERCENT,ORDER_TYPE,TIME_IN_FORCE,IS_ACTIVATE_CHILD,'+
                       'SCOPE,XML_PARAMS,OCA_GROUP_NUMBER,TIME_START,TIME_STOP,MAX_NUM_SHARES,MAX_NUM_AMOUNT,TRIGGER_METHOD,'+
-                      'BROKER_ID,SYMBOL,LOCAL_SYMBOL,CURRENCY,EXPIRY,LMT_PRICE_OFFSET,RATE_TYPE,SECURITY_TYPE,IS_FINAL,EXCHANGE)' +
+                      'BROKER_ID,SYMBOL,LOCAL_SYMBOL,CURRENCY,EXPIRY,LMT_PRICE_OFFSET,RATE_TYPE,SECURITY_TYPE,IS_FINAL,EXCHANGE,'+
+                      'INSTRUMENT)' +
                       ' VALUES(:RecordId, '          +
                       '        :AdvancedOrderType, ' +
                       '        :Description, '       +
@@ -1398,7 +1414,8 @@ resourcestring
                       '        :RateType, '          +
                       '        :SecurityType, '      +
                       '        :IsFinal, '           +
-                      '        :Exchange)';
+                      '        :Exchange,'           +
+                      '        :Instrument)';
 
   procedure FillXmlParams;
   var
@@ -1483,6 +1500,10 @@ begin
     Query.ParamByName('TrailingProcent').AsFloat     := IfThen(Self.TrailingPercent = UNSET_DOUBLE, 0, Self.TrailingPercent);
     Query.ParamByName('TrailStopPrice').AsFloat      := IfThen(Self.TrailStopPrice = UNSET_DOUBLE, 0, Self.TrailStopPrice);
     Query.ParamByName('TriggerMethod').AsInteger     := Integer(Self.TriggerMethod);
+    if (Self.Instrument.SokidInfo.ContractId > 0) then
+      Query.ParamByName('Instrument').AsInteger := Self.Instrument.SokidInfo.ContractId
+    else
+      Query.ParamByName('Instrument').Clear;
     FillXmlParams;
     Query.ParamByName('XmlParams').AsString          := Self.XmlParams;
     if (Self.Expiry > 0) then
@@ -1755,6 +1776,7 @@ begin
     Query.First;
     if not Query.IsEmpty then
     begin
+      Self.Name              := Query.FieldByName('NAME').AsString;
       Self.Active            := Query.FieldByName('COND_ACTIVE').AsBoolean;
       Self.Bypass            := Query.FieldByName('IS_BYPASS').AsBoolean;
       Self.CondType          := TConditionType(Query.FieldByName('COND_TYPE').AsInteger);
@@ -1784,13 +1806,16 @@ begin
       Self.UpProc            := Query.FieldByName('UP_PROC').AsInteger;
       Self.XmlParams         := Query.FieldByName('XML_PARAMS').AsString;
       Self.IsCondition       := Self.Bypass;
-
+      Self.GradientValue     := Self.GradientValue;
       if (Self.EndDate < Today) then
         Self.EndDate := Today;
       if (Self.StartDate < Today) then
         Self.StartDate := Today;
       if (Self.DivisionValue = 0) then
         Self.DivisionValue := 1;
+      Self.Instrument.SokidInfo.ContractId := Query.FieldByName('INSTRUMENT').AsInteger;
+        if SokidList.ContainsKey(Self.Instrument.SokidInfo.ContractId) then
+          Self.Instrument.SokidInfo.AssignFrom(SokidList.Items[Self.Instrument.SokidInfo.ContractId]);
     end;
     Self.RecordId := aRecordId;
   finally
@@ -1907,6 +1932,7 @@ procedure TConditionDoc.SaveToDB;
 resourcestring
   C_SQL_EXISTS_TEXT = 'SELECT COUNT(*) AS CNT FROM CONDITION WHERE ID = :RecordId';
   C_SQL_UPDATE_TEXT = 'UPDATE CONDITION SET ' +
+                      'NAME                = :Name, '              +
                       'COND_ACTIVE         = :Active, '            +
                       'IS_BREAKUP          = :isBreakUp, '         +
                       'DESCRIPTION         = :Description, '       +
@@ -1934,15 +1960,18 @@ resourcestring
                       'TYPE_OPERATION      = :TypeOperation, '     +
                       'COND_TYPE           = :CondType, '          +
                       'DIVISION_VALUE      = :DivisionValue, '     +
+                      'INSTRUMENT          = :Instrument, '        +
+                      'GRADIENT_VALUE      = :GradientValue, '     +
                       'XML_PARAMS          = :XmlParams '          +
                       ' WHERE ID = :RecordId';
 
   C_SQL_INSERT_TEXT = 'INSERT INTO CONDITION '+
-                      '(COND_TYPE,DESCRIPTION,DURATION,COND_ACTIVE,IS_BREAKUP, ' +
+                      '(NAME,COND_TYPE,DESCRIPTION,DURATION,COND_ACTIVE,IS_BREAKUP, ' +
                       'COND_VALUE,GRADIENT,WIDTH,MONITORING,UP_PROC,START_DATE,END_DATE,START_TIME,END_TIME,PRIORITY,' +
                       'KIND_CREATION,TRAIL_BUY,TRAIL_SELL,IS_BYPASS,TICK_TYPE1,TICK_TYPE2,TYPE_OPERATION,COND_VALUE_RELATIVE,' +
-                      'INEQUALITY_RT, INEQUALITY_GR,INEQUALITY_COL,DIVISION_VALUE,XML_PARAMS,ID)'  +
-                      ' VALUES (:CondType, '          +
+                      'INEQUALITY_RT, INEQUALITY_GR,INEQUALITY_COL,DIVISION_VALUE,XML_PARAMS,INSTRUMENT,GRADIENT_VALUE,ID)'  +
+                      ' VALUES (:Name, '              +
+                      '         :CondType, '          +
                       '         :Description, '       +
                       '         :Duration, '          +
                       '         :Active, '            +
@@ -1970,6 +1999,8 @@ resourcestring
                       '         :InequalityCol, '     +
                       '         :DivisionValue, '     +
                       '         :XmlParams, '         +
+                      '         :Instrument, '        +
+                      '         :GradientValue, '     +
                       '         :RecordId)';
 var
   IsExists: Boolean;
@@ -2006,6 +2037,7 @@ begin
     else
       Query.SQL.Text := C_SQL_INSERT_TEXT;
 
+    Query.ParamByName('Name').AsString             := Self.Name;
     Query.ParamByName('Active').AsBoolean          := Self.Active;
     Query.ParamByName('Bypass').AsBoolean          := Self.Bypass;
     Query.ParamByName('CondType').AsInteger        := Integer(Self.CondType);
@@ -2035,6 +2067,11 @@ begin
     Query.ParamByName('TypeOperation').AsInteger   := Integer(Self.TypeOperation);
     Query.ParamByName('UpProc').AsInteger          := Self.UpProc;
     Query.ParamByName('XmlParams').AsString        := Self.XmlParams;
+    if (Self.Instrument.SokidInfo.ContractId > 0) then
+      Query.ParamByName('Instrument').AsInteger := Self.Instrument.SokidInfo.ContractId
+    else
+      Query.ParamByName('Instrument').Clear;
+    Query.ParamByName('GradientValue').AsFloat     := Self.GradientValue;
     try
       Query.Prepare;
       Query.ExecSQL;
@@ -3356,6 +3393,7 @@ begin
         Self.Symbol          := Query.FieldByName('SYMBOL').AsString;
         Self.TriggerMethod   := TTriggerMethod(Query.FieldByName('TRIGGER_METHOD').AsInteger);
         Self.XmlParams       := Query.FieldByName('XML_PARAMS').AsString;
+
         if Query.FieldByName('ORDER_ACTION').AsBoolean then
           Self.OrderAction := iabBuy
         else
@@ -3915,6 +3953,13 @@ end;
 procedure TOrderStatusQueue.OnRebuildFromTWS(Sender: TObject);
 begin
 
+end;
+
+{ TInstrument }
+
+procedure TInstrument.AssignFrom(const aInstrument: TInstrument);
+begin
+  Self.SokidInfo     := aInstrument.SokidInfo;
 end;
 
 end.

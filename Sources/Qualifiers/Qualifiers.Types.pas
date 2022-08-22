@@ -666,7 +666,7 @@ function TQualifierList.GetItemByNum(const aInstanceNum: Integer): TQualifier;
 var
   i: Integer;
 begin
-  Result.Clear;
+  Result := nil;
   for i := 0 to Self.Count - 1 do
     if (Self.Items[i].InstanceNum = aInstanceNum) then
       Exit(Self.Items[i]);

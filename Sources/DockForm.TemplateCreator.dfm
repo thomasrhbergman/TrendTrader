@@ -199,7 +199,7 @@ inherited frmDockFormTemplateCreator: TfrmDockFormTemplateCreator
           Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus, coUseCaptionAlignment, coEditable, coStyleColor]
           Position = 2
           Text = 'Calc Type'
-          Width = 143
+          Width = 124
         end>
     end
   end
@@ -515,7 +515,7 @@ inherited frmDockFormTemplateCreator: TfrmDockFormTemplateCreator
   end
   inherited pmTree: TPopupMenu
     OnPopup = pmTreePopup
-    Left = 37
+    Left = 29
     Top = 136
     object miEdit: TMenuItem
       Action = aEdit

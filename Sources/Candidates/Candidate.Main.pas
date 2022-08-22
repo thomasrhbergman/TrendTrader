@@ -385,6 +385,7 @@ end;
 function TfrmCandidateMain.GetTradesState: TTradesState;
 begin
   //Result := FCandidateInfo.TradesState;
+  Result := tsNotConsidered; //!!!!
 end;
 
 procedure TfrmCandidateMain.FormCreate(Sender: TObject);
@@ -446,8 +447,8 @@ begin
 end;
 
 procedure TfrmCandidateMain.FormShow(Sender: TObject);
-var
-  MainForm: TForm;
+//var
+//  MainForm: TForm;
 begin
   inherited;
 //  MainForm  := Application.MainForm;
@@ -745,7 +746,8 @@ begin
         Exit;
       end;
 
-      Quantity := 0;
+      //Quantity := 0;
+      OrderAmount := 0;
       if (LastPrice > 0) and (LastExch > 0) then
       begin
 //        if (FCandidateInfo.TotalOrderAmount < LastPrice) then
@@ -789,7 +791,8 @@ begin
               psAlgorithmSizeLimit:
                 ;
               psOrderQuantityMax:
-                Quantity := Trunc(General.PrecautionarySettings[aData^.SecurityType][psOrderQuantityMax]);
+                //Quantity := Trunc(General.PrecautionarySettings[aData^.SecurityType][psOrderQuantityMax]);
+                ;
               psMaxAllowedPrice, psMinAllowedPrice:
                 begin
                   aData^.Description := 'Not passed - ' + PrecSetting.ToString;

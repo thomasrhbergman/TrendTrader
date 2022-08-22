@@ -4,7 +4,7 @@ object frmMonitor: TfrmMonitor
   Width = 1107
   Height = 658
   AutoScroll = True
-  Caption = 'RobotX'
+  Caption = 'Trend-Trader'
   Color = clBtnFace
   Constraints.MinHeight = 350
   Constraints.MinWidth = 1100
@@ -34,6 +34,7 @@ object frmMonitor: TfrmMonitor
     Height = 93
     Align = alTop
     TabOrder = 0
+    Visible = False
     object gbConnectOld: TGroupBox
       Left = 1
       Top = 1
