@@ -10,8 +10,10 @@ object frmAutoTrades: TfrmAutoTrades
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  OldCreateOrder = True
   PopupMenu = frameAutoTrades.pmTree
   Position = poMainFormCenter
+  PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
@@ -95,22 +97,6 @@ object frmAutoTrades: TfrmAutoTrades
       inherited pnlOrderGroupSetTop: TPanel
         Width = 482
         ExplicitWidth = 482
-        inherited lblViewType: TLabel
-          Left = 8
-          Width = 53
-          Height = 13
-          ExplicitLeft = 8
-          ExplicitWidth = 53
-          ExplicitHeight = 13
-        end
-        inherited lblSearchFor: TLabel
-          Left = 24
-          Width = 37
-          Height = 13
-          ExplicitLeft = 24
-          ExplicitWidth = 37
-          ExplicitHeight = 13
-        end
         inherited edtSearch: TEdit
           Width = 386
           ExplicitWidth = 386

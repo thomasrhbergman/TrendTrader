@@ -3,8 +3,8 @@ object frmQualifierEdit: TfrmQualifierEdit
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Qualifier'
-  ClientHeight = 381
-  ClientWidth = 617
+  ClientHeight = 501
+  ClientWidth = 490
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -22,17 +22,19 @@ object frmQualifierEdit: TfrmQualifierEdit
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
-    Top = 336
-    Width = 617
+    Top = 456
+    Width = 490
     Height = 45
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitTop = 336
+    ExplicitWidth = 617
     DesignSize = (
-      617
+      490
       45)
     object btnSave: TBitBtn
-      Left = 515
+      Left = 388
       Top = 2
       Width = 100
       Height = 40
@@ -47,9 +49,10 @@ object frmQualifierEdit: TfrmQualifierEdit
       Images = DMImage.vil32
       ParentFont = False
       TabOrder = 0
+      ExplicitLeft = 515
     end
     object btnCancel: TBitBtn
-      Left = 414
+      Left = 287
       Top = 2
       Width = 100
       Height = 40
@@ -65,692 +68,21 @@ object frmQualifierEdit: TfrmQualifierEdit
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
-    end
-    object pnlInfo: TPanel
-      Left = 0
-      Top = 0
-      Width = 369
-      Height = 45
-      Align = alLeft
-      BevelOuter = bvNone
-      TabOrder = 2
-      object imgWarning: TVirtualImage
-        Left = 0
-        Top = 0
-        Width = 32
-        Height = 45
-        Align = alLeft
-        ImageCollection = DMImage.ImCollection32
-        ImageWidth = 0
-        ImageHeight = 0
-        ImageIndex = 58
-        ImageName = 'Warning_32x32'
-        ExplicitTop = 2
-      end
-      object lblInfo: TLabel
-        AlignWithMargins = True
-        Left = 35
-        Top = 3
-        Width = 331
-        Height = 39
-        Align = alClient
-        Caption = 
-          'Changing the Document affects overall template in Template Creat' +
-          'or'
-        Layout = tlCenter
-        WordWrap = True
-        ExplicitWidth = 330
-        ExplicitHeight = 13
-      end
+      ExplicitLeft = 414
     end
   end
-  object pnlAutoTrades: TPanel
-    Left = 0
-    Top = 313
-    Width = 617
-    Height = 23
-    Align = alBottom
-    BevelOuter = bvNone
-    TabOrder = 1
-    object cbBypass: TCheckBox
-      Left = 265
-      Top = 5
-      Width = 113
-      Height = 17
-      Caption = 'Bypass'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 0
-    end
-    object cbEnabled: TCheckBox
-      Left = 6
-      Top = 5
-      Width = 249
-      Height = 17
-      Caption = 'Activate / Deactivate Qualifier Condition'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      ParentShowHint = False
-      ShowHint = True
-      TabOrder = 1
-    end
-  end
-  object pcConditions: TPageControl
-    Left = 0
-    Top = 50
-    Width = 617
-    Height = 263
-    ActivePage = tcCompare
-    Align = alClient
-    DoubleBuffered = True
-    ParentDoubleBuffered = False
-    TabOrder = 2
-    TabStop = False
-    object tcCompare: TTabSheet
-      Caption = 'Compare'
-      object pnlSearchInstrument: TPanel
-        Left = 569
-        Top = 0
-        Width = 40
-        Height = 235
-        Align = alRight
-        AutoSize = True
-        BevelOuter = bvNone
-        TabOrder = 0
-        DesignSize = (
-          40
-          235)
-        object btnShowSearchForm: TBitBtn
-          Left = 0
-          Top = 85
-          Width = 40
-          Height = 40
-          Action = aShowSearchInstruments
-          Anchors = [akTop, akRight]
-          Font.Charset = DEFAULT_CHARSET
-          Font.Color = clBlack
-          Font.Height = -13
-          Font.Name = 'Tahoma'
-          Font.Style = [fsBold]
-          Images = DMImage.vil32
-          ParentFont = False
-          TabOrder = 0
-        end
-      end
-      object pnlComparePrice: TPanel
-        Left = 0
-        Top = 0
-        Width = 569
-        Height = 235
-        Align = alClient
-        BevelOuter = bvNone
-        TabOrder = 1
-        object pnlComparePriceTotal: TPanel
-          Left = 0
-          Top = 203
-          Width = 569
-          Height = 40
-          Align = alTop
-          BevelOuter = bvNone
-          TabOrder = 0
-          object lblInequalityInstrument1: TLabel
-            Left = 68
-            Top = 5
-            Width = 69
-            Height = 16
-            Alignment = taRightJustify
-            Caption = 'Instrument1'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblInequalityInstrument2: TLabel
-            Left = 253
-            Top = 6
-            Width = 71
-            Height = 16
-            AutoSize = False
-            Caption = 'Instrument2'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblCalculateTotal2: TLabel
-            Left = 256
-            Top = 23
-            Width = 25
-            Height = 16
-            Caption = '0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblCalculateTotal1: TLabel
-            Left = 110
-            Top = 23
-            Width = 25
-            Height = 16
-            Alignment = taRightJustify
-            Caption = '0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object cbInequalityValue: TComboBox
-            Left = 145
-            Top = 3
-            Width = 102
-            Height = 21
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -11
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            TabOrder = 0
-            Items.Strings = (
-              'greater than'
-              'less than'
-              'between')
-          end
-        end
-        object pnlInstrument2: TPanel
-          AlignWithMargins = True
-          Left = 3
-          Top = 105
-          Width = 563
-          Height = 98
-          Margins.Bottom = 0
-          Align = alTop
-          BevelKind = bkFlat
-          BevelOuter = bvNone
-          TabOrder = 1
-          OnDragDrop = OnInstrumentDragDrop
-          OnDragOver = OnInstrumentDragOver
-          object lblInstrumentName2: TLabel
-            Left = 31
-            Top = 0
-            Width = 104
-            Height = 16
-            Alignment = taRightJustify
-            Caption = 'Instrument Name:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblInstrumentNameVal2: TLabel
-            Left = 141
-            Top = 0
-            Width = 99
-            Height = 16
-            Caption = 'Instrument Name'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblContractVal2: TLabel
-            Left = 141
-            Top = 19
-            Width = 63
-            Height = 16
-            Caption = 'Contract Id'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblContract2: TLabel
-            Left = 67
-            Top = 19
-            Width = 68
-            Height = 16
-            Alignment = taRightJustify
-            Caption = 'Contract Id:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblSymbolVal2: TLabel
-            Left = 141
-            Top = 38
-            Width = 42
-            Height = 16
-            Caption = 'Symbol'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblSymbol2: TLabel
-            Left = 88
-            Top = 38
-            Width = 47
-            Height = 16
-            Alignment = taRightJustify
-            Caption = 'Symbol:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblValue2: TLabel
-            Left = 83
-            Top = 57
-            Width = 52
-            Height = 16
-            Caption = 'IB Value:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblInstrument2IBValue1: TLabel
-            Left = 215
-            Top = 78
-            Width = 25
-            Height = 16
-            Alignment = taRightJustify
-            Caption = '0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblInstrument2IBValue2: TLabel
-            Left = 370
-            Top = 78
-            Width = 25
-            Height = 16
-            Alignment = taRightJustify
-            Caption = '0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblCalculateValue2: TLabel
-            AlignWithMargins = True
-            Left = 398
-            Top = 58
-            Width = 34
-            Height = 16
-            Margins.Right = 5
-            Caption = '=0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            Layout = tlCenter
-          end
-          object cbInstrument2IBValue2: TComboBox
-            Left = 295
-            Top = 56
-            Width = 100
-            Height = 21
-            TabOrder = 0
-            OnChange = cbInstrument2IBValue2Change
-          end
-          object cbInstrument2IBValue1: TComboBox
-            Left = 140
-            Top = 56
-            Width = 100
-            Height = 21
-            TabOrder = 1
-            OnChange = cbInstrument2IBValue1Change
-          end
-          object cbTypeOperation2: TComboBox
-            Left = 242
-            Top = 56
-            Width = 50
-            Height = 21
-            TabOrder = 2
-            OnChange = cbTypeOperation2Change
-          end
-          object btnCalculateInstrument2: TButton
-            Left = 460
-            Top = 54
-            Width = 100
-            Height = 40
-            Action = aCalculateInstrument2
-            Images = DMImage.vil32
-            TabOrder = 3
-          end
-        end
-        object pnlInstrument1: TPanel
-          AlignWithMargins = True
-          Left = 3
-          Top = 3
-          Width = 563
-          Height = 99
-          Margins.Bottom = 0
-          Align = alTop
-          BevelKind = bkFlat
-          BevelOuter = bvNone
-          TabOrder = 2
-          OnDragDrop = OnInstrumentDragDrop
-          OnDragOver = OnInstrumentDragOver
-          object lblInstrumentName1: TLabel
-            Left = 31
-            Top = 0
-            Width = 104
-            Height = 16
-            Alignment = taRightJustify
-            Caption = 'Instrument Name:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblInstrumentNameVal1: TLabel
-            Left = 141
-            Top = 0
-            Width = 99
-            Height = 16
-            Caption = 'Instrument Name'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblContractVal1: TLabel
-            Left = 141
-            Top = 19
-            Width = 63
-            Height = 16
-            Caption = 'Contract Id'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblContract1: TLabel
-            Left = 67
-            Top = 19
-            Width = 68
-            Height = 16
-            Alignment = taRightJustify
-            Caption = 'Contract Id:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblSymbolVal1: TLabel
-            Left = 141
-            Top = 38
-            Width = 42
-            Height = 16
-            Caption = 'Symbol'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblSymbol1: TLabel
-            Left = 88
-            Top = 38
-            Width = 47
-            Height = 16
-            Alignment = taRightJustify
-            Caption = 'Symbol:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblValue1: TLabel
-            Left = 83
-            Top = 58
-            Width = 52
-            Height = 16
-            Caption = 'IB Value:'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblCalculateValue1: TLabel
-            AlignWithMargins = True
-            Left = 398
-            Top = 59
-            Width = 34
-            Height = 16
-            Margins.Right = 5
-            Caption = '=0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-            Layout = tlCenter
-          end
-          object lblInstrument1IBValue1: TLabel
-            Left = 215
-            Top = 79
-            Width = 25
-            Height = 16
-            Alignment = taRightJustify
-            Caption = '0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object lblInstrument1IBValue2: TLabel
-            Left = 370
-            Top = 79
-            Width = 25
-            Height = 16
-            Alignment = taRightJustify
-            Caption = '0.00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -13
-            Font.Name = 'Tahoma'
-            Font.Style = []
-            ParentFont = False
-          end
-          object cbInstrument1IBValue2: TComboBox
-            Left = 295
-            Top = 57
-            Width = 100
-            Height = 21
-            TabOrder = 0
-            OnChange = cbInstrument1IBValue2Change
-          end
-          object cbInstrument1IBValue1: TComboBox
-            Left = 140
-            Top = 57
-            Width = 100
-            Height = 21
-            TabOrder = 1
-            OnChange = cbInstrument1IBValue1Change
-          end
-          object cbTypeOperation1: TComboBox
-            Left = 242
-            Top = 57
-            Width = 50
-            Height = 21
-            TabOrder = 2
-            OnChange = cbTypeOperation1Change
-          end
-          object btnCalculateInstrument1: TButton
-            Left = 460
-            Top = 55
-            Width = 100
-            Height = 40
-            Action = aCalculateInstrument1
-            Images = DMImage.vil32
-            TabOrder = 3
-          end
-        end
-      end
-    end
-    object tsEveryDay: TTabSheet
-      Caption = 'Every Day'
-      ImageIndex = 1
-      object lblEveryDayTime: TLabel
-        Left = 63
-        Top = 11
-        Width = 80
-        Height = 16
-        Alignment = taRightJustify
-        Caption = 'Startup Time:'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -13
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object edEveryDayTime: TDateTimePicker
-        Left = 150
-        Top = 9
-        Width = 105
-        Height = 21
-        Date = 44131.000000000000000000
-        Time = 44131.000000000000000000
-        Kind = dtkTime
-        TabOrder = 0
-      end
-    end
-    object tsSpecificDateTime: TTabSheet
-      Caption = 'Specific Date'
-      ImageIndex = 2
-      object lblSpecificDate: TLabel
-        Left = 66
-        Top = 11
-        Width = 77
-        Height = 16
-        Alignment = taRightJustify
-        Caption = 'Startup Date:'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -13
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object lblSpecificTime: TLabel
-        Left = 63
-        Top = 37
-        Width = 80
-        Height = 16
-        Alignment = taRightJustify
-        Caption = 'Startup Time:'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -13
-        Font.Name = 'Tahoma'
-        Font.Style = []
-        ParentFont = False
-      end
-      object edSpecificDate: TDateTimePicker
-        Left = 150
-        Top = 9
-        Width = 105
-        Height = 21
-        Date = 44131.000000000000000000
-        Time = 44131.000000000000000000
-        TabOrder = 0
-      end
-      object edSpecificTime: TDateTimePicker
-        Left = 150
-        Top = 35
-        Width = 105
-        Height = 21
-        Date = 44131.000000000000000000
-        Time = 44131.000000000000000000
-        Kind = dtkTime
-        TabOrder = 1
-      end
-    end
-  end
-  object pnlTypeCondition: TPanel
+  object pnlHeader: TPanel
     Left = 0
     Top = 0
-    Width = 617
-    Height = 50
+    Width = 490
+    Height = 40
     Align = alTop
     BevelOuter = bvNone
-    TabOrder = 3
-    object lblTypeCondition: TLabel
-      Left = 53
-      Top = 3
-      Width = 90
-      Height = 16
-      Alignment = taRightJustify
-      Caption = 'Type Condition:'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-    end
+    TabOrder = 1
+    ExplicitWidth = 1025
     object lblName: TLabel
       Left = 105
-      Top = 25
+      Top = 10
       Width = 38
       Height = 16
       Alignment = taRightJustify
@@ -762,30 +94,722 @@ object frmQualifierEdit: TfrmQualifierEdit
       Font.Style = []
       ParentFont = False
     end
-    object cbTypeCondition: TComboBox
-      Left = 149
-      Top = 1
-      Width = 281
-      Height = 21
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 0
-      OnChange = cbTypeConditionChange
-      Items.Strings = (
-        'greater than'
-        'less than'
-        'between')
-    end
     object edtName: TEdit
       Left = 149
-      Top = 24
+      Top = 9
       Width = 281
       Height = 21
+      TabOrder = 0
+    end
+  end
+  object pnlCompare: TPanel
+    Left = 0
+    Top = 40
+    Width = 490
+    Height = 225
+    Align = alTop
+    BevelInner = bvLowered
+    TabOrder = 2
+    ExplicitTop = 0
+    ExplicitWidth = 1025
+    object pnlCompareClient: TPanel
+      Left = 73
+      Top = 2
+      Width = 375
+      Height = 221
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 0
+      ExplicitWidth = 621
+      object pnlComparePriceTotal: TPanel
+        Left = 0
+        Top = 178
+        Width = 375
+        Height = 40
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 0
+        ExplicitTop = 0
+        ExplicitWidth = 910
+        object lblInequalityInstrument1: TLabel
+          Left = 68
+          Top = 4
+          Width = 69
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Instrument1'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblInequalityInstrument2: TLabel
+          Left = 253
+          Top = 5
+          Width = 71
+          Height = 16
+          AutoSize = False
+          Caption = 'Instrument2'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblCalculateTotal2: TLabel
+          Left = 256
+          Top = 22
+          Width = 25
+          Height = 16
+          Caption = '0.00'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblCalculateTotal1: TLabel
+          Left = 110
+          Top = 22
+          Width = 25
+          Height = 16
+          Alignment = taRightJustify
+          Caption = '0.00'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object cbInequalityCompare: TComboBox
+          Left = 143
+          Top = 3
+          Width = 100
+          Height = 21
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+          TabOrder = 0
+          Items.Strings = (
+            'greater than'
+            'less than'
+            'between')
+        end
+      end
+      object pnlInstrument1: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 369
+        Height = 88
+        Margins.Bottom = 0
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 1
+        OnDragDrop = OnInstrumentDragDrop
+        OnDragOver = OnInstrumentDragOver
+        ExplicitTop = 0
+        object lblInstrumentName1: TLabel
+          Left = 20
+          Top = 0
+          Width = 115
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Instrument 1 Name:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblInstrumentNameVal1: TLabel
+          Left = 141
+          Top = 0
+          Width = 99
+          Height = 16
+          Caption = 'Instrument Name'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblContractVal1: TLabel
+          Left = 141
+          Top = 19
+          Width = 63
+          Height = 16
+          Caption = 'Contract Id'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblContract1: TLabel
+          Left = 67
+          Top = 19
+          Width = 68
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Contract Id:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblSymbolVal1: TLabel
+          Left = 141
+          Top = 38
+          Width = 42
+          Height = 16
+          Caption = 'Symbol'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblSymbol1: TLabel
+          Left = 88
+          Top = 38
+          Width = 47
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Symbol:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblValue1: TLabel
+          Left = 98
+          Top = 58
+          Width = 37
+          Height = 16
+          Caption = 'Value:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object cbInstrument1IBValue1: TComboBox
+          Left = 140
+          Top = 57
+          Width = 100
+          Height = 21
+          TabOrder = 0
+          OnChange = cbInstrument1IBValue1Change
+        end
+      end
+      object pnlInstrument2: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 94
+        Width = 369
+        Height = 84
+        Margins.Bottom = 0
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 2
+        OnDragDrop = OnInstrumentDragDrop
+        OnDragOver = OnInstrumentDragOver
+        ExplicitTop = 0
+        ExplicitWidth = 904
+        object lblInstrumentName2: TLabel
+          Left = 20
+          Top = 0
+          Width = 115
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Instrument 2 Name:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblInstrumentNameVal2: TLabel
+          Left = 141
+          Top = 0
+          Width = 99
+          Height = 16
+          Caption = 'Instrument Name'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblContractVal2: TLabel
+          Left = 141
+          Top = 19
+          Width = 63
+          Height = 16
+          Caption = 'Contract Id'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblContract2: TLabel
+          Left = 67
+          Top = 19
+          Width = 68
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Contract Id:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblSymbolVal2: TLabel
+          Left = 141
+          Top = 38
+          Width = 42
+          Height = 16
+          Caption = 'Symbol'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblSymbol2: TLabel
+          Left = 88
+          Top = 38
+          Width = 47
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Symbol:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblValue2: TLabel
+          Left = 98
+          Top = 57
+          Width = 37
+          Height = 16
+          Caption = 'Value:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object cbInstrument2IBValue1: TComboBox
+          Left = 140
+          Top = 56
+          Width = 100
+          Height = 21
+          TabOrder = 0
+          OnChange = cbInstrument2IBValue1Change
+        end
+      end
+    end
+    object pnlCompareSearch: TPanel
+      Left = 448
+      Top = 2
+      Width = 40
+      Height = 221
+      Align = alRight
+      AutoSize = True
+      BevelOuter = bvNone
       TabOrder = 1
+      ExplicitLeft = 694
+      DesignSize = (
+        40
+        221)
+      object btnShowSearchCompare: TBitBtn
+        Left = 0
+        Top = 104
+        Width = 40
+        Height = 40
+        Action = aShowSearchInstruments
+        Anchors = [akTop, akRight]
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = [fsBold]
+        Images = DMImage.vil32
+        ParentFont = False
+        TabOrder = 0
+      end
+    end
+    object pnlCompareLeft: TPanel
+      Left = 2
+      Top = 2
+      Width = 71
+      Height = 221
+      Align = alLeft
+      BevelOuter = bvNone
+      TabOrder = 2
+      object cbCompare: TCheckBox
+        Left = 4
+        Top = 109
+        Width = 60
+        Height = 17
+        Caption = 'Compare'
+        TabOrder = 0
+      end
+    end
+  end
+  object pnlTime: TPanel
+    Left = 0
+    Top = 410
+    Width = 490
+    Height = 45
+    Align = alTop
+    BevelInner = bvLowered
+    TabOrder = 3
+    ExplicitTop = 147
+    ExplicitWidth = 736
+    object pnlTimeLeft: TPanel
+      Left = 2
+      Top = 2
+      Width = 71
+      Height = 41
+      Align = alLeft
+      BevelOuter = bvNone
+      TabOrder = 0
+      object cbTime: TCheckBox
+        Left = 5
+        Top = 13
+        Width = 60
+        Height = 17
+        Caption = 'Time'
+        TabOrder = 0
+      end
+    end
+    object pnlTimeCenter: TPanel
+      AlignWithMargins = True
+      Left = 76
+      Top = 5
+      Width = 409
+      Height = 38
+      Margins.Bottom = 0
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 1
+      OnDragDrop = OnInstrumentDragDrop
+      OnDragOver = OnInstrumentDragOver
+      ExplicitLeft = 3
+      ExplicitTop = 3
+      ExplicitWidth = 663
+      object lblFromTime: TLabel
+        Left = 99
+        Top = 11
+        Width = 35
+        Height = 16
+        Alignment = taRightJustify
+        Caption = 'From:'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object lblToTime: TLabel
+        Left = 249
+        Top = 11
+        Width = 20
+        Height = 16
+        Alignment = taRightJustify
+        Caption = 'To:'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object edFromTime: TDateTimePicker
+        Left = 141
+        Top = 9
+        Width = 99
+        Height = 21
+        Date = 44131.000000000000000000
+        Time = 44131.000000000000000000
+        Kind = dtkTime
+        TabOrder = 0
+      end
+      object edToTime: TDateTimePicker
+        Left = 276
+        Top = 9
+        Width = 99
+        Height = 21
+        Date = 44131.000000000000000000
+        Time = 44131.000000000000000000
+        Kind = dtkTime
+        TabOrder = 1
+      end
+    end
+  end
+  object pnlValue: TPanel
+    Left = 0
+    Top = 265
+    Width = 490
+    Height = 145
+    Align = alTop
+    BevelInner = bvLowered
+    TabOrder = 4
+    ExplicitTop = 0
+    ExplicitWidth = 744
+    object pnlValueClient: TPanel
+      Left = 73
+      Top = 2
+      Width = 375
+      Height = 141
+      Align = alClient
+      BevelOuter = bvNone
+      TabOrder = 0
+      ExplicitWidth = 629
+      object pnlValuePriceTotal: TPanel
+        Left = 0
+        Top = 87
+        Width = 375
+        Height = 58
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 0
+        object lbComparisonValue: TLabel
+          Left = 28
+          Top = 30
+          Width = 109
+          Height = 16
+          Caption = 'Comparison Value:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object cbInequalityValue: TComboBox
+          Left = 143
+          Top = 2
+          Width = 100
+          Height = 21
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+          TabOrder = 0
+          Items.Strings = (
+            'greater than'
+            'less than'
+            'between')
+        end
+        object edComparisonValue: TNumberBox
+          Left = 143
+          Top = 29
+          Width = 100
+          Height = 21
+          AcceptExpressions = True
+          TabOrder = 1
+          SpinButtonOptions.Placement = nbspCompact
+          UseMouseWheel = True
+          NegativeValueColor = clWindow
+        end
+      end
+      object pnlInstrument: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 369
+        Height = 84
+        Margins.Bottom = 0
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 1
+        OnDragDrop = OnInstrumentDragDrop
+        OnDragOver = OnInstrumentDragOver
+        ExplicitWidth = 623
+        object lblInstrumentName: TLabel
+          Left = 31
+          Top = 0
+          Width = 104
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Instrument Name:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblInstrumentNameVal: TLabel
+          Left = 141
+          Top = 0
+          Width = 99
+          Height = 16
+          Caption = 'Instrument Name'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblContractVal: TLabel
+          Left = 141
+          Top = 19
+          Width = 63
+          Height = 16
+          Caption = 'Contract Id'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblContract: TLabel
+          Left = 67
+          Top = 19
+          Width = 68
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Contract Id:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblSymbolVal: TLabel
+          Left = 141
+          Top = 38
+          Width = 42
+          Height = 16
+          Caption = 'Symbol'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblSymbol: TLabel
+          Left = 88
+          Top = 38
+          Width = 47
+          Height = 16
+          Alignment = taRightJustify
+          Caption = 'Symbol:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object lblValue: TLabel
+          Left = 98
+          Top = 57
+          Width = 37
+          Height = 16
+          Caption = 'Value:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
+        object cbInstrumentIBValue: TComboBox
+          Left = 140
+          Top = 56
+          Width = 100
+          Height = 21
+          TabOrder = 0
+          OnChange = cbInstrumentIBValueChange
+        end
+      end
+    end
+    object pnlValueSearch: TPanel
+      Left = 448
+      Top = 2
+      Width = 40
+      Height = 141
+      Align = alRight
+      AutoSize = True
+      BevelOuter = bvNone
+      TabOrder = 1
+      ExplicitLeft = 702
+      DesignSize = (
+        40
+        141)
+      object btnShowSearchValue: TBitBtn
+        Left = 0
+        Top = 48
+        Width = 40
+        Height = 40
+        Action = aShowSearchInstruments
+        Anchors = [akTop, akRight]
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clBlack
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = [fsBold]
+        Images = DMImage.vil32
+        ParentFont = False
+        TabOrder = 0
+      end
+    end
+    object pnlValueLeft: TPanel
+      Left = 2
+      Top = 2
+      Width = 71
+      Height = 141
+      Align = alLeft
+      BevelOuter = bvNone
+      TabOrder = 2
+      object cbValue: TCheckBox
+        Left = 5
+        Top = 69
+        Width = 60
+        Height = 17
+        Caption = 'Value'
+        TabOrder = 0
+      end
     end
   end
   object ActionListMain: TActionList

@@ -27,7 +27,6 @@ object frmQuantityEdit: TfrmQuantityEdit
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitWidth = 360
     DesignSize = (
       356
       45)
@@ -47,7 +46,6 @@ object frmQuantityEdit: TfrmQuantityEdit
       Images = DMImage.vil32
       ParentFont = False
       TabOrder = 0
-      ExplicitLeft = 258
     end
     object btnCancel: TBitBtn
       Left = 153
@@ -66,7 +64,6 @@ object frmQuantityEdit: TfrmQuantityEdit
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
-      ExplicitLeft = 157
     end
   end
   object pnlTypeCondition: TPanel
@@ -77,7 +74,6 @@ object frmQuantityEdit: TfrmQuantityEdit
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitWidth = 360
     DesignSize = (
       356
       194)

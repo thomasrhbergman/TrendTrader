@@ -102,7 +102,7 @@ begin
   AutoTrade.OrderAmount             := 1000;
   AutoTrade.OrderCurrency           := C_DEFAULT_CURRENCY;
 
-  if (TfrmAutoTradesEdit.ShowDocument(AutoTrade) = mrOk) then
+  if (TfrmAutoTradesEdit.ShowEditForm(AutoTrade, dmInsert) = mrOk) then
   begin
     AutoTrade.SaveToDB;
     DMod.RefreshQuery(DMod.fbqAutoTrades);
@@ -124,7 +124,7 @@ begin
     if Assigned(Node) then
     begin
       Data := Node^.GetData;
-      if (TfrmAutoTradesEdit.ShowDocument(Data^.AutoTrade) = mrOk) then
+      if (TfrmAutoTradesEdit.ShowEditForm(Data^.AutoTrade, dmUpdate) = mrOk) then
       begin
         Data^.AutoTrade.SaveToDB;
         frameAutoTrades.LoadTree;

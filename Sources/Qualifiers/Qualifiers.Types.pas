@@ -8,14 +8,12 @@ uses
   IABSocketAPI, System.Generics.Collections, BrokerHelperAbstr, Winapi.msxml, Vcl.Graphics, Entity.Sokid,
   {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} IABSocketAPI_const, DebugWriter, HtmlLib, Chart.Trade,
   System.DateUtils, XmlFiles, Data.DB, DaModule, InstrumentList, System.Math, System.Threading,
-  Publishers.Interfaces, Generics.Helper, Common.Types, AutoTrades.Types, Bleeper, DaModule.Utils, ArrayHelper,
+  Publishers.Interfaces, Generics.Helper, Common.Types, Bleeper, DaModule.Utils, ArrayHelper,
   Global.Types, Publishers, Vcl.Forms, IABFunctions.Helpers, IABFunctions.MarketData, Vcl.ExtCtrls,
   FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet;
 {$ENDREGION}
 
 type
-  TAutoTradesInstanceEvent = function (const aAutoTradeId, aQualifierId, aQualifierInstance: Integer): IAutoTrade of object;
-  TAutoTradesArray = TArrayRecord<TAutoTradeInfo>;
   TTypeCondition = (tcRealtime, tcEveryDay, tcSpecificDate);
   TTypeConditionHelper = record helper for TTypeCondition
   private
@@ -67,30 +65,34 @@ type
   *)
 
   PQualifier = ^TQualifier;
-  TQualifier = class(TInterfacedPersistent, IUpdateFeeds)
+  TQualifier = class(TBaseClass)
   private const
     C_SECTION = 'Params';
     C_SECTION_INSTRUMENT1 = 'Instrument1';
     C_SECTION_INSTRUMENT2 = 'Instrument2';
+    C_SECTION_INSTRUMENT = 'Instrument';
   private
-    FRecordId: Integer;
-    FAutoTrades: TAutoTradesArray;
-    FAutoTradesInstanceEvent: TAutoTradesInstanceEvent;
     FBypass: Boolean;
     FCreateTime: TTime;
     FEnabled: Boolean;
-    FInequalityType: TInequalityType;
+    FInequalityCompare: TInequalityType;
+    FInequalityValue: TInequalityType;
     FIsCondition: Boolean;
-    FName: string;
     FOwnerNode: PVirtualNode;
 
     FStartupDate: TDateTime;
     FTypeCondition: TTypeCondition;
     FTimer: TTimer;
-    FState: TTradesState;
     FPreTime: TTime;
     FPerTime: TTime;
     FInstanceNum: Integer;
+
+    FComparisonValue: Double;
+    FFromTime: TTIme;
+    FToTime: TTime;
+    FIsCompare: Boolean;
+    FIsValue: Boolean;
+    FIsTime: Boolean;
     procedure OnConditionTime(Sender: TObject);
     //implementation ICustomInterface
     function GetInstance: TObject;
@@ -99,37 +101,45 @@ type
   public
     Instrument1: TQualifierInstrument;
     Instrument2: TQualifierInstrument;
-    [weak] AutoTradesInstance: IAutoTrade;
+    Instrument: TQualifierInstrument;
 
-    function GetAutoTrades(const aRecordId: Integer): TAutoTradesArray;
     function ToString: string; override;
     function ToValueString: string;
     function ToXml: string;
     procedure AssignFrom(const aQualifierItem: TQualifier);
-    procedure Clear;
-    procedure Deinitialize;
-    procedure FromDB(const aID: Integer);
     procedure FromXml(const aXmlText: string);
+    procedure Clear;
+    constructor Create; override;
+    procedure Deinitialize;
     procedure Initialize;
-    procedure SaveToDB;
     destructor Destroy; override;
 
-    property AutoTrades     : TAutoTradesArray     read FAutoTrades     write FAutoTrades;
-    property Bypass         : Boolean              read FBypass         write FBypass;
-    property CreateTime     : TTime                read FCreateTime     write FCreateTime;
-    property Enabled        : Boolean              read FEnabled        write FEnabled;
-    property InequalityType : TInequalityType      read FInequalityType write FInequalityType;
-    property IsCondition    : Boolean              read FIsCondition    write FIsCondition;
-    property Name           : string               read FName           write FName;
-    property OwnerNode      : PVirtualNode         read FOwnerNode      write FOwnerNode;
-    property RecordId       : Integer              read FRecordId       write FRecordId;
-    property StartupDate    : TDateTime            read FStartupDate    write FStartupDate;
-    property TypeCondition  : TTypeCondition       read FTypeCondition  write FTypeCondition;
-    property State          : TTradesState         read FState          write FState;
-    property PreTime        : TTime                read FPreTime        write FPreTime;
-    property PerTime        : TTime                read FPerTime        write FPerTime;
-    property InstanceNum    : Integer              read FInstanceNum    write FInstanceNum;
-    property OnExecuteAutoTradesInstance: TAutoTradesInstanceEvent read FAutoTradesInstanceEvent write FAutoTradesInstanceEvent;
+    procedure FromDB(aID: Integer); override;
+    procedure SaveToDB; override;
+    class function GetListSQL: string; override;
+    class function GetListCaption: string; override;
+    class procedure DeleteFromDB(aID: Integer); override;
+
+
+    property Bypass             : Boolean              read FBypass             write FBypass;
+    property CreateTime         : TTime                read FCreateTime         write FCreateTime;
+    property Enabled            : Boolean              read FEnabled            write FEnabled;
+    property InequalityCompare  : TInequalityType      read FInequalityCompare  write FInequalityCompare;
+    property InequalityValue    : TInequalityType      read FInequalityValue    write FInequalityValue;
+    property IsCondition        : Boolean              read FIsCondition        write FIsCondition;
+    property OwnerNode          : PVirtualNode         read FOwnerNode          write FOwnerNode;
+    property StartupDate        : TDateTime            read FStartupDate        write FStartupDate;
+    property TypeCondition      : TTypeCondition       read FTypeCondition      write FTypeCondition;
+    property PreTime            : TTime                read FPreTime            write FPreTime;
+    property PerTime            : TTime                read FPerTime            write FPerTime;
+    property InstanceNum        : Integer              read FInstanceNum        write FInstanceNum;
+
+    property ComparisonValue    : Double               read FComparisonValue    write FComparisonValue;
+    property FromTime           : TTIme                read FFromTime           write FFromTime;
+    property ToTime             : TTime                read FToTime             write FToTime;
+    property IsCompare          : Boolean              read FIsCompare          write FIsCompare;
+    property IsValue            : Boolean              read FIsValue            write FIsValue;
+    property IsTime             : Boolean              read FIsTime             write FIsTime;
   end;
 
   TQualifierList = class(TList<TQualifier>)
@@ -171,19 +181,27 @@ end;
 procedure TQualifier.AssignFrom(const aQualifierItem: TQualifier);
 begin
   Self.Clear;
-  Self.TypeCondition  := aQualifierItem.TypeCondition;
-  Self.RecordId       := aQualifierItem.RecordId;
-  Self.Name           := aQualifierItem.Name;
-  Self.Bypass         := aQualifierItem.Bypass;
-  Self.InequalityType := aQualifierItem.InequalityType;
-  Self.Enabled        := aQualifierItem.Enabled;
-  Self.IsCondition    := aQualifierItem.IsCondition;
-  Self.StartupDate    := aQualifierItem.StartupDate;
-  Self.OwnerNode      := aQualifierItem.OwnerNode;
-  Self.CreateTime     := aQualifierItem.CreateTime;
+  Self.TypeCondition      := aQualifierItem.TypeCondition;
+  Self.RecordId           := aQualifierItem.RecordId;
+  Self.Name               := aQualifierItem.Name;
+  Self.Bypass             := aQualifierItem.Bypass;
+  Self.InequalityCompare  := aQualifierItem.InequalityCompare;
+  Self.InequalityValue    := aQualifierItem.InequalityValue;
+  Self.Enabled            := aQualifierItem.Enabled;
+  Self.IsCondition        := aQualifierItem.IsCondition;
+  Self.StartupDate        := aQualifierItem.StartupDate;
+  Self.OwnerNode          := aQualifierItem.OwnerNode;
+  Self.CreateTime         := aQualifierItem.CreateTime;
+  Self.ComparisonValue    := aQualifierItem.ComparisonValue;
+  Self.FromTime           := aQualifierItem.FromTime;
+  Self.ToTime             := aQualifierItem.ToTime;
+  Self.IsCompare          := aQualifierItem.IsCompare;
+  Self.IsValue            := aQualifierItem.IsValue;
+  Self.IsTime             := aQualifierItem.IsTime;
 
   Self.Instrument1.AssignFrom(aQualifierItem.Instrument1);
   Self.Instrument2.AssignFrom(aQualifierItem.Instrument2);
+  Self.Instrument.AssignFrom(aQualifierItem.Instrument);
   (*Self.AutoTrades.Count := aQualifierItem.AutoTrades.Count;
   for var i := Low(aQualifierItem.AutoTrades.Items) to High(aQualifierItem.AutoTrades.Items) do
   begin
@@ -194,22 +212,35 @@ end;
 
 procedure TQualifier.Clear;
 begin
-  Self.Name           := '';
-  Self.RecordId       := -1;
-  Self.StartupDate    := 0;
-  Self.CreateTime     := 0;
-  Self.Enabled        := True;
-  Self.Bypass         := False;
-  Self.IsCondition    := False;
-  Self.TypeCondition  := Low(TTypeCondition);
-  Self.InequalityType := Low(TInequalityType);
-  Self.Instrument1    := Default(TQualifierInstrument);
-  Self.Instrument2    := Default(TQualifierInstrument);
-  Self.OwnerNode      := nil;
-  Self.AutoTrades.Clear;
+  Self.Name               := '';
+  Self.RecordId           := -1;
+  Self.StartupDate        := 0;
+  Self.CreateTime         := 0;
+  Self.Enabled            := True;
+  Self.Bypass             := False;
+  Self.IsCondition        := False;
+  Self.TypeCondition      := Low(TTypeCondition);
+  Self.InequalityCompare  := Low(TInequalityType);
+  Self.InequalityValue    := Low(TInequalityType);
+  Self.Instrument1        := Default(TQualifierInstrument);
+  Self.Instrument2        := Default(TQualifierInstrument);
+  Self.Instrument         := Default(TQualifierInstrument);
+  Self.OwnerNode          := nil;
+  Self.ComparisonValue    := 0;
+  Self.FromTime           := 0;
+  Self.ToTime             := 0;
+  Self.IsCompare          := false;
+  Self.IsValue            := false;
+  Self.IsTime             := false;
 end;
 
-procedure TQualifier.FromDB(const aID: Integer);
+constructor TQualifier.Create;
+begin
+  inherited;
+  Clear;
+end;
+
+procedure TQualifier.FromDB(aID: Integer);
 resourcestring
   C_SQL_SELECT_TEXT = 'SELECT * FROM QUALIFIERS WHERE ID=:ID';
 var
@@ -227,16 +258,25 @@ begin
       Query.Open;
       if not Query.IsEmpty then
       begin
-        Self.Name           := Query.FieldByName('NAME').AsString;
-        Self.TypeCondition  := TTypeCondition(Query.FieldByName('TYPE_CONDITION').AsInteger);
-        Self.AutoTrades     := GetAutoTrades(aID);
-        Self.Enabled        := Query.FieldByName('ENABLED').AsBoolean;
-        Self.Bypass         := Query.FieldByName('BYPASS').AsBoolean;
-        Self.IsCondition    := False;
-        Self.StartupDate    := Query.FieldByName('STARTUP_DATE').AsDateTime;
-        Self.CreateTime     := Now;
+        Self.Name             := Query.FieldByName('NAME').AsString;
+        Self.TypeCondition    := TTypeCondition(Query.FieldByName('TYPE_CONDITION').AsInteger);
+        Self.Enabled          := Query.FieldByName('ENABLED').AsBoolean;
+        Self.Bypass           := Query.FieldByName('BYPASS').AsBoolean;
+        Self.IsCondition      := False;
+        Self.StartupDate      := Query.FieldByName('STARTUP_DATE').AsDateTime;
+        Self.CreateTime       := Now;
+        Self.ComparisonValue  := Query.FieldByName('COMPARISON_VALUE').AsFloat;
+        Self.FromTime         := Query.FieldByName('FROM_TIME').AsDateTime;
+        Self.ToTime           := Query.FieldByName('TO_TIME').AsDateTime;
+        Self.IsCompare        := Query.FieldByName('IS_COMPARE').AsBoolean;
+        Self.IsValue          := Query.FieldByName('IS_VALUE').AsBoolean;
+        Self.IsTime           := Query.FieldByName('IS_TIME').AsBoolean;
+
         Self.Instrument1.SokidInfo.ContractId := Query.FieldByName('INSTRUMENT1').AsInteger;
         Self.Instrument2.SokidInfo.ContractId := Query.FieldByName('INSTRUMENT2').AsInteger;
+        Self.Instrument.SokidInfo.ContractId  := Query.FieldByName('INSTRUMENT').AsInteger;
+
+
         Self.FromXml(Query.FieldByName('XML_PARAMS').AsString);
 
         case Self.TypeCondition of
@@ -246,6 +286,8 @@ begin
                 Self.Instrument1.SokidInfo.AssignFrom(SokidList.Items[Self.Instrument1.SokidInfo.ContractId]);
               if SokidList.ContainsKey(Self.Instrument2.SokidInfo.ContractId) then
                 Self.Instrument2.SokidInfo.AssignFrom(SokidList.Items[Self.Instrument2.SokidInfo.ContractId]);
+              if SokidList.ContainsKey(Self.Instrument.SokidInfo.ContractId) then
+                Self.Instrument.SokidInfo.AssignFrom(SokidList.Items[Self.Instrument.SokidInfo.ContractId]);
             end;
         end;
       end;
@@ -260,11 +302,15 @@ procedure TQualifier.SaveToDB;
 resourcestring
   C_SQL_EXISTS_TEXT = 'SELECT COUNT(*) AS CNT FROM QUALIFIERS WHERE ID=:ID';
   C_SQL_UPDATE_TEXT = 'UPDATE QUALIFIERS SET TYPE_CONDITION=:TYPE_CONDITION, NAME=:NAME, ENABLED=:ENABLED,' + sLineBreak +
-                                            'BYPASS=:BYPASS, INSTRUMENT1=:INSTRUMENT1, INSTRUMENT2=:INSTRUMENT2, STARTUP_DATE=:STARTUP_DATE,' + sLineBreak +
+                                            'BYPASS=:BYPASS, INSTRUMENT1=:INSTRUMENT1, INSTRUMENT2=:INSTRUMENT2, INSTRUMENT=:INSTRUMENT, ' + sLineBreak +
+                                            'STARTUP_DATE=:STARTUP_DATE, FROM_TIME=:FROM_TIME, TO_TIME=:TO_TIME, '+ sLineBreak +
+                                            'IS_COMPARE=:IS_COMPARE, IS_VALUE=:IS_VALUE, IS_TIME=:IS_TIME, COMPARISON_VALUE=:COMPARISON_VALUE, '+ sLineBreak +
                                             'XML_PARAMS=:XML_PARAMS WHERE ID=:ID';
 
-  C_SQL_INSERT_TEXT = 'INSERT INTO QUALIFIERS ( ID, TYPE_CONDITION, NAME, ENABLED, BYPASS, INSTRUMENT1, INSTRUMENT2, STARTUP_DATE, XML_PARAMS)' + sLineBreak +
-                                     ' VALUES (:ID,:TYPE_CONDITION,:NAME,:ENABLED,:BYPASS,:INSTRUMENT1,:INSTRUMENT2,:STARTUP_DATE,:XML_PARAMS)';
+  C_SQL_INSERT_TEXT = 'INSERT INTO QUALIFIERS ( ID, TYPE_CONDITION, NAME, ENABLED, BYPASS, INSTRUMENT1, INSTRUMENT2, INSTRUMENT,'+
+                                               'STARTUP_DATE, FROM_TIME, TO_TIME, IS_COMPARE, IS_VALUE, IS_TIME, COMPARISON_VALUE, XML_PARAMS)' + sLineBreak +
+                                     ' VALUES (:ID,:TYPE_CONDITION,:NAME,:ENABLED,:BYPASS,:INSTRUMENT1,:INSTRUMENT2,:INSTRUMENT,'+
+                                              ':STARTUP_DATE,:FROM_TIME,:TO_TIME,:IS_COMPARE,:IS_VALUE,:IS_TIME,:COMPARISON_VALUE,:XML_PARAMS)';
 var
   Query: TFDQuery;
   IsExists: Boolean;
@@ -309,6 +355,13 @@ begin
     Query.ParamByName('ENABLED').AsBoolean        := Self.Enabled;
     Query.ParamByName('BYPASS').AsBoolean         := Self.Bypass;
     Query.ParamByName('STARTUP_DATE').AsDateTime  := Self.StartupDate;
+    Query.ParamByName('FROM_TIME').AsDateTime     := Self.FromTime;
+    Query.ParamByName('TO_TIME').AsDateTime       := Self.ToTime;
+    Query.ParamByName('IS_COMPARE').AsBoolean     := Self.IsCompare;
+    Query.ParamByName('IS_VALUE').AsBoolean       := Self.IsValue;
+    Query.ParamByName('IS_TIME').AsBoolean        := Self.IsTime;
+    Query.ParamByName('COMPARISON_VALUE').AsFloat := Self.ComparisonValue;
+
     Query.ParamByName('XML_PARAMS').AsString      := Self.ToXml;
 
     if (Self.Instrument1.SokidInfo.ContractId > 0) then
@@ -319,6 +372,10 @@ begin
       Query.ParamByName('INSTRUMENT2').AsInteger := Self.Instrument2.SokidInfo.ContractId
     else
       Query.ParamByName('INSTRUMENT2').Clear;
+    if (Self.Instrument.SokidInfo.ContractId > 0) then
+      Query.ParamByName('INSTRUMENT').AsInteger := Self.Instrument.SokidInfo.ContractId
+    else
+      Query.ParamByName('INSTRUMENT').Clear;
 
     try
       Query.Prepare;
@@ -334,50 +391,19 @@ begin
   end;
 end;
 
-function TQualifier.GetAutoTrades(const aRecordId: Integer): TAutoTradesArray;
-resourcestring
-  C_SQL_SELECT_TEXT = 'SELECT RECORD_ID FROM DOC_RELATIONS WHERE DOC_TYPE = 2 AND PARENT_ID IN (SELECT ID FROM DOC_RELATIONS WHERE RECORD_ID=:RecordId)';
-var
-  Query: TFDQuery;
-  AutoTradeInfo: TAutoTradeInfo;
-begin
-  Result.Clear;
-  Query := TFDQuery.Create(nil);
-  try
-    DMod.CheckConnect;
-    Query.Connection := DMod.ConnectionStock;
-    Query.Transaction := Query.Connection.Transaction;
-    Query.SQL.Text := C_SQL_SELECT_TEXT;
-    Query.ParamByName('RecordId').AsInteger := aRecordId;
-    try
-      Query.Prepare;
-      Query.Open;
-      while not Query.Eof do
-      begin
-        if (Query.FieldByName('RECORD_ID').AsInteger > 0) then
-        begin
-          AutoTradeInfo.FromDB(Query.FieldByName('RECORD_ID').AsInteger);
-          Result.Add(AutoTradeInfo);
-        end;
-        Query.Next;
-      end;
-      if Query.Transaction.Active then
-        Query.Transaction.CommitRetaining;
-    except
-      on E: Exception do
-      begin
-        TPublishers.LogPublisher.Write([ltLogWriter], ddError, 'TQualifier', 'GetAutoTrades', E.Message + TDModUtils.GetQueryInfo(Query));
-        raise;
-      end;
-    end;
-  finally
-    FreeAndNil(Query);
-  end;
-end;
-
 function TQualifier.GetInstance: TObject;
 begin
   Result := Self;
+end;
+
+class function TQualifier.GetListCaption: string;
+begin
+  Result := 'Qualifiers list';
+end;
+
+class function TQualifier.GetListSQL: string;
+begin
+  Result := 'SELECT ID, NAME FROM QUALIFIERS ORDER BY LOWER(NAME)';
 end;
 
 procedure TQualifier.Initialize;
@@ -408,6 +434,16 @@ begin
         if (Self.Instrument2.TickType2 < ttNotSet) then
           Self.Instrument2.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument2.SokidInfo.ContractId, Self.Instrument2.TickType2);
         Self.Instrument2.TotalValue := 0;
+        TPublishers.FeedPublisher.Subscribe(Self);
+      end;
+
+      if (Self.Instrument.SokidInfo.ContractId > 0) then
+      begin
+        TIABMarket.RequestMarketData(Self.Instrument.SokidInfo.ContractId);
+        Self.Instrument.PriceValue1 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument.SokidInfo.ContractId, Self.Instrument.TickType1);
+        if (Self.Instrument2.TickType2 < ttNotSet) then
+          Self.Instrument.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument.SokidInfo.ContractId, Self.Instrument.TickType2);
+        Self.Instrument.TotalValue := 0;
         TPublishers.FeedPublisher.Subscribe(Self);
       end;
     end;
@@ -441,12 +477,19 @@ begin
   TPublishers.FeedPublisher.Unsubscribe(Self);
 end;
 
+class procedure TQualifier.DeleteFromDB(aID: Integer);
+resourcestring
+  C_SQL_DELETE = 'DELETE FROM QUALIFIERS WHERE ID=%d';
+begin
+  //TTreeDocument.DeleteRelations(Data.ID);
+  DMod.ExecuteSQL(Format(C_SQL_DELETE, [aID]));
+end;
+
 procedure TQualifier.OnPriceChange(Sender: TObject; Id: Integer; TickType: TIABTickType; Value: Currency; TimeStamp: TDateTime);
 var
   IsCondition: Boolean;
 begin
   if (Self.Enabled) and
-     (Assigned(FAutoTradesInstanceEvent)) and
      (Value > 0) and
      ((Instrument1.SokidInfo.ContractId = Id) or (Instrument2.SokidInfo.ContractId = Id) or Self.Bypass) and
      (Self.TypeCondition = tcRealtime)  then
@@ -493,18 +536,38 @@ begin
             Instrument2.TotalValue := Instrument2.TypeOperation.Calc(Instrument2.PriceValue1, Value);
         end;
       end;
+
+      //Instrument
+      if (Instrument.SokidInfo.ContractId = Id) and (Value > 0) then
+      begin
+        if (Instrument.TickType1 = TickType) then
+        begin
+          Instrument.PriceValue1 := Value;
+          if (Instrument.TickType2 = ttNotSet) then
+            Instrument.TotalValue := Value
+          else if (Instrument.PriceValue2 > 0) then
+            Instrument.TotalValue := Instrument.TypeOperation.Calc(Value, Instrument.PriceValue2);
+        end;
+        if (Instrument.TickType2 = TickType) then
+        begin
+          Instrument.PriceValue2 := Value;
+          if (Instrument.PriceValue1 > 0) then
+            Instrument.TotalValue := Instrument.TypeOperation.Calc(Instrument.PriceValue1, Value);
+        end;
+      end;
       QualifiersControllerPublisher.UpdateState(Self);
     end;
 
     if (Instrument1.TotalValue <> 0) or (Instrument2.TotalValue <> 0) then
     begin
-      State := tsWorking;
+      //State := tsWorking;
       if (PerTime = 0) then
         PerTime := TimeOf(Now);
     end;
 
+    // TODO rework for multiple conditions
     if (Instrument1.TotalValue <> 0) and (Instrument2.TotalValue <> 0) then
-      IsCondition := FInequalityType.IsCondition(Instrument1.TotalValue, Instrument2.TotalValue);
+      IsCondition := FInequalityCompare.IsCondition(Instrument1.TotalValue, Instrument2.TotalValue);
 
     if IsCondition then
     begin
@@ -521,7 +584,7 @@ begin
                                  ', Value2='      + Instrument2.PriceValue2.ToString + '<br>' +
                                  'Bypass='        + BoolToStr(FBypass, True));
 
-      State := tsWorking;
+      //State := tsWorking;
       FIsCondition     := True;
       FEnabled         := False;
 
@@ -539,6 +602,7 @@ begin
       QualifiersControllerPublisher.UpdateState(Self);
       TIABMarket.CancelMarketData(Instrument1.SokidInfo.ContractId);
       TIABMarket.CancelMarketData(Instrument2.SokidInfo.ContractId);
+      TIABMarket.CancelMarketData(Instrument.SokidInfo.ContractId);
     end;
   end;
 end;
@@ -548,7 +612,7 @@ var
   IsCondition: Boolean;
   TimeStamp: TDateTime;
 begin
-  if (Self.Enabled) and (Assigned(FAutoTradesInstanceEvent)) and (Self.TypeCondition in [tcEveryDay, tcSpecificDate]) then
+  if (Self.Enabled) and (Self.TypeCondition in [tcEveryDay, tcSpecificDate]) then
   begin
     TimeStamp := Now;
     if Self.Bypass then
@@ -575,7 +639,7 @@ begin
                                      'StartupDate - ' + FormatDateTime('DD.MM.YYYY hh:nn:ss', TimeStamp) + ')<br>' +
                                      'Bypass=' + BoolToStr(FBypass, True));
 
-      State            := tsWorking;
+      //State            := tsWorking;
       FIsCondition     := True;
       FEnabled         := False;
 
@@ -610,7 +674,13 @@ begin
     Self.Instrument2.TickType2     := TIABTickType(XmlFile.ReadInteger(C_SECTION_INSTRUMENT2, 'IBValue2', Ord(ttNotSet)));
     Self.Instrument2.TypeOperation := TTypeOperation(XmlFile.ReadInteger(C_SECTION_INSTRUMENT2, 'TypeOperation', Ord(toDivide)));
 
-    Self.InequalityType := TInequalityType(XmlFile.ReadInteger(C_SECTION, 'Inequality', Ord(TInequalityType.iqAbove)));
+    Self.Instrument.TickType1      := TIABTickType(XmlFile.ReadInteger(C_SECTION_INSTRUMENT, 'IBValue', Ord(ttLast)));
+    Self.Instrument.TickType2      := TIABTickType(XmlFile.ReadInteger(C_SECTION_INSTRUMENT, 'IBValue2', Ord(ttNotSet)));
+    Self.Instrument.TypeOperation  := TTypeOperation(XmlFile.ReadInteger(C_SECTION_INSTRUMENT, 'TypeOperation', Ord(toDivide)));
+
+
+    Self.InequalityCompare := TInequalityType(XmlFile.ReadInteger(C_SECTION, 'InequalityCompare', Ord(TInequalityType.iqAbove)));
+    Self.InequalityValue := TInequalityType(XmlFile.ReadInteger(C_SECTION, 'InequalityValue', Ord(TInequalityType.iqAbove)));
   finally
     FreeAndNil(XMLFile);
   end;
@@ -620,7 +690,7 @@ function TQualifier.ToString: string;
 begin
   case Self.TypeCondition of
     tcRealtime:
-      Result := Self.Instrument1.SokidInfo.Symbol + ' ' + Self.InequalityType.ToString + ' ' + Self.Instrument2.SokidInfo.Symbol;
+      Result := Self.Instrument1.SokidInfo.Symbol + ' ' + Self.InequalityCompare.ToString + ' ' + Self.Instrument2.SokidInfo.Symbol;
     tcEveryDay:
       Result := FormatDateTime('hh:nn:ss', Self.StartupDate);
     tcSpecificDate:
@@ -647,7 +717,11 @@ begin
     XmlFile.WriteInteger(C_SECTION_INSTRUMENT2, 'IBValue', Ord(Self.Instrument2.TickType1));
     XmlFile.WriteInteger(C_SECTION_INSTRUMENT2, 'IBValue2', Ord(Self.Instrument2.TickType2));
     XmlFile.WriteInteger(C_SECTION_INSTRUMENT2, 'TypeOperation', Ord(Self.Instrument2.TypeOperation));
-    XmlFile.WriteInteger(C_SECTION, 'Inequality', Ord(Self.InequalityType));
+    XmlFile.WriteInteger(C_SECTION_INSTRUMENT, 'IBValue', Ord(Self.Instrument.TickType1));
+    XmlFile.WriteInteger(C_SECTION_INSTRUMENT, 'IBValue2', Ord(Self.Instrument.TickType2));
+    XmlFile.WriteInteger(C_SECTION_INSTRUMENT, 'TypeOperation', Ord(Self.Instrument.TypeOperation));
+    XmlFile.WriteInteger(C_SECTION, 'InequalityCompare', Ord(Self.InequalityCompare));
+    XmlFile.WriteInteger(C_SECTION, 'InequalityValue', Ord(Self.InequalityValue));
     Result := XmlFile.XMLText;
   finally
     FreeAndNil(XmlFile);

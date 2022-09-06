@@ -8,28 +8,26 @@ uses
   IABSocketAPI, System.Generics.Collections, BrokerHelperAbstr, Winapi.msxml, Vcl.Graphics, Entity.Sokid,
   {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} IABSocketAPI_const, DebugWriter, HtmlLib, Chart.Trade,
   System.DateUtils, XmlFiles, Data.DB, DaModule, InstrumentList, System.Math, System.Threading,
-  Publishers.Interfaces, Generics.Helper, Common.Types, AutoTrades.Types, Bleeper, DaModule.Utils, ArrayHelper,
+  Publishers.Interfaces, Generics.Helper, Common.Types, Bleeper, DaModule.Utils, ArrayHelper,
   Global.Types, Publishers, Vcl.Forms, IABFunctions.Helpers, IABFunctions.MarketData, Vcl.ExtCtrls,
   FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet;
 {$ENDREGION}
 
 type
   POrderTemplate = ^TOrderTemplate;
-  TOrderTemplate = class(TInterfacedPersistent)
-  private
-    FRecordId: Integer;
-    FName: string;
+  TOrderTemplate = class(TBaseClass)
   public
     function ToString: string; override;
     function ToValueString: string;
     procedure AssignFrom(const aOrderTemplate: TOrderTemplate);
     procedure Clear;
-    procedure FromDB(const aID: Integer);
-    procedure SaveToDB;
-    class procedure DeleteFromDB(aID: Integer); static;
+    constructor Create; override;
 
-    property RecordId         : Integer              read FRecordId         write FRecordId;
-    property Name             : string               read FName             write FName;
+    procedure FromDB(aID: Integer); override;
+    procedure SaveToDB; override;
+    class function GetListSQL: string; override;
+    class function GetListCaption: string; override;
+    class procedure DeleteFromDB(aID: Integer); override;
   end;
 
 implementation
@@ -49,6 +47,12 @@ begin
   Self.RecordId         := -1;
 end;
 
+constructor TOrderTemplate.Create;
+begin
+  inherited;
+  Clear;
+end;
+
 class procedure TOrderTemplate.DeleteFromDB(aID: Integer);
 resourcestring
   C_SQL_DELETE = 'DELETE FROM ORDER_TEMPLATES WHERE ID=%d';
@@ -56,7 +60,7 @@ begin
   DMod.ExecuteSQL(Format(C_SQL_DELETE, [aID]));
 end;
 
-procedure TOrderTemplate.FromDB(const aID: Integer);
+procedure TOrderTemplate.FromDB(aID: Integer);
 resourcestring
   C_SQL_SELECT_TEXT = 'SELECT * FROM ORDER_TEMPLATES WHERE ID=:ID';
 var
@@ -81,6 +85,16 @@ begin
       FreeAndNil(Query);
     end;
   end;
+end;
+
+class function TOrderTemplate.GetListCaption: string;
+begin
+  Result := 'Order templates list';
+end;
+
+class function TOrderTemplate.GetListSQL: string;
+begin
+  Result := 'SELECT ID, NAME FROM ORDER_TEMPLATES ORDER BY LOWER(NAME)';
 end;
 
 procedure TOrderTemplate.SaveToDB;

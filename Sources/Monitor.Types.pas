@@ -203,7 +203,8 @@ begin
       if Assigned(Self.Qualifier) then
         Self.Qualifier.Enabled := FEnabled;
     ntAutoTrade:
-      Self.AutoTrade.Enabled := FEnabled;
+      if Assigned(Self.AutoTrade) then
+        Self.AutoTrade.Enabled := FEnabled;
     ntOrderGroup:
       if Assigned(Self.OrderGroupDoc) then
         Self.OrderGroupDoc.Enabled := FEnabled;

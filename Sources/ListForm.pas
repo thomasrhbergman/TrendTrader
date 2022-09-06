@@ -6,10 +6,8 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, CustomForms, Vcl.ExtCtrls, VirtualTrees,
   Vcl.StdCtrls, Vcl.Buttons, Common.Types, DaModule, FireDAC.Comp.Client, FireDAC.Stan.Param,
-  VirtualTrees.Types, Qualifiers.Edit, System.Actions, Vcl.ActnList,
-  Qualifiers.Types, MessageDialog, MonitorTree.Document, Candidate.Types,
-  Candidate.Main, Quantities.Edit, Quantities.Types, OrderTemplate.Edit,
-  OrderTemplate.Types;
+  VirtualTrees.Types, System.Actions, Vcl.ActnList, MessageDialog, DaImages, Global.Types,
+  System.Generics.Collections;
 
 type
   TListNodeItem = record
@@ -18,6 +16,8 @@ type
     Active: boolean;
   end;
   PListNodeItem = ^TListNodeItem;
+
+  TListMode = (lmShow, lmSelect);
 
   TfrmListForm = class(TCustomForm)
     vstList: TVirtualStringTree;
@@ -41,50 +41,46 @@ type
     procedure actNewExecute(Sender: TObject);
     procedure actDeleteExecute(Sender: TObject);
     procedure actSelectExecute(Sender: TObject);
+    procedure vstListAfterCellPaint(Sender: TBaseVirtualTree;
+      TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+      CellRect: TRect);
+    procedure FormShow(Sender: TObject);
+    procedure vstListDblClick(Sender: TObject);
   private
     { Private declarations }
-    FDocType: TDocType;
+    FBaseClass: TCustomBaseClass;
+    FFormClass: TCustomFormClass;
     FSelectedId: Integer;
+    FListMode: TListMode;
   public
     { Public declarations }
     procedure PopulateList(aID: integer = 0);
   end;
 
-  function ShowList(aDocType: TDocType): Integer;
+type
+  TListFormRecord = record
+    BaseClass: TCustomBaseClass;
+    FormClass: TCustomFormClass;
+  end;
+
+  TListFormFactory = class
+  private
+    FDictionary: TDictionary<TDocType, TListFormRecord>;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    procedure RegisterList(const AType: TDocType; ABaseClass: TCustomBaseClass; AFormClass: TCustomFormClass);
+    procedure Show(const AType: TDocType);
+    function Select(const AType: TDocType): Integer;
+  end;
+
+var
+  ListFormFactory: TListFormFactory;
 
 implementation
 
 {$R *.dfm}
-
-function ShowList(aDocType: TDocType): Integer;
-begin
-  Result := -1;
-  if not (aDocType  in [ntAutoTrade, ntQualifier, ntCandidates, ntQuantities, ntOrderTemplate]) then
-  begin
-    TMessageDialog.ShowWarning('List is implemented only for AutoTrades, Qualifiers, Candidate processes, Quantities and Order Templates');
-    Exit;
-  end;
-  with TfrmListForm.Create(nil) do
-  try
-    FDocType := aDocType;
-    case FDocType of
-      ntAutoTrade: Caption := 'Autotrades list';
-      ntQualifier: Caption := 'Qualifiers list';
-      ntCandidates: Caption := 'Candidate processes list';
-      ntQuantities: Caption := 'Quantities list';
-      ntOrderTemplate: Caption := 'Order templates list';
-    end;
-    PopulateList;
-    ShowModal;
-    if (ModalResult = mrOk) then
-    begin
-      Result := FSelectedId;
-      DMod.RefreshQuery(DMod.fbqQualifiers);
-    end;
-  finally
-    Free;
-  end;
-end;
 
 { TfrmListForm }
 
@@ -96,50 +92,15 @@ begin
   Node := vstList.FocusedNode;
   if not Assigned(Node) then Exit;
   Data := Node^.GetData;
-
-  case FDocType of
-    ntAutoTrade: ;
-    ntQualifier: begin
-        if (Data.ID > 0) and (TMessageDialog.ShowQuestion('Current Qualifier will be deleted. Continue?') = mrYes) then
-        begin
-          TTreeDocument.DeleteRelations(Data.ID);
-          DMod.RefreshQuery(DMod.fbqQualifiers);
-          PopulateList;
-          //TODO delete from table and clear fields in autotrade
-        end;
-      end;
-    ntCandidates: begin
-        if (Data.ID > 0) and (TMessageDialog.ShowQuestion('Current Candidate will be deleted. Continue?') = mrYes) then
-        begin
-          TCandidateInfo.DeleteFromDB(Data.ID);
-          PopulateList;
-          //TODO delete from table and clear fields in autotrade
-        end;
-      end;
-    ntQuantities: begin
-        if (Data.ID > 0) and (TMessageDialog.ShowQuestion('Current Quantity will be deleted. Continue?') = mrYes) then
-        begin
-          TQuantity.DeleteFromDB(Data.ID);
-          PopulateList;
-          //TODO delete from table and clear fields in autotrade
-        end;
-      end;
-    ntOrderTemplate: begin
-        if (Data.ID > 0) and (TMessageDialog.ShowQuestion('Current Order Template will be deleted. Continue?') = mrYes) then
-        begin
-          TOrderTemplate.DeleteFromDB(Data.ID);
-          PopulateList;
-          //TODO delete from table and clear fields in autotrade
-        end;
-      end;
+  if (Data.ID > 0) and (TMessageDialog.ShowQuestion('Current record will be deleted. Continue?') = mrYes) then
+  begin
+    FBaseClass.DeleteFromDB(Data.ID);
+    PopulateList;
   end;
 end;
 
 procedure TfrmListForm.actEditExecute(Sender: TObject);
-var FQualifier: TQualifier;
-    FCandidate: TCandidateInfo;
-    FQuantity: TQuantity;
-    FOrderTemplate: TOrderTemplate;
+var FItem: TBaseClass;
     Data: PListNodeItem;
     Node: PVirtualNode;
 begin
@@ -147,56 +108,16 @@ begin
   Node := vstList.FocusedNode;
   if not Assigned(Node) then Exit;
   Data := Node^.GetData;
-
-  case FDocType of
-    ntAutoTrade: ;
-    ntQualifier: begin
-        FQualifier := TQualifier.Create;
-        try
-          FQualifier.FromDB(Data.ID);
-          if (TfrmQualifierEdit.ShowDocument(FQualifier, dmUpdate) = mrOk) then
-          begin
-            FQualifier.SaveToDB;
-            PopulateList(FQualifier.RecordId);
-          end;
-        finally
-          FQualifier.Free;
-        end;
-      end;
-    ntCandidates: begin
-        FCandidate.FromDB(Data.ID);
-        if (TfrmCandidateMain.ShowDocument(FCandidate, dmUpdate) = mrOk) then
-        begin
-          FCandidate.SaveToDB;
-          PopulateList(FCandidate.RecordId);
-        end;
-      end;
-    ntQuantities: begin
-        FQuantity := TQuantity.Create;
-        try
-          FQuantity.FromDB(Data.ID);
-          if (TfrmQuantityEdit.ShowDocument(FQuantity, dmUpdate) = mrOk) then
-          begin
-            FQuantity.SaveToDB;
-            PopulateList(FQuantity.RecordId);
-          end;
-        finally
-          FQuantity.Free;
-        end;
-      end;
-    ntOrderTemplate: begin
-        FOrderTemplate := TOrderTemplate.Create;
-        try
-          FOrderTemplate.FromDB(Data.ID);
-          if (TfrmOrderTemplateEdit.ShowDocument(FOrderTemplate, dmUpdate) = mrOk) then
-          begin
-            FOrderTemplate.SaveToDB;
-            PopulateList(FOrderTemplate.RecordId);
-          end;
-        finally
-          FOrderTemplate.Free;
-        end;
-      end;
+  FItem := FBaseClass.Create;
+  try
+    FItem.FromDB(Data.ID);
+    if (FFormClass.ShowEditForm(FItem, dmUpdate) = mrOk) then
+    begin
+      FItem.SaveToDB;
+      PopulateList(FItem.RecordId);
+    end;
+  finally
+    FItem.Free;
   end;
 end;
 
@@ -207,55 +128,18 @@ begin
 end;
 
 procedure TfrmListForm.actNewExecute(Sender: TObject);
-var FQualifier: TQualifier;
-    FCandidate: TCandidateInfo;
-    FQuantity: TQuantity;
-    FOrderTemplate: TOrderTemplate;
+var FItem: TBaseClass;
 begin
   inherited;
-  case FDocType of
-    ntAutoTrade: ;
-    ntQualifier: begin
-        FQualifier := TQualifier.Create;
-        try
-          if (TfrmQualifierEdit.ShowDocument(FQualifier, dmInsert) = mrOk) then
-          begin
-            FQualifier.SaveToDB;
-            PopulateList(FQualifier.RecordId);
-          end;
-        finally
-          FQualifier.Free;
-        end;
-      end;
-    ntCandidates: begin
-        FCandidate.Clear;
-        if (TfrmCandidateMain.ShowDocument(FCandidate, dmInsert) = mrOk) then
-        begin
-          FCandidate.SaveToDB;
-          PopulateList(FCandidate.RecordId);
-        end;
-      end;
-    ntQuantities: begin
-        FQuantity := TQuantity.Create;
-        try
-          if (TfrmQuantityEdit.ShowDocument(FQuantity, dmInsert) = mrOk) then
-          begin
-            FQuantity.SaveToDB;
-            PopulateList(FQuantity.RecordId);
-          end;
-        finally
-          FQuantity.Free;
-        end;
-      end;
-    ntOrderTemplate: begin
-        FOrderTemplate := TOrderTemplate.Create;
-        try
-          if (TfrmOrderTemplateEdit.ShowDocument(FOrderTemplate, dmInsert) = mrOk) then
-            PopulateList(FOrderTemplate.RecordId);
-        finally
-          FOrderTemplate.Free;
-        end;
-      end;
+  FItem := FBaseClass.Create;
+  try
+    if (FFormClass.ShowEditForm(FItem, dmUpdate) = mrOk) then
+    begin
+      FItem.SaveToDB;
+      PopulateList(FItem.RecordId);
+    end;
+  finally
+    FItem.Free;
   end;
 end;
 
@@ -281,14 +165,15 @@ begin
   vstList.NodeDataSize := SizeOf(TListNodeItem);
 end;
 
-procedure TfrmListForm.PopulateList(aID: integer = 0);
-const
-  C_SQL_SELECT_AUTOTRADES = 'SELECT ID, NAME, ACTIVE FROM AUTOTRADES ORDER BY LOWER(NAME)';
-  C_SQL_SELECT_QUALIFIERS = 'SELECT ID, NAME FROM QUALIFIERS ORDER BY LOWER(NAME)';
-  C_SQL_SELECT_CANDIDATES = 'SELECT ID, NAME FROM CANDIDATES ORDER BY LOWER(NAME)';
-  C_SQL_SELECT_QUANTITIES = 'SELECT ID, NAME FROM QUANTITIES ORDER BY LOWER(NAME)';
-  C_SQL_SELECT_ORDER_TEMPLATES = 'SELECT ID, NAME FROM ORDER_TEMPLATES ORDER BY LOWER(NAME)';
+procedure TfrmListForm.FormShow(Sender: TObject);
+begin
+  inherited;
+  actSelect.Enabled := FListMode = lmSelect;
+  Caption := FBaseClass.GetListCaption;
+  PopulateList;
+end;
 
+procedure TfrmListForm.PopulateList(aID: integer = 0);
 var Q: TFDQuery;
     Data: PListNodeItem;
     Node, FocusNode: PVirtualNode;
@@ -299,13 +184,7 @@ begin
   try
     DMod.CheckConnect;
     Q.Connection := DMod.ConnectionStock;
-    case FDocType of
-      ntAutoTrade: Q.SQL.Text := C_SQL_SELECT_AUTOTRADES;
-      ntQualifier: Q.SQL.Text := C_SQL_SELECT_QUALIFIERS;
-      ntCandidates: Q.SQL.Text := C_SQL_SELECT_CANDIDATES;
-      ntQuantities: Q.SQL.Text := C_SQL_SELECT_QUANTITIES;
-      ntOrderTemplate: Q.SQL.Text := C_SQL_SELECT_ORDER_TEMPLATES;
-    end;
+    Q.SQL.Text := FBaseClass.GetListSQL;
     Q.Open;
     if Assigned(Q.FindField('ACTIVE')) then
       vstList.Header.Columns.Items[1].Options := vstList.Header.Columns.Items[1].Options + [coVisible]
@@ -333,6 +212,37 @@ begin
   end;
 end;
 
+procedure TfrmListForm.vstListAfterCellPaint(Sender: TBaseVirtualTree;
+  TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
+  CellRect: TRect);
+var
+  Data: PListNodeItem;
+  Idx: Integer;
+begin
+  inherited;
+  Data := Node^.GetData;
+  if Assigned(Data) then
+  begin
+    if Column = 1 then
+    begin
+      if Data.Active then
+        Idx := 71
+      else
+        Idx := 72;
+      DMImage.vil16.Draw(TargetCanvas, CellRect.Left + (CellRect.Width - 16) div 2, CellRect.Top, Idx);
+    end;
+  end;
+end;
+
+procedure TfrmListForm.vstListDblClick(Sender: TObject);
+begin
+  inherited;
+  if FListMode = lmShow then
+    actEdit.Execute
+  else
+    actSelect.Execute;
+end;
+
 procedure TfrmListForm.vstListGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -344,7 +254,78 @@ begin
   begin
     Data := Node^.GetData;
     CellText := Data.Name;
+  end
+  else if (Column = 1) then
+    CellText := '';
+end;
+
+{ TListFormFactory }
+
+constructor TListFormFactory.Create;
+begin
+  FDictionary := TDictionary<TDocType, TListFormRecord>.Create;
+end;
+
+destructor TListFormFactory.Destroy;
+begin
+  if Assigned(FDictionary) then
+    FDictionary.Free;
+  inherited;
+end;
+
+procedure TListFormFactory.RegisterList(const AType: TDocType;
+  ABaseClass: TCustomBaseClass; AFormClass: TCustomFormClass);
+var lRecord: TListFormRecord;
+begin
+  lRecord.BaseClass := ABaseClass;
+  lRecord.FormClass := AFormClass;
+  FDictionary.AddOrSetValue(AType, lRecord);
+end;
+
+function TListFormFactory.Select(const AType: TDocType): Integer;
+var
+  lRecord: TListFormRecord;
+begin
+  Result := -1;
+  if FDictionary.TryGetValue(AType, lRecord) then
+  begin
+    with TfrmListForm.Create(nil) do
+    try
+      FBaseClass := lRecord.BaseClass;
+      FFormClass := lRecord.FormClass;
+      FListMode := lmSelect;
+      ShowModal;
+      if (ModalResult = mrOk) then
+        Result := FSelectedId;
+    finally
+      Free;
+    end;
   end;
 end;
+
+procedure TListFormFactory.Show(const AType: TDocType);
+var
+  lRecord: TListFormRecord;
+begin
+  if FDictionary.TryGetValue(AType, lRecord) then
+  begin
+    with TfrmListForm.Create(nil) do
+    try
+      FBaseClass := lRecord.BaseClass;
+      FFormClass := lRecord.FormClass;
+      FListMode := lmShow;
+      ShowModal;
+    finally
+      Free;
+    end;
+  end;
+end;
+
+initialization
+  ListFormFactory := TListFormFactory.Create;
+
+finalization
+  if Assigned(ListFormFactory) then
+    ListFormFactory.Free;
 
 end.

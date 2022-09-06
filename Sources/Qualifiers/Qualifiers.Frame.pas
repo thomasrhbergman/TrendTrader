@@ -174,10 +174,10 @@ begin
   begin
     if (Column = COL_STATE) then
     begin
-      if Assigned(Data^.Qualifier.AutoTradesInstance) then
+      {if Assigned(Data^.Qualifier.AutoTradesInstance) then
         State := Data^.Qualifier.AutoTradesInstance.GetTradesState
       else
-        State := Data^.Qualifier.State;
+        State := Data^.Qualifier.State; }
       case State of
         tsSuspended:
           TargetCanvas.Font.Color := clWebOrange;
@@ -232,11 +232,11 @@ begin
               if Data^.Qualifier.Bypass then
                 CellText := CellText + ' [BYPASS]';
             end;
-          COL_STATE:
+          {COL_STATE:
             if Assigned(Data^.Qualifier.AutoTradesInstance) then
               CellText := Data^.Qualifier.AutoTradesInstance.GetTradesState.ToString
             else
-              CellText := Data^.Qualifier.State.ToString;
+              CellText := Data^.Qualifier.State.ToString;}
           COL_ACTIVATED_TIME:
             CellText := FormatDateTime('hh:nn:ss.zzz', Data^.Qualifier.PreTime);
           COL_CONDITION_TRUE_TIME:
@@ -344,7 +344,7 @@ var
 begin
   if Application.Terminated then
     Exit
-  else if (not FNodeList.ContainsKey(aQualifier.InstanceNum)) and (aQualifier.State = tsNotConsidered) then
+  else if (not FNodeList.ContainsKey(aQualifier.InstanceNum)) then
     Exit;
 
   if not FNodeList.ContainsKey(aQualifier.InstanceNum) then
@@ -367,7 +367,6 @@ begin
   begin
     ParentNode := FNodeList.Items[aQualifier.InstanceNum];
     Data := ParentNode^.GetData;
-    Data^.Qualifier.AutoTradesInstance := aQualifier.AutoTradesInstance;
     vstTree.Invalidate;
   end;
 end;
@@ -375,13 +374,13 @@ end;
 procedure TframeQualifiers.SetState(const aState: TTradesState);
 resourcestring
   rsInfo = 'State changed manually to ';
-var
+{var
   Data: PQualifierData;
   Node: PVirtualNode;
   Index: Integer;
-  Qualifier: TQualifier;
+  Qualifier: TQualifier;}
 begin
-  Node := vstTree.FocusedNode;
+  {Node := vstTree.FocusedNode;
   if Assigned(Node) then
     if ((Node.CheckType = ctCheckBox) and (Node.CheckState = csCheckedNormal)) or
         (Node.CheckType <> ctCheckBox) then
@@ -408,7 +407,7 @@ begin
             end;
           end;
       end;
-    end;
+    end; }
 end;
 
 procedure TframeQualifiers.Start;
@@ -442,8 +441,8 @@ begin
       if (TMessageDialog.ShowQuestion(Format(rsCanceled, [Data^.Qualifier.InstanceNum.ToString])) = mrYes) then
       begin
         Data := Node^.GetData;
-        if Assigned(Data^.Qualifier.AutoTradesInstance) then
-          AutoTradesControllerPublisher.DeleteAutoTrade(Data^.Qualifier.AutoTradesInstance.GetAutoTradeInfo.InstanceNum);
+        {if Assigned(Data^.Qualifier.AutoTradesInstance) then
+          AutoTradesControllerPublisher.DeleteAutoTrade(Data^.Qualifier.AutoTradesInstance.GetAutoTradeInfo.InstanceNum); }
         if Assigned(FQualifierList) then
         begin
           Index := FQualifierList.GetIndexByNum(Data^.Qualifier.InstanceNum);
@@ -474,11 +473,11 @@ begin
         Data := Node^.GetData;
         if (Data^.DocType = ntQualifier) then
         begin
-          if Assigned(Data^.Qualifier.AutoTradesInstance) then
+          {if Assigned(Data^.Qualifier.AutoTradesInstance) then
           begin
             AutoTradesControllerPublisher.DeleteAutoTrade(Data^.Qualifier.AutoTradesInstance.GetAutoTradeInfo.InstanceNum);
             TPublishers.MonitorStructureChangePublisher.OnMonitorStructureChange(nil, nil, crNodeMoved);
-          end;
+          end;}
           arr[Index] := Data^.Qualifier.InstanceNum;
           Inc(Index);
           if Assigned(FQualifierList) then

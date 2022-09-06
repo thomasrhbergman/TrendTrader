@@ -8,17 +8,15 @@ uses
   IABSocketAPI, System.Generics.Collections, BrokerHelperAbstr, Winapi.msxml, Vcl.Graphics, Entity.Sokid,
   {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} IABSocketAPI_const, DebugWriter, HtmlLib, Chart.Trade,
   System.DateUtils, XmlFiles, Data.DB, DaModule, InstrumentList, System.Math, System.Threading,
-  Publishers.Interfaces, Generics.Helper, Common.Types, AutoTrades.Types, Bleeper, DaModule.Utils, ArrayHelper,
+  Publishers.Interfaces, Generics.Helper, Common.Types, Bleeper, DaModule.Utils, ArrayHelper,
   Global.Types, Publishers, Vcl.Forms, IABFunctions.Helpers, IABFunctions.MarketData, Vcl.ExtCtrls,
   FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet;
 {$ENDREGION}
 
 type
   PQuantity = ^TQuantity;
-  TQuantity = class(TInterfacedPersistent)
+  TQuantity = class(TBaseClass)
   private
-    FRecordId: Integer;
-    FName: string;
     FCurrency: string;
     FOrderAmount: Integer;
     FTotalOrderAmount: Integer;
@@ -27,12 +25,14 @@ type
     function ToValueString: string;
     procedure AssignFrom(const aQuantity: TQuantity);
     procedure Clear;
-    procedure FromDB(const aID: Integer);
-    procedure SaveToDB;
-    class procedure DeleteFromDB(aID: Integer); static;
+    constructor Create; override;
 
-    property RecordId         : Integer              read FRecordId         write FRecordId;
-    property Name             : string               read FName             write FName;
+    procedure FromDB(aID: Integer); override;
+    procedure SaveToDB; override;
+    class function GetListSQL: string; override;
+    class function GetListCaption: string; override;
+    class procedure DeleteFromDB(aID: Integer); override;
+
     property Currency         : string               read FCurrency         write FCurrency;
     property OrderAmount      : Integer              read FOrderAmount      write FOrderAmount;
     property TotalOrderAmount : Integer              read FTotalOrderAmount write FTotalOrderAmount;
@@ -61,6 +61,12 @@ begin
   Self.TotalOrderAmount := 0;
 end;
 
+constructor TQuantity.Create;
+begin
+  inherited;
+  Clear;
+end;
+
 class procedure TQuantity.DeleteFromDB(aID: Integer);
 resourcestring
   C_SQL_DELETE = 'DELETE FROM QUANTITIES WHERE ID=%d';
@@ -68,7 +74,7 @@ begin
   DMod.ExecuteSQL(Format(C_SQL_DELETE, [aID]));
 end;
 
-procedure TQuantity.FromDB(const aID: Integer);
+procedure TQuantity.FromDB(aID: Integer);
 resourcestring
   C_SQL_SELECT_TEXT = 'SELECT * FROM QUANTITIES WHERE ID=:ID';
 var
@@ -96,6 +102,16 @@ begin
       FreeAndNil(Query);
     end;
   end;
+end;
+
+class function TQuantity.GetListCaption: string;
+begin
+  Result := 'Quantities list';
+end;
+
+class function TQuantity.GetListSQL: string;
+begin
+  Result := 'SELECT ID, NAME FROM QUANTITIES ORDER BY LOWER(NAME)';
 end;
 
 procedure TQuantity.SaveToDB;

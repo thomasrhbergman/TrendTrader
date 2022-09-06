@@ -31,7 +31,6 @@ object frmCandidateMain: TfrmCandidateMain
     BevelOuter = bvNone
     TabOrder = 1
     Visible = False
-    ExplicitHeight = 630
     object gbSpecificationAutoTrade: TGroupBox
       AlignWithMargins = True
       Left = 0
@@ -348,7 +347,6 @@ object frmCandidateMain: TfrmCandidateMain
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitHeight = 630
     object pnlOptions: TPanel
       Left = 0
       Top = 0
@@ -470,7 +468,6 @@ object frmCandidateMain: TfrmCandidateMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitHeight = 580
       object vstCandidate: TVirtualStringTree
         Left = 0
         Top = 0
@@ -510,7 +507,6 @@ object frmCandidateMain: TfrmCandidateMain
         OnInitNode = vstCandidateInitNode
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-        ExplicitHeight = 497
         Columns = <
           item
             CaptionAlignment = taCenter
@@ -539,7 +535,6 @@ object frmCandidateMain: TfrmCandidateMain
         ParentColor = False
         TabOrder = 1
         Visible = False
-        ExplicitTop = 497
         object lbIsolate: TListBox
           Left = 2
           Top = 15

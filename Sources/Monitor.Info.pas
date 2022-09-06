@@ -362,11 +362,11 @@ var
   sb                 : TStringBuilder;
   TickType           : TIABTickType;
 
-  function GetAutoTradeIDs(aArray: TAutoTradesArray): string;
+  {function GetAutoTradeIDs(aArray: TAutoTradesArray): string;
   begin
     for var AutoTradeInfo in aArray do
       Result := Result + ', ' + AutoTradeInfo.RecordId.ToString;
-  end;
+  end;}
 
 begin
   if Assigned(aNode) then
@@ -417,10 +417,10 @@ begin
       case Data^.DocType of
         ntQualifier:
           sb.Append(THtmlLib.GetTableLineTag(VarArrayOf(['Name', Qualifier.Name]))).AppendLine
-            .Append(THtmlLib.GetTableLineTag(VarArrayOf(['State', Qualifier.State.ToString]))).AppendLine
+            {.Append(THtmlLib.GetTableLineTag(VarArrayOf(['State', Qualifier.State.ToString]))).AppendLine}
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['TypeCondition', Qualifier.TypeCondition.ToString]))).AppendLine
-            .Append(THtmlLib.GetTableLineTag(VarArrayOf(['Condition', Qualifier.InequalityType.ToString]))).AppendLine
-            .Append(THtmlLib.GetTableLineTag(VarArrayOf(['AutoTradeInfo', GetAutoTradeIDs(Qualifier.AutoTrades)]))).AppendLine
+            .Append(THtmlLib.GetTableLineTag(VarArrayOf(['Condition', Qualifier.InequalityCompare.ToString]))).AppendLine
+            {.Append(THtmlLib.GetTableLineTag(VarArrayOf(['AutoTradeInfo', GetAutoTradeIDs(Qualifier.AutoTrades)]))).AppendLine}
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['Bypass', BoolToStr(Qualifier.Bypass, True)]))).AppendLine
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['IsCondition', BoolToStr(Qualifier.IsCondition, True)]))).AppendLine
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['Instrument1', Qualifier.Instrument1.SokidInfo.Symbol]))).AppendLine
@@ -433,7 +433,7 @@ begin
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['AllowSendDuplicateOrder', BoolToStr(AutoTrade.AllowSendDuplicateOrder, True)]))).AppendLine
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['AutoRefresh', BoolToStr(AutoTrade.AutoRefresh, True)]))).AppendLine
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['OrdersCount', AutoTrade.CreatedOrdersCount.ToString]))).AppendLine
-            .Append(THtmlLib.GetTableLineTag(VarArrayOf(['QualifierId', AutoTrade.QualifierId.ToString]))).AppendLine
+            .Append(THtmlLib.GetTableLineTag(VarArrayOf(['QualifierId', AutoTrade.Qualifier.RecordId.ToString]))).AppendLine
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['QualifierInstance', AutoTrade.QualifierInstance.ToString]))).AppendLine
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['MaxNumberOrder', AutoTrade.MaxNumberOrder.ToString]))).AppendLine
             .Append(THtmlLib.GetTableLineTag(VarArrayOf(['MaxRows', AutoTrade.MaxRows.ToString]))).AppendLine

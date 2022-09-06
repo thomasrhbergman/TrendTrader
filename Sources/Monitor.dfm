@@ -768,6 +768,7 @@ object frmMonitor: TfrmMonitor
         Height = 36
         Caption = 'AutoTrades'
         TabOrder = 1
+        OnClick = btnAutoTradesClick
       end
       object btnQualifiers: TBitBtn
         Left = 270

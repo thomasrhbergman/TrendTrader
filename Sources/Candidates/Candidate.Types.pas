@@ -7,7 +7,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, VirtualTrees, IABFunctions,
   IABSocketAPI, System.Generics.Collections, BrokerHelperAbstr, Winapi.msxml, Vcl.Graphics, Entity.Sokid, Data.DB,
   {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} IABSocketAPI_const, DebugWriter, HtmlLib, CustomForms, Document,
-  System.DateUtils, Global.Types, System.Math, DaModule, Common.Types, ArrayHelper, AutoTrades.Types,
+  System.DateUtils, Global.Types, System.Math, DaModule, Common.Types, ArrayHelper,
   IABFunctions.MessageCodes, Publishers, DaModule.Utils, IABFunctions.Helpers, FireDAC.Comp.Client,
   FireDAC.Stan.Param, FireDAC.Comp.DataSet;
 {$ENDREGION}
@@ -314,7 +314,7 @@ type
 
   ICandidateMarket = interface
     ['{73774C47-5AB5-40A5-AE87-EDDBDF0965F8}']
-    function GetAutoTradeInfo: TAutoTradeInfo;
+    //function GetAutoTradeInfo: TAutoTradeInfo;
     function GetMainTree: TBaseVirtualTree;
     procedure AddInstrument(const aInstruments: PArrayInstrumentData; aColumnsInfo: TColumnsInfo);
     procedure DecMarketInstances;
@@ -332,11 +332,9 @@ type
     procedure Clear;
   end;
 
-  TCandidateInfo = record
+  TCandidate = class(TBaseClass)
   public
-    RecordId: Integer;
     ColumnsInfo: string;
-    Name: string;
     Columns: string;
     MaxNumberOrder: Integer;
     CreatedOrdersCount: Integer;
@@ -345,14 +343,18 @@ type
     CreateTime: TTime;
     Active: Boolean;
 
-    function IsEquals(ACandidateInfo: TCandidateInfo): Boolean;
+    procedure FromDB(aID: Integer); override;
+    procedure SaveToDB; override;
+    class function GetListSQL: string; override;
+    class function GetListCaption: string; override;
+    class procedure DeleteFromDB(aID: Integer); override;
+
+    function IsEquals(ACandidate: TCandidate): Boolean;
     function ToList: string;
     function ToValueString: string;
-    procedure AssignFrom(aCandidate: TCandidateInfo);
+    procedure AssignFrom(aCandidate: TCandidate);
     procedure Clear;
-    procedure FromDB(aID: Integer);
-    procedure SaveToDB;
-    class procedure DeleteFromDB(aID: Integer); static;
+    constructor Create; override;
   end;
 
 const
@@ -1461,9 +1463,9 @@ begin
   end;
 end;
 
-{ TCandidateInfo }
+{ TCandidate }
 
-procedure TCandidateInfo.AssignFrom(aCandidate: TCandidateInfo);
+procedure TCandidate.AssignFrom(aCandidate: TCandidate);
 begin
   Self.Clear;
   Self.RecordId                := aCandidate.RecordId;
@@ -1476,19 +1478,32 @@ begin
   Self.ScanCount               := aCandidate.ScanCount;
 end;
 
-procedure TCandidateInfo.Clear;
+procedure TCandidate.Clear;
 begin
-  Self := Default(TCandidateInfo);
+  Self.RecordId                := -1;
+  Self.ColumnsInfo             := '';
+  Self.Name                    := '';
+  Self.MaxNumberOrder          := 0;
+  Self.Columns                 := '';
+  Self.CreatedOrdersCount      := 0;
+  Self.LastUpdate              := 0;
+  Self.ScanCount               := 0;
 end;
 
-class procedure TCandidateInfo.DeleteFromDB(aID: Integer);
+constructor TCandidate.Create;
+begin
+  inherited;
+  Clear;
+end;
+
+class procedure TCandidate.DeleteFromDB(aID: Integer);
 resourcestring
   C_SQL_DELETE = 'DELETE FROM CANDIDATES WHERE ID=%d';
 begin
   DMod.ExecuteSQL(Format(C_SQL_DELETE, [aID]));
 end;
 
-procedure TCandidateInfo.FromDB(aID: Integer);
+procedure TCandidate.FromDB(aID: Integer);
 resourcestring
   C_SQL_SELECT_TEXT = 'SELECT * FROM CANDIDATES WHERE ID=:ID';
 var
@@ -1519,12 +1534,22 @@ begin
 
 end;
 
-function TCandidateInfo.IsEquals(ACandidateInfo: TCandidateInfo): Boolean;
+class function TCandidate.GetListCaption: string;
 begin
-  Result := Self.ToList.Equals(ACandidateInfo.ToList);
+  Result := 'Candidate processes list';
 end;
 
-procedure TCandidateInfo.SaveToDB;
+class function TCandidate.GetListSQL: string;
+begin
+  Result := 'SELECT ID, NAME FROM CANDIDATES ORDER BY LOWER(NAME)';
+end;
+
+function TCandidate.IsEquals(ACandidate: TCandidate): Boolean;
+begin
+  Result := Self.ToList.Equals(ACandidate.ToList);
+end;
+
+procedure TCandidate.SaveToDB;
 resourcestring
   C_SQL_EXISTS_TEXT = 'SELECT COUNT(*) AS CNT FROM CANDIDATES WHERE ID=:RecordId';
   C_SQL_INSERT_TEXT = 'INSERT INTO CANDIDATES(ID, NAME, COLUMNS_INFO, MAX_NUMBER_ORDER) ' +
@@ -1590,7 +1615,7 @@ begin
   end;
 end;
 
-function TCandidateInfo.ToList: string;
+function TCandidate.ToList: string;
 var
   sb: TStringBuilder;
 begin
@@ -1606,7 +1631,7 @@ begin
   end;
 end;
 
-function TCandidateInfo.ToValueString: string;
+function TCandidate.ToValueString: string;
 begin
   Result := 'MAX:' + MaxNumberOrder.ToString;
   {*Result := 'TOTAL:' + TotalOrderAmount.ToString +

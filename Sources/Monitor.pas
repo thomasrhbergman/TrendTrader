@@ -411,6 +411,7 @@ type
     procedure btnCandidatesProcessClick(Sender: TObject);
     procedure btnQuantitiesClick(Sender: TObject);
     procedure btnOrderTemplatesClick(Sender: TObject);
+    procedure btnAutoTradesClick(Sender: TObject);
   private
     const
       C_KEY_SHOW_SUM_ALGOS     = 'ShowSumAlgos';
@@ -1276,28 +1277,34 @@ begin
   end;
 end;
 
+procedure TfrmMonitor.btnAutoTradesClick(Sender: TObject);
+begin
+  inherited;
+  ListFormFactory.Show(ntAutoTrade);
+end;
+
 procedure TfrmMonitor.btnCandidatesProcessClick(Sender: TObject);
 begin
   inherited;
-  ShowList(ntCandidates);
+  ListFormFactory.Show(ntCandidates);
 end;
 
 procedure TfrmMonitor.btnOrderTemplatesClick(Sender: TObject);
 begin
   inherited;
-  ShowList(ntOrderTemplate);
+  ListFormFactory.Show(ntOrderTemplate);
 end;
 
 procedure TfrmMonitor.btnQualifiersClick(Sender: TObject);
 begin
   inherited;
-  ShowList(ntQualifier);
+  ListFormFactory.Show(ntQualifier);
 end;
 
 procedure TfrmMonitor.btnQuantitiesClick(Sender: TObject);
 begin
   inherited;
-  ShowList(ntQuantities);
+  ListFormFactory.Show(ntQuantities);
 end;
 
 procedure TfrmMonitor.btnStartHTTPServerClick(Sender: TObject);
@@ -3061,7 +3068,7 @@ begin
                                 Data,
                                 TAutoTradesCommon.Create(Quantity,
                                                          AutoTradeInfo.QualifierInstance,
-                                                         AutoTradeInfo.QualifierId,
+                                                         AutoTradeInfo.Qualifier.RecordId,
                                                          AutoTradeInfo.InstanceNum,
                                                          AutoTradeInfo.RecordId,
                                                          AutoTradeInfo.AllowSendDuplicateOrder));
@@ -7216,8 +7223,6 @@ begin
   Qualifier := TQualifier.Create;
   Qualifier.FromDB(DMod.fbtAccounts.FieldByName('QUALIFIERID').AsInteger);
   Qualifier.InstanceNum := General.GetNextInstanceNum;
-  Qualifier.State := tsSuspended;
-  Qualifier.OnExecuteAutoTradesInstance := DoAutoTradesInstance;
   FQualifierList.Add(Qualifier);
   Qualifier.Initialize;
   Result := Qualifier.InstanceNum;
@@ -7245,10 +7250,10 @@ begin
 end;
 
 procedure TfrmMonitor.CloseQualifier(const aInstanceNum: Integer);
-var
-  Qualifier: TQualifier;
+{var
+  Qualifier: TQualifier; }
 begin
-  if (aInstanceNum > 0) then
+  {if (aInstanceNum > 0) then
   begin
     Qualifier := FQualifierList.GetItemByNum(aInstanceNum);
     if Assigned(Qualifier.AutoTradesInstance) then
@@ -7257,7 +7262,7 @@ begin
       TPublishers.MonitorStructureChangePublisher.OnMonitorStructureChange(nil, nil, crNodeMoved);
       QualifiersControllerPublisher.DeleteQualifier(aInstanceNum);
     end;
-  end;
+  end; }
 end;
 
 procedure TfrmMonitor.aQualifiersExecuteExecute(Sender: TObject);
@@ -7368,14 +7373,14 @@ begin
   Result := nil;
   if (aAutoTradeId > 0) then
   begin
-    AutoTradeInfo := TAutoTradeInfo.Create(True);
+    AutoTradeInfo := TAutoTradeInfo.Create;
     AutoTradeInfo.FromDB(aAutoTradeId);
     AutoTradeInfo.Active            := True;
     AutoTradeInfo.InstanceNum       := General.GetNextInstanceNum;
-    AutoTradeInfo.QualifierId       := aQualifierId;
+    AutoTradeInfo.Qualifier.FromDb(aQualifierId);
     AutoTradeInfo.QualifierInstance := aQualifierInstance;
     Result := TfrmScannerMain.Execute(AutoTradeInfo);
-    if (aQualifierInstance > 0) then
+    {if (aQualifierInstance > 0) then
     begin
       Index := FQualifierList.GetIndexByNum(aQualifierInstance);
       if (Index > -1) then
@@ -7384,7 +7389,7 @@ begin
         Qualifier.AutoTradesInstance := Result;
         FQualifierList[Index] := Qualifier;
       end;
-    end;
+    end;}
   end;
 end;
 

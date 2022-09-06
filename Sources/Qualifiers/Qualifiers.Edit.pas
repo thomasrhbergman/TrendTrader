@@ -11,7 +11,7 @@ uses
   Search.Instruments,  VirtualTrees, Entity.Sokid, Data.DB, Scanner.Types, Monitor.Types, Document,
   System.DateUtils, BrokerHelperAbstr, Common.Types, DaImages, Global.Types, Vcl.Imaging.pngimage, Vcl.VirtualImage,
   Global.Resources, IABFunctions.Helpers, Vcl.NumberBox, Publishers.Interfaces, Publishers, InstrumentList,
-  IABFunctions.MarketData;
+  IABFunctions.MarketData, ListForm;
 {$ENDREGION}
 
 type
@@ -22,69 +22,69 @@ type
     aSave: TAction;
     aShowAutoTrades: TAction;
     aShowSearchInstruments: TAction;
-    btnCalculateInstrument1: TButton;
-    btnCalculateInstrument2: TButton;
     btnCancel: TBitBtn;
     btnSave: TBitBtn;
-    btnShowSearchForm: TBitBtn;
-    cbBypass: TCheckBox;
-    cbEnabled: TCheckBox;
-    cbInequalityValue: TComboBox;
+    btnShowSearchCompare: TBitBtn;
+    cbInequalityCompare: TComboBox;
     cbInstrument1IBValue1: TComboBox;
-    cbInstrument1IBValue2: TComboBox;
     cbInstrument2IBValue1: TComboBox;
-    cbInstrument2IBValue2: TComboBox;
-    cbTypeCondition: TComboBox;
-    cbTypeOperation1: TComboBox;
-    cbTypeOperation2: TComboBox;
-    edEveryDayTime: TDateTimePicker;
-    edSpecificDate: TDateTimePicker;
-    edSpecificTime: TDateTimePicker;
     edtName: TEdit;
-    imgWarning: TVirtualImage;
     lblCalculateTotal1: TLabel;
     lblCalculateTotal2: TLabel;
-    lblCalculateValue1: TLabel;
-    lblCalculateValue2: TLabel;
     lblContract1: TLabel;
     lblContract2: TLabel;
     lblContractVal1: TLabel;
     lblContractVal2: TLabel;
-    lblEveryDayTime: TLabel;
     lblInequalityInstrument1: TLabel;
     lblInequalityInstrument2: TLabel;
-    lblInfo: TLabel;
-    lblInstrument1IBValue1: TLabel;
-    lblInstrument1IBValue2: TLabel;
-    lblInstrument2IBValue1: TLabel;
-    lblInstrument2IBValue2: TLabel;
     lblInstrumentName1: TLabel;
     lblInstrumentName2: TLabel;
     lblInstrumentNameVal1: TLabel;
     lblInstrumentNameVal2: TLabel;
     lblName: TLabel;
-    lblSpecificDate: TLabel;
-    lblSpecificTime: TLabel;
     lblSymbol1: TLabel;
     lblSymbol2: TLabel;
     lblSymbolVal1: TLabel;
     lblSymbolVal2: TLabel;
-    lblTypeCondition: TLabel;
     lblValue1: TLabel;
     lblValue2: TLabel;
-    pcConditions: TPageControl;
-    pnlAutoTrades: TPanel;
     pnlBottom: TPanel;
-    pnlComparePrice: TPanel;
     pnlComparePriceTotal: TPanel;
-    pnlInfo: TPanel;
     pnlInstrument1: TPanel;
     pnlInstrument2: TPanel;
-    pnlSearchInstrument: TPanel;
-    pnlTypeCondition: TPanel;
-    tcCompare: TTabSheet;
-    tsEveryDay: TTabSheet;
-    tsSpecificDateTime: TTabSheet;
+    pnlCompareSearch: TPanel;
+    pnlHeader: TPanel;
+    pnlCompareClient: TPanel;
+    pnlCompare: TPanel;
+    pnlCompareLeft: TPanel;
+    cbCompare: TCheckBox;
+    pnlValue: TPanel;
+    pnlValueClient: TPanel;
+    pnlValuePriceTotal: TPanel;
+    cbInequalityValue: TComboBox;
+    pnlInstrument: TPanel;
+    lblInstrumentName: TLabel;
+    lblInstrumentNameVal: TLabel;
+    lblContractVal: TLabel;
+    lblContract: TLabel;
+    lblSymbolVal: TLabel;
+    lblSymbol: TLabel;
+    lblValue: TLabel;
+    cbInstrumentIBValue: TComboBox;
+    pnlValueSearch: TPanel;
+    btnShowSearchValue: TBitBtn;
+    pnlValueLeft: TPanel;
+    cbValue: TCheckBox;
+    edComparisonValue: TNumberBox;
+    pnlTime: TPanel;
+    pnlTimeCenter: TPanel;
+    pnlTimeLeft: TPanel;
+    cbTime: TCheckBox;
+    lblFromTime: TLabel;
+    edFromTime: TDateTimePicker;
+    lblToTime: TLabel;
+    edToTime: TDateTimePicker;
+    lbComparisonValue: TLabel;
     procedure aCalculateInstrument1Execute(Sender: TObject);
     procedure aCalculateInstrument1Update(Sender: TObject);
     procedure aCalculateInstrument2Execute(Sender: TObject);
@@ -92,12 +92,7 @@ type
     procedure aSaveExecute(Sender: TObject);
     procedure aShowSearchInstrumentsExecute(Sender: TObject);
     procedure cbInstrument1IBValue1Change(Sender: TObject);
-    procedure cbInstrument1IBValue2Change(Sender: TObject);
     procedure cbInstrument2IBValue1Change(Sender: TObject);
-    procedure cbInstrument2IBValue2Change(Sender: TObject);
-    procedure cbTypeConditionChange(Sender: TObject);
-    procedure cbTypeOperation1Change(Sender: TObject);
-    procedure cbTypeOperation2Change(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormCreate(Sender: TObject);
@@ -109,6 +104,7 @@ type
     function GetInstance: TObject;
     //implementation IUpdateFeeds
     procedure OnPriceChange(Sender: TObject; Id: Integer; TickType: TIABTickType; Value: Currency; TimeStamp: TDateTime);
+    procedure cbInstrumentIBValueChange(Sender: TObject);
   private
     FQualifierItem: TQualifier;
     function CheckData: Boolean;
@@ -118,7 +114,7 @@ type
     procedure QualifierInstrumentToGUI(Sender: TObject; aQualifierInstrument: TQualifierInstrument);
     procedure SokidInfoToGUI(Sender: TObject; aSokidInfo: TSokidInfo);
   public
-    class function ShowDocument(var aQualifierItem: TQualifier; aDialogMode: TDialogMode): TModalResult;
+    class function ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult; override;
     procedure Initialize;
     procedure Denitialize;
   end;
@@ -127,18 +123,18 @@ implementation
 
 {$R *.dfm}
 
-class function TfrmQualifierEdit.ShowDocument(var aQualifierItem: TQualifier; aDialogMode: TDialogMode): TModalResult;
+class function TfrmQualifierEdit.ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult;
 begin
   with TfrmQualifierEdit.Create(nil) do
   try
     DialogMode := aDialogMode;
-    FQualifierItem.AssignFrom(aQualifierItem);
+    FQualifierItem.AssignFrom(TQualifier(aItem));
     Initialize;
     Result := ShowModal;
     if (Result = mrOk) then
     begin
       Denitialize;
-      aQualifierItem.AssignFrom(FQualifierItem);
+      TQualifier(aItem).AssignFrom(FQualifierItem);
     end;
   finally
     Free;
@@ -161,42 +157,25 @@ procedure TfrmQualifierEdit.Initialize;
 resourcestring
   rsCaption = '%s (v.%s)';
 begin
-  lblInfo.Caption := rsChangingDocument;
+  cbInequalityCompare.Items.Clear;
   cbInequalityValue.Items.Clear;
   for var it := Low(TInequalityType) to High(TInequalityType) do
     if not (it in [iqBetween]) then
+    begin
+      cbInequalityCompare.Items.Add(it.ToFullName);
       cbInequalityValue.Items.Add(it.ToFullName);
-  cbInequalityValue.ItemIndex := Ord(FQualifierItem.InequalityType);
-  pcConditions.ActivePageIndex := cbInequalityValue.ItemIndex;
-
-  edEveryDayTime.Time := TimeOf(FQualifierItem.StartupDate);
-  edSpecificTime.Time := TimeOf(FQualifierItem.StartupDate);
-  if DateOf(FQualifierItem.StartupDate) = 0 then
-    edSpecificDate.Date := Date
-  else
-    edSpecificDate.Date := DateOf(FQualifierItem.StartupDate);
-
-  for var i := 0 to pcConditions.PageCount - 1 do
-    pcConditions.Pages[i].TabVisible := False;
-
-  cbTypeOperation1.Items.Clear;
-  cbTypeOperation2.Items.Clear;
-  for var TypeOperation := Low(TTypeOperation) to High(TTypeOperation) do
-  begin
-    cbTypeOperation1.Items.Add(TypeOperation.ToString);
-    cbTypeOperation2.Items.Add(TypeOperation.ToString);
-  end;
+    end;
+  cbInequalityCompare.ItemIndex := Ord(FQualifierItem.InequalityCompare);
+  cbInequalityValue.ItemIndex := Ord(FQualifierItem.InequalityValue);
 
   cbInstrument1IBValue1.Items.Clear;
-  cbInstrument1IBValue2.Items.Clear;
   cbInstrument2IBValue1.Items.Clear;
-  cbInstrument2IBValue2.Items.Clear;
+  cbInstrumentIBValue.Items.Clear;
   for var TickType := ttBidSize to ttFuturesOpenInterest do
   begin
     cbInstrument1IBValue1.Items.Add(TickType.ToString);
-    cbInstrument1IBValue2.Items.Add(TickType.ToString);
     cbInstrument2IBValue1.Items.Add(TickType.ToString);
-    cbInstrument2IBValue2.Items.Add(TickType.ToString);
+    cbInstrumentIBValue.Items.Add(TickType.ToString);
   end;
   if (DialogMode = dmInsert) then
   begin
@@ -206,33 +185,37 @@ begin
     FQualifierItem.Instrument2.TickType2 := ttClose;
     FQualifierItem.Instrument1.TypeOperation := toDivide;
     FQualifierItem.Instrument2.TypeOperation := toDivide;
+    FQualifierItem.Instrument.TickType1 := ttLast;
+    FQualifierItem.Instrument.TickType2 := ttClose;
+    FQualifierItem.Instrument.TypeOperation := toDivide;
   end;
 
-  cbTypeCondition.Items.Clear;
-  for var tc := Low(TTypeCondition) to High(TTypeCondition) do
-    cbTypeCondition.Items.Add(tc.ToString);
-  cbTypeCondition.ItemIndex := Ord(FQualifierItem.TypeCondition);
-  pcConditions.ActivePageIndex := cbTypeCondition.ItemIndex;
-
-  cbEnabled.Checked := FQualifierItem.Enabled;
-  cbBypass.Checked := FQualifierItem.Bypass;
   QualifierInstrumentToGUI(pnlInstrument1, FQualifierItem.Instrument1);
   QualifierInstrumentToGUI(pnlInstrument2, FQualifierItem.Instrument2);
+  QualifierInstrumentToGUI(pnlInstrument, FQualifierItem.Instrument);
 
   if (FQualifierItem.Instrument1.SokidInfo.ContractId > 0) then
     TIABMarket.RequestMarketData(FQualifierItem.Instrument1.SokidInfo.ContractId);
   if (FQualifierItem.Instrument2.SokidInfo.ContractId > 0) then
     TIABMarket.RequestMarketData(FQualifierItem.Instrument2.SokidInfo.ContractId);
+  if (FQualifierItem.Instrument.SokidInfo.ContractId > 0) then
+    TIABMarket.RequestMarketData(FQualifierItem.Instrument.SokidInfo.ContractId);
 
   if FQualifierItem.Name.IsEmpty then
     edtName.Text := 'Qualifier'
   else
     edtName.Text := FQualifierItem.Name;
 
+  cbCompare.Checked := FQualifierItem.IsCompare;
+  cbValue.Checked := FQualifierItem.IsValue;
+  cbTime.Checked := FQualifierItem.IsTime;
+  edFromTime.Time := FQualifierItem.FromTime;
+  edToTime.Time := FQualifierItem.ToTime;
+  edComparisonValue.Value := FQualifierItem.ComparisonValue;
+
   case DialogMode of
     dmInsert:
       begin
-        cbEnabled.Checked := True;
         Self.Caption := Format(rsCaption, ['New Qualifier', General.ModuleVersion]);
       end;
     dmUpdate:
@@ -257,6 +240,13 @@ begin
     lblContractVal2.Caption              := aSokidInfo.ContractId.ToString;
     lblSymbolVal2.Caption                := aSokidInfo.Symbol;
     lblInequalityInstrument2.Caption     := aSokidInfo.Symbol;
+  end
+  else if (Sender = pnlInstrument) then
+  begin
+    FQualifierItem.Instrument.SokidInfo  := aSokidInfo;
+    lblInstrumentNameVal.Caption         := aSokidInfo.Name;
+    lblContractVal.Caption               := aSokidInfo.ContractId.ToString;
+    lblSymbolVal.Caption                 := aSokidInfo.Symbol;
   end;
   SokidList.SetValue(aSokidInfo);
 end;
@@ -270,8 +260,6 @@ begin
     lblContractVal1.Caption         := aQualifierInstrument.SokidInfo.ContractId.ToString;
     lblSymbolVal1.Caption           := aQualifierInstrument.SokidInfo.Symbol;
     cbInstrument1IBValue1.ItemIndex := Ord(aQualifierInstrument.TickType1);
-    cbInstrument1IBValue2.ItemIndex := Ord(aQualifierInstrument.TickType2);
-    cbTypeOperation1.ItemIndex      := Ord(aQualifierInstrument.TypeOperation);
   end
   else if (Sender = pnlInstrument2) then
   begin
@@ -280,45 +268,33 @@ begin
     lblContractVal2.Caption         := aQualifierInstrument.SokidInfo.ContractId.ToString;
     lblSymbolVal2.Caption           := aQualifierInstrument.SokidInfo.Symbol;
     cbInstrument2IBValue1.ItemIndex := Ord(aQualifierInstrument.TickType1);
-    cbInstrument2IBValue2.ItemIndex := Ord(aQualifierInstrument.TickType2);
-    cbTypeOperation2.ItemIndex      := Ord(aQualifierInstrument.TypeOperation);
+  end
+  else if (Sender = pnlInstrument) then
+  begin
+    FQualifierItem.Instrument       := aQualifierInstrument;
+    lblInstrumentNameVal.Caption    := aQualifierInstrument.SokidInfo.Name;
+    lblContractVal.Caption          := aQualifierInstrument.SokidInfo.ContractId.ToString;
+    lblSymbolVal.Caption            := aQualifierInstrument.SokidInfo.Symbol;
+    cbInstrumentIBValue.ItemIndex   := Ord(aQualifierInstrument.TickType1);
   end;
 end;
 
 procedure TfrmQualifierEdit.Denitialize;
 begin
-  FQualifierItem.Enabled       := cbEnabled.Checked;
-  FQualifierItem.TypeCondition := TTypeCondition(cbTypeCondition.ItemIndex);
-
   if (cbInstrument1IBValue1.ItemIndex > -1) then
     FQualifierItem.Instrument1.TickType1 := TIABTickType(cbInstrument1IBValue1.ItemIndex)
   else
     FQualifierItem.Instrument1.TickType1 := ttLast;
-
-  if (cbInstrument1IBValue2.ItemIndex > -1) then
-    FQualifierItem.Instrument1.TickType2 := TIABTickType(cbInstrument1IBValue2.ItemIndex)
-  else
-    FQualifierItem.Instrument1.TickType2 := ttNotSet;
-
-  if (cbTypeOperation1.ItemIndex > -1) then
-    FQualifierItem.Instrument1.TypeOperation := TTypeOperation(cbTypeOperation1.ItemIndex)
-  else
-    FQualifierItem.Instrument1.TypeOperation := toNone;
 
   if (cbInstrument2IBValue1.ItemIndex > -1) then
     FQualifierItem.Instrument2.TickType1 := TIABTickType(cbInstrument2IBValue1.ItemIndex)
   else
     FQualifierItem.Instrument2.TickType1 := ttLast;
 
-  if (cbInstrument2IBValue2.ItemIndex > -1) then
-    FQualifierItem.Instrument2.TickType2 := TIABTickType(cbInstrument2IBValue2.ItemIndex)
+  if (cbInstrumentIBValue.ItemIndex > -1) then
+    FQualifierItem.Instrument.TickType1 := TIABTickType(cbInstrumentIBValue.ItemIndex)
   else
-    FQualifierItem.Instrument2.TickType2 := ttNotSet;
-
-  if (cbTypeOperation2.ItemIndex > -1) then
-    FQualifierItem.Instrument2.TypeOperation := TTypeOperation(cbTypeOperation2.ItemIndex)
-  else
-    FQualifierItem.Instrument2.TypeOperation := toNone;
+    FQualifierItem.Instrument.TickType1 := ttLast;
 
   case FQualifierItem.TypeCondition of
     tcRealtime:
@@ -328,20 +304,31 @@ begin
           TIABMarket.CancelMarketData(FQualifierItem.Instrument1.SokidInfo.ContractId);
         if (FQualifierItem.Instrument2.SokidInfo.ContractId > 0) then
           TIABMarket.CancelMarketData(FQualifierItem.Instrument2.SokidInfo.ContractId);
+        if (FQualifierItem.Instrument.SokidInfo.ContractId > 0) then
+          TIABMarket.CancelMarketData(FQualifierItem.Instrument.SokidInfo.ContractId);
       end;
-    tcEveryDay:
-      FQualifierItem.StartupDate := edEveryDayTime.Time;
-    tcSpecificDate:
-      FQualifierItem.StartupDate := edSpecificDate.Date + edSpecificTime.Time;
+    tcEveryDay: ;
+      //FQualifierItem.StartupDate := edEveryDayTime.Time;
+    tcSpecificDate: ;
+      //FQualifierItem.StartupDate := edSpecificDate.Date + edSpecificTime.Time;
   end;
 
-  if (cbInequalityValue.ItemIndex > -1) then
-    FQualifierItem.InequalityType := TInequalityType(cbInequalityValue.ItemIndex)
+  if (cbInequalityCompare.ItemIndex > -1) then
+    FQualifierItem.InequalityCompare := TInequalityType(cbInequalityCompare.ItemIndex)
   else
-    FQualifierItem.InequalityType := iqBelow;
+    FQualifierItem.InequalityCompare := iqBelow;
+  if (cbInequalityValue.ItemIndex > -1) then
+    FQualifierItem.InequalityValue := TInequalityType(cbInequalityValue.ItemIndex)
+  else
+    FQualifierItem.InequalityValue := iqBelow;
 
-  FQualifierItem.Bypass := cbBypass.Checked;
-  FQualifierItem.Name   := edtName.Text;
+  FQualifierItem.Name             := edtName.Text;
+  FQualifierItem.IsCompare        := cbCompare.Checked;
+  FQualifierItem.IsValue          := cbValue.Checked;
+  FQualifierItem.IsTime           := cbTime.Checked;
+  FQualifierItem.FromTime         := edFromTime.Time;
+  FQualifierItem.ToTime           := edToTime.Time;
+  FQualifierItem.ComparisonValue  := edComparisonValue.Value;
 end;
 
 procedure TfrmQualifierEdit.OnInstrumentDragDrop(Sender, Source: TObject; X, Y: Integer);
@@ -365,6 +352,12 @@ begin
       begin
         if (FQualifierItem.Instrument2.SokidInfo.ContractId > 0) then
           TIABMarket.CancelMarketData(FQualifierItem.Instrument2.SokidInfo.ContractId);
+      end
+      else
+      if (Sender = pnlInstrument) then
+      begin
+        if (FQualifierItem.Instrument.SokidInfo.ContractId > 0) then
+          TIABMarket.CancelMarketData(FQualifierItem.Instrument.SokidInfo.ContractId);
       end;
       TIABMarket.RequestMarketData(Data^.ContractId);
       SokidInfoToGUI(Sender, Data^);
@@ -407,33 +400,6 @@ begin
   CalculateInstrument1;
 end;
 
-procedure TfrmQualifierEdit.cbInstrument1IBValue2Change(Sender: TObject);
-begin
-  if (cbInstrument1IBValue2.ItemIndex > -1) then
-    FQualifierItem.Instrument1.TickType2 := TIABTickType(cbInstrument1IBValue2.ItemIndex)
-  else
-    FQualifierItem.Instrument1.TickType2 := ttNotSet;
-  CalculateInstrument1;
-end;
-
-procedure TfrmQualifierEdit.cbTypeOperation1Change(Sender: TObject);
-begin
-  if (cbTypeOperation1.ItemIndex > -1) then
-    FQualifierItem.Instrument1.TypeOperation := TTypeOperation(cbTypeOperation1.ItemIndex)
-  else
-    FQualifierItem.Instrument1.TypeOperation := toNone;
-  CalculateInstrument1;
-end;
-
-procedure TfrmQualifierEdit.cbTypeOperation2Change(Sender: TObject);
-begin
-  if (cbTypeOperation2.ItemIndex > -1) then
-    FQualifierItem.Instrument2.TypeOperation := TTypeOperation(cbTypeOperation2.ItemIndex)
-  else
-    FQualifierItem.Instrument2.TypeOperation := toNone;
-  CalculateInstrument2;
-end;
-
 procedure TfrmQualifierEdit.cbInstrument2IBValue1Change(Sender: TObject);
 begin
   if (cbInstrument2IBValue1.ItemIndex > -1) then
@@ -443,19 +409,13 @@ begin
   CalculateInstrument2;
 end;
 
-procedure TfrmQualifierEdit.cbInstrument2IBValue2Change(Sender: TObject);
+procedure TfrmQualifierEdit.cbInstrumentIBValueChange(Sender: TObject);
 begin
-  if (cbInstrument2IBValue2.ItemIndex > -1) then
-    FQualifierItem.Instrument2.TickType2 := TIABTickType(cbInstrument2IBValue2.ItemIndex)
+  if (cbInstrumentIBValue.ItemIndex > -1) then
+    FQualifierItem.Instrument.TickType1 := TIABTickType(cbInstrumentIBValue.ItemIndex)
   else
-    FQualifierItem.Instrument2.TickType2 := ttNotSet;
-  CalculateInstrument2;
-end;
-
-procedure TfrmQualifierEdit.cbTypeConditionChange(Sender: TObject);
-begin
-  if Showing then
-    pcConditions.ActivePageIndex := cbTypeCondition.ItemIndex;
+    FQualifierItem.Instrument.TickType1 := ttLast;
+  //CalculateInstrument2;
 end;
 
 function TfrmQualifierEdit.CheckData: Boolean;
@@ -465,16 +425,29 @@ begin
   Msg := '';
   if (FQualifierItem.TypeCondition = tcRealtime) then
   begin
-    if (cbInequalityValue.ItemIndex < 0) then
-      Msg := Msg + 'Condition not selected! ' + sLineBreak;
-    if (FQualifierItem.Instrument1.SokidInfo.ContractId <= 0) then
-      Msg := Msg + 'Instrument1 not selected! ' + sLineBreak;
-    if (FQualifierItem.Instrument2.SokidInfo.ContractId <= 0) then
-      Msg := Msg + 'Instrument1 not selected! ' + sLineBreak;
-    if (cbInstrument1IBValue2.ItemIndex > -1) and (cbTypeOperation1.ItemIndex = -1) then
-      Msg := Msg + 'TypeOperation1 not selected! ' + sLineBreak;
-    if (cbInstrument2IBValue2.ItemIndex > -1) and (cbTypeOperation2.ItemIndex = -1) then
-      Msg := Msg + 'TypeOperation2 not selected! ' + sLineBreak;
+    if cbCompare.Checked then
+    begin
+      if (cbInequalityCompare.ItemIndex < 0) then
+        Msg := Msg + 'Condition not selected! ' + sLineBreak;
+      if (FQualifierItem.Instrument1.SokidInfo.ContractId <= 0) then
+        Msg := Msg + 'Instrument1 not selected! ' + sLineBreak;
+      if (FQualifierItem.Instrument2.SokidInfo.ContractId <= 0) then
+        Msg := Msg + 'Instrument1 not selected! ' + sLineBreak;
+    end;
+    if cbValue.Checked then
+    begin
+      if (cbInequalityValue.ItemIndex < 0) then
+        Msg := Msg + 'Condition not selected! ' + sLineBreak;
+      if (FQualifierItem.Instrument.SokidInfo.ContractId <= 0) then
+        Msg := Msg + 'Instrument not selected! ' + sLineBreak;
+    end;
+    if cbTime.Checked then
+    begin
+      if edFromTime.Time = 0 then
+        Msg := Msg + 'From time is not entered! ' + sLineBreak;
+      if edToTime.Time = 0 then
+        Msg := Msg + 'To time is not entered! ' + sLineBreak;
+    end;
   end;
 
   Result := Msg.IsEmpty;
@@ -519,34 +492,34 @@ end;
 
 procedure TfrmQualifierEdit.CalculateInstrument1;
 begin
-  if (FQualifierItem.Instrument1.SokidInfo.ContractId > 0) then
-  begin
-    if (cbTypeOperation1.ItemIndex <= 0) and (cbInstrument1IBValue2.ItemIndex > -1) then
-      TMessageDialog.ShowWarning(rsTypeOperationNotSelected)
-    else
-    begin
-      lblCalculateTotal1.Caption :=  FormatFloat('0.00', GetCalcValue(FQualifierItem.Instrument1));
-      lblCalculateValue1.Caption := '=' + lblCalculateTotal1.Caption;
-      lblInstrument1IBValue1.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument1.SokidInfo.ContractId, FQualifierItem.Instrument1.TickType1));
-      lblInstrument1IBValue2.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument1.SokidInfo.ContractId, FQualifierItem.Instrument1.TickType2));
-    end;
-  end;
+//  if (FQualifierItem.Instrument1.SokidInfo.ContractId > 0) then
+//  begin
+//    if (cbTypeOperation1.ItemIndex <= 0) and (cbInstrument1IBValue2.ItemIndex > -1) then
+//      TMessageDialog.ShowWarning(rsTypeOperationNotSelected)
+//    else
+//    begin
+//      lblCalculateTotal1.Caption :=  FormatFloat('0.00', GetCalcValue(FQualifierItem.Instrument1));
+//      lblCalculateValue1.Caption := '=' + lblCalculateTotal1.Caption;
+//      lblInstrument1IBValue1.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument1.SokidInfo.ContractId, FQualifierItem.Instrument1.TickType1));
+//      lblInstrument1IBValue2.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument1.SokidInfo.ContractId, FQualifierItem.Instrument1.TickType2));
+//    end;
+//  end;
 end;
 
 procedure TfrmQualifierEdit.CalculateInstrument2;
 begin
-  if (FQualifierItem.Instrument2.SokidInfo.ContractId > 0) then
-  begin
-    if (cbTypeOperation2.ItemIndex <= 0) and (cbInstrument2IBValue2.ItemIndex > -1) then
-      TMessageDialog.ShowWarning(rsTypeOperationNotSelected)
-    else
-    begin
-      lblCalculateTotal2.Caption := FormatFloat('0.00', GetCalcValue(FQualifierItem.Instrument2));
-      lblCalculateValue2.Caption := '=' + lblCalculateTotal2.Caption;
-      lblInstrument2IBValue1.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument2.SokidInfo.ContractId, FQualifierItem.Instrument2.TickType1));
-      lblInstrument2IBValue2.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument2.SokidInfo.ContractId, FQualifierItem.Instrument2.TickType2));
-    end;
-  end;
+//  if (FQualifierItem.Instrument2.SokidInfo.ContractId > 0) then
+//  begin
+//    if (cbTypeOperation2.ItemIndex <= 0) and (cbInstrument2IBValue2.ItemIndex > -1) then
+//      TMessageDialog.ShowWarning(rsTypeOperationNotSelected)
+//    else
+//    begin
+//      lblCalculateTotal2.Caption := FormatFloat('0.00', GetCalcValue(FQualifierItem.Instrument2));
+//      lblCalculateValue2.Caption := '=' + lblCalculateTotal2.Caption;
+//      lblInstrument2IBValue1.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument2.SokidInfo.ContractId, FQualifierItem.Instrument2.TickType1));
+//      lblInstrument2IBValue2.Caption := FormatFloat('0.00', TPriceCache.PriceCache.GetLastPrice(FQualifierItem.Instrument2.SokidInfo.ContractId, FQualifierItem.Instrument2.TickType2));
+//    end;
+//  end;
 end;
 
 procedure TfrmQualifierEdit.aCalculateInstrument1Execute(Sender: TObject);
@@ -568,5 +541,8 @@ procedure TfrmQualifierEdit.aCalculateInstrument1Update(Sender: TObject);
 begin
   TAction(Sender).Enabled := (FQualifierItem.Instrument1.SokidInfo.ContractId > 0);
 end;
+
+initialization
+  ListFormFactory.RegisterList(ntQualifier, TQualifier, TfrmQualifierEdit);
 
 end.

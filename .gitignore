@@ -10,6 +10,7 @@
 *.tvsconfig
 *.~dsk
 *.zip
+*.dsk
 /.svn/
 /__history/
 /__recovery/

@@ -1564,15 +1564,6 @@ begin
   edtWeight.ValueFloat       := FScanOptions.Weight;
   seMaxRows.Value            := FScanOptions.MaxRows;
   UseExtraFilters            := FScanOptions.CandidateMarket.UseExtraFilters;
-  if Assigned(FCandidateMarket) then
-  begin
-    lblAutoTradesName.Caption := 'Parent AutoTrades Name: ' + FCandidateMarket.GetAutoTradeInfo.Name;
-    lblInstanceNum.Caption := Concat('Parent Instance Num: ', Abs(FCandidateMarket.GetAutoTradeInfo.InstanceNum).ToString);
-    if (FCandidateMarket.GetAutoTradeInfo.InstanceNum > 0) then
-      lblInstanceNum.Caption := Concat(lblInstanceNum.Caption, ' (Autotrade)')
-    else
-      lblInstanceNum.Caption := Concat(lblInstanceNum.Caption, ' (Manual)');
-  end;
   edtAvailableFiltersChange(nil);
 end;
 

@@ -154,7 +154,7 @@ object frmOrderTemplateEdit: TfrmOrderTemplateEdit
           Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus, coUseCaptionAlignment, coEditable, coStyleColor]
           Position = 0
           Text = 'Items'
-          Width = 358
+          Width = 339
         end>
     end
   end

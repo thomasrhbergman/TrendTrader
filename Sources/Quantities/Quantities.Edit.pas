@@ -11,7 +11,7 @@ uses
   Search.Instruments,  VirtualTrees, Entity.Sokid, Data.DB, Scanner.Types, Monitor.Types, Document,
   System.DateUtils, BrokerHelperAbstr, Common.Types, DaImages, Global.Types, Vcl.Imaging.pngimage, Vcl.VirtualImage,
   Global.Resources, IABFunctions.Helpers, Vcl.NumberBox, Publishers.Interfaces, Publishers, InstrumentList,
-  IABFunctions.MarketData, Utils;
+  IABFunctions.MarketData, Utils, ListForm;
 {$ENDREGION}
 
 type
@@ -44,7 +44,7 @@ type
     C_KEY_ORDER_CURRENCY       = 'OrderCurrency';
     C_KEY_ORDER_CURRENCY_LIST  = 'OrderCurrencyList';
   public
-    class function ShowDocument(aQuantityItem: TQuantity; aDialogMode: TDialogMode): TModalResult;
+    class function ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult; override;
     procedure Initialize;
     procedure Denitialize;
   end;
@@ -53,19 +53,19 @@ implementation
 
 {$R *.dfm}
 
-class function TfrmQuantityEdit.ShowDocument(aQuantityItem: TQuantity; aDialogMode: TDialogMode): TModalResult;
+class function TfrmQuantityEdit.ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult;
 begin
   with TfrmQuantityEdit.Create(nil) do
   try
     DialogMode := aDialogMode;
-    FQuantity.AssignFrom(aQuantityItem);
+    FQuantity.AssignFrom(TQuantity(aItem));
     Initialize;
     Result := ShowModal;
     SaveParamsToXml;
     if (Result = mrOk) then
     begin
       Denitialize;
-      aQuantityItem.AssignFrom(FQuantity);
+      TQuantity(aItem).AssignFrom(FQuantity);
     end;
   finally
     Free;
@@ -174,5 +174,8 @@ procedure TfrmQuantityEdit.aSaveExecute(Sender: TObject);
 begin
   ModalResult := mrOk;
 end;
+
+initialization
+  ListFormFactory.RegisterList(ntQuantities, TQuantity, TfrmQuantityEdit);
 
 end.

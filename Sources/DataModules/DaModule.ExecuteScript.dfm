@@ -10,8 +10,10 @@ object frmExecuteScript: TfrmExecuteScript
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  OldCreateOrder = True
   Position = poMainFormCenter
   ShowHint = True
+  PixelsPerInch = 96
   TextHeight = 13
   object splLog: TSplitter
     Left = 0

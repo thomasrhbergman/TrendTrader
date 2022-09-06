@@ -28,7 +28,7 @@ type
     class function CreateOrderGroup(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
     class function CreateOrderGroupSet(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
     class function CreateQualifier(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
-    class function GetAutoTradeItems(aNode: PVirtualNode): TAutoTradesArray; inline;
+    //class function GetAutoTradeItems(aNode: PVirtualNode): TAutoTradesArray; inline;
     class function GetDocStatus(const aData: PTreeData): string; inline;
     class function GetDocType(const aTree: TBaseVirtualTree; const aNode: PVirtualNode): TDocType; inline;
     class function GetNodesList(aNode: PVirtualNode; aIsRecursive: Boolean = True): TNodeArray; inline;
@@ -87,6 +87,7 @@ begin
   Data^.CreationType := ctUser;
   Data^.RelationId     := -1;
 
+  Data^.AutoTrade                         := TAutoTradeInfo.Create;
   Data^.AutoTrade.Active                  := True;
   Data^.AutoTrade.AllowSendDuplicateOrder := False;
   Data^.AutoTrade.AutoRefresh             := True;
@@ -568,6 +569,7 @@ begin
   end;
 end;
 
+{
 class function TTreeDocument.GetAutoTradeItems(aNode: PVirtualNode): TAutoTradesArray;
 var
   CurrNode : PVirtualNode;
@@ -589,6 +591,7 @@ begin
     end;
   end;
 end;
+}
 
 class procedure TTreeDocument.CopySubtree(aTree: TBaseVirtualTree; aNode: PVirtualNode; aAfterLoadProc: TAfterLoadEachDocumentProc);
 
@@ -701,7 +704,7 @@ begin
   else
     case aData^.DocType of
       ntQualifier:
-        Result := aData^.Qualifier.State.ToString;
+        Result := ''{aData^.Qualifier.State.ToString};
       (*ntQualifierCondition:
         Result := 'IsCondition: ' + BoolToStr(aData^.QualifierCondition.IsCondition, True);*)
       ntAutoTrade:

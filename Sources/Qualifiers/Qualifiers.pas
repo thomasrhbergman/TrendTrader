@@ -87,7 +87,7 @@ begin
   Data^.Qualifier.Name := '';
   Data^.Qualifier.SaveToDB;
   TTreeDocument.SaveRelationTree(frameQualifiers.vstTree, Node);
-  if (TfrmQualifierEdit.ShowDocument(Data^.Qualifier, dmInsert) = mrOk) then
+  if (TfrmQualifierEdit.ShowEditForm(Data^.Qualifier, dmInsert) = mrOk) then
   begin
     Node := TTreeDocument.LoadRelationTree(Data^.RecordId, -1, frameQualifiers.vstTree, nil, nil, nil);
     if (frameQualifiers.GroupView = gvFlat) then
@@ -121,7 +121,7 @@ begin
     if (TTreeDocument.GetDocType(frameQualifiers.vstTree, Node) <> ntQualifier) then
       Node := TTreeDocument.GetParentNode(frameQualifiers.vstTree, Node, ntQualifier);
     if Assigned(Node) then
-      if TfrmQualifierEdit.ShowDocument(Data^.Qualifier, dmUpdate) = mrOk then
+      if TfrmQualifierEdit.ShowEditForm(Data^.Qualifier, dmUpdate) = mrOk then
       begin
         Data := Node.GetData;
         Data.Qualifier.SaveToDB;

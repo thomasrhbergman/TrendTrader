@@ -13,7 +13,7 @@ uses
   DaImages, Edit.OrderGroup, Edit.Condition, Edit.Algos, Edit.OrderDocument, Edit.Factor, Qualifiers.Types, ArrayHelper,
   Qualifiers.Edit, Qualifiers, AutoTrades.Edit, Edit.OrderGroupSet, Vcl.ComCtrls, InformationDialog, Frame.DocumentsTree,
   VirtualTrees.ExportHelper, Common.Types, Monitor.Info, System.Threading, CustomDockForm,
-  System.Types, Utils, MonitorTree.Helper, MonitorTree.Document, HtmlConsts;
+  System.Types, Utils, MonitorTree.Helper, MonitorTree.Document, HtmlConsts, AutoTrades.Types;
 {$ENDREGION}
 
 type
@@ -497,7 +497,7 @@ begin
       Node := TTreeDocument.CreateAutoTrade(ParentNode, vstTree);
       Data := Node^.GetData;
       Data^.AutoTrade.Enabled := True;
-      if (TfrmAutoTradesEdit.ShowDocument(Data^.AutoTrade) <> mrOk) then
+      if (TfrmAutoTradesEdit.ShowEditForm(Data^.AutoTrade, dmInsert) <> mrOk) then
         vstTree.DeleteNode(Node)
       else
         vstTree.Expanded[ParentNode] := True;
@@ -618,7 +618,7 @@ begin
     Data := Node^.GetData;
     case Data^.DocType of
       ntQualifier:
-        if (TfrmQualifierEdit.ShowDocument(Data^.Qualifier, dmUpdate) = mrOk) then
+        if (TfrmQualifierEdit.ShowEditForm(Data^.Qualifier, dmUpdate) = mrOk) then
         begin
           Data^.Qualifier.SaveToDB;
           FCurrentQualifier.FromDB(Data^.RecordId);
@@ -628,7 +628,7 @@ begin
           frameQualifierSet.MarkedNode := TMarkedNode.Create(Data^.RecordId, TDocType.ntQualifier);
         end;
       ntAutoTrade:
-        if (TfrmAutoTradesEdit.ShowDocument(Data^.AutoTrade) = mrOk) then
+        if (TfrmAutoTradesEdit.ShowEditForm(Data^.AutoTrade, dmUpdate) = mrOk) then
         begin
           if Assigned(Node.FirstChild) then
           begin

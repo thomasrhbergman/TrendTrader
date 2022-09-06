@@ -73,7 +73,7 @@ object frmScannerMain: TfrmScannerMain
           ParentFont = False
         end
         object cbOrderCurrencyAdd: TSpeedButton
-          Left = 139
+          Left = 143
           Top = 45
           Width = 23
           Height = 22

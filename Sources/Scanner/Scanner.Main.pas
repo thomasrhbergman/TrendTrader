@@ -374,7 +374,7 @@ begin
                                        'Name='                    + FAutoTradeInfo.Name                       + sLineBreak +
                                        'InstanceNum='             + FAutoTradeInfo.InstanceNum.ToString       + sLineBreak +
                                        'RecordId= '               + FAutoTradeInfo.RecordId.ToString          + sLineBreak +
-                                       'QualifierId= '            + FAutoTradeInfo.QualifierId.ToString       + sLineBreak +
+                                       'QualifierId= '            + FAutoTradeInfo.Qualifier.RecordId.ToString       + sLineBreak +
                                        'QualifierInstance= '      + FAutoTradeInfo.QualifierInstance.ToString + sLineBreak +
                                        'OrderGroupId= '           + FAutoTradeInfo.OrderGroupId.ToString      + sLineBreak +
                                        'OrderAmount='             + FAutoTradeInfo.OrderAmount.ToString       + sLineBreak +
@@ -871,7 +871,7 @@ begin
                                                 aData,
                                                 TAutoTradesCommon.Create(Quantity,
                                                                          FAutoTradeInfo.QualifierInstance,
-                                                                         FAutoTradeInfo.QualifierId,
+                                                                         FAutoTradeInfo.Qualifier.RecordId,
                                                                          FAutoTradeInfo.InstanceNum,
                                                                          FAutoTradeInfo.RecordId,
                                                                          FAutoTradeInfo.AllowSendDuplicateOrder)) <> nil then

@@ -12,7 +12,7 @@ uses
   System.DateUtils, BrokerHelperAbstr, Common.Types, DaImages, Global.Types, Vcl.Imaging.pngimage, Vcl.VirtualImage,
   Global.Resources, IABFunctions.Helpers, Vcl.NumberBox, Publishers.Interfaces, Publishers, InstrumentList,
   IABFunctions.MarketData, Utils, Vcl.Menus, MonitorTree.Document, Edit.OrderDocument, MonitorTree.Helper,
-  Edit.Condition, Edit.OrderGroup, HtmlConsts, Monitor.Info, InformationDialog, System.Types;
+  Edit.Condition, Edit.OrderGroup, HtmlConsts, Monitor.Info, InformationDialog, System.Types, ListForm;
 {$ENDREGION}
 
 type
@@ -99,7 +99,7 @@ type
     procedure EditDocument;
     procedure LoadTree;
   public
-    class function ShowDocument(aOrderTemplate: TOrderTemplate; aDialogMode: TDialogMode): TModalResult;
+    class function ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult; override;
     procedure Initialize;
     procedure Denitialize;
   end;
@@ -108,18 +108,18 @@ implementation
 
 {$R *.dfm}
 
-class function TfrmOrderTemplateEdit.ShowDocument(aOrderTemplate: TOrderTemplate; aDialogMode: TDialogMode): TModalResult;
+class function TfrmOrderTemplateEdit.ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult;
 begin
   with TfrmOrderTemplateEdit.Create(nil) do
   try
     DialogMode := aDialogMode;
-    FOrderTemplate.AssignFrom(aOrderTemplate);
+    FOrderTemplate.AssignFrom(TOrderTemplate(aItem));
     Initialize;
     Result := ShowModal;
     if (Result = mrOk) then
     begin
       Denitialize;
-      aOrderTemplate.AssignFrom(FOrderTemplate);
+      TOrderTemplate(aItem).AssignFrom(FOrderTemplate);
     end;
   finally
     Free;
@@ -522,5 +522,8 @@ begin
   else
     miShowInformation.Visible := False;
 end;
+
+initialization
+  ListFormFactory.RegisterList(ntOrderTemplate, TOrderTemplate, TfrmOrderTemplateEdit);
 
 end.

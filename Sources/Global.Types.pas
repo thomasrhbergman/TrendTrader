@@ -316,6 +316,24 @@ type
     property XMLFile                 : TXMLFile                read FXMLFile                 write FXMLFile;
   end;
 
+  TBaseClass = class
+  private
+    FRecordId: Integer;
+    FName: String;
+  public
+    constructor Create; virtual;
+    procedure FromDB(aID: Integer); virtual;
+    procedure SaveToDB; virtual;
+    class procedure DeleteFromDB(aID: Integer); virtual;
+    class function GetListSQL: string; virtual;
+    class function GetListCaption: string; virtual;
+
+    property RecordId: Integer read FRecordId write FRecordId;
+    property Name: String read FName write FName;
+  end;
+
+  TCustomBaseClass = class of TBaseClass;
+
 var
   General: TGeneral;
 
@@ -890,6 +908,34 @@ begin
     edMaxAllowedPrice.ValueFloat          := PreArr[psMaxAllowedPrice];
     edMinAllowedPrice.ValueFloat          := PreArr[psMinAllowedPrice];
   end;
+end;
+
+{ TBaseClass }
+
+constructor TBaseClass.Create;
+begin
+end;
+
+class procedure TBaseClass.DeleteFromDB(aID: Integer);
+begin
+end;
+
+procedure TBaseClass.FromDB(aID: Integer);
+begin
+end;
+
+class function TBaseClass.GetListCaption: string;
+begin
+  Result := '';
+end;
+
+class function TBaseClass.GetListSQL: string;
+begin
+  Result := '';
+end;
+
+procedure TBaseClass.SaveToDB;
+begin
 end;
 
 initialization

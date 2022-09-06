@@ -35,10 +35,10 @@ begin
     Data := Node^.GetData;
     case Data^.DocType of
       ntQualifier:
-        if (TfrmQualifierEdit.ShowDocument(Data^.Qualifier, dmUpdate) = mrOk) then
+        if (TfrmQualifierEdit.ShowEditForm(Data^.Qualifier, dmUpdate) = mrOk) then
           Data^.Qualifier.SaveToDB;
       ntAutoTrade:
-        if TfrmAutoTradesEdit.ShowDocument(Data^.AutoTrade) = mrOk then
+        if TfrmAutoTradesEdit.ShowEditForm(Data^.AutoTrade, dmUpdate) = mrOk then
           Data^.AutoTrade.SaveToDB;
       ntOrderGroupSet:
         if TfrmEditOrderGroupSet.ShowDocument(Data^.OrderGroupSetDoc, UseInTemplate) = mrOk then

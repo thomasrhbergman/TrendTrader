@@ -6,6 +6,7 @@ inherited frmListForm: TfrmListForm
   Constraints.MinWidth = 337
   Position = poMainFormCenter
   OnCreate = FormCreate
+  OnShow = FormShow
   ExplicitWidth = 337
   ExplicitHeight = 461
   PixelsPerInch = 96
@@ -28,6 +29,9 @@ inherited frmListForm: TfrmListForm
     TabOrder = 0
     TreeOptions.MiscOptions = [toAcceptOLEDrop, toCheckSupport, toFullRepaintOnResize, toGridExtensions, toInitOnSave, toToggleOnDblClick, toWheelPanning]
     TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowDropmark, toShowHorzGridLines, toShowTreeLines, toShowVertGridLines, toThemeAware]
+    TreeOptions.SelectionOptions = [toExtendedFocus, toAlwaysSelectNode]
+    OnAfterCellPaint = vstListAfterCellPaint
+    OnDblClick = vstListDblClick
     OnGetText = vstListGetText
     Touch.InteractiveGestures = [igPan, igPressAndTap]
     Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
@@ -38,6 +42,8 @@ inherited frmListForm: TfrmListForm
         Width = 230
       end
       item
+        CaptionAlignment = taCenter
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus, coUseCaptionAlignment, coEditable, coStyleColor]
         Position = 1
         Text = 'Active'
         Width = 77

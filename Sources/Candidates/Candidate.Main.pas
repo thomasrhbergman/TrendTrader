@@ -18,7 +18,7 @@ uses
   IABFunctions.MarketData, AutoTrades.Types, DaModule.Utils, VirtualTrees.Helper, Global.Resources, Vcl.Themes,
   Monitor.Info, Publishers, System.Notification, Chart.Trade, Vcl.NumberBox, IABFunctions.Helpers, System.Types,
   MonitorTree.Helper, Candidate.GradientColumn, VirtualTrees.Types, FireDAC.Comp.Client, FireDAC.Stan.Param,
-  FireDAC.Comp.DataSet;
+  FireDAC.Comp.DataSet, ListForm;
 {$ENDREGION}
 
 type
@@ -204,7 +204,7 @@ type
     C_PANEL_AUTO_REFRESH        = 10;
   private
     [weak] FAutoTradesEdit: IAutoTrade;
-    FCandidateInfo: TCandidateInfo;
+    FCandidate: TCandidate;
     FCacheNodesWeight: TObjectDictionary<Integer, TExtraColumns>;
     FColumns: TAutoTradeColumns;
     FExplorationMode: Boolean;
@@ -286,8 +286,8 @@ type
     property IsLoaded           : Boolean      read FIsLoaded             write FIsLoaded;
     property TradesState        : TTradesState read GetTradesState        write SetTradesState;
   public
-    class function Execute(const aCandidateInfo: TCandidateInfo): IAutoTrade;
-    class function ShowDocument(var aCandidateInfo: TCandidateInfo; aDialogMode: TDialogMode): TModalResult; overload;
+    class function Execute(const aCandidate: TCandidate): IAutoTrade;
+    class function ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult; overload; override;
     class procedure ShowDocument; overload;
     procedure Initialize;
     procedure Denitialize;
@@ -326,7 +326,7 @@ begin
     frmCandidateMain.WindowState := wsNormal;
 end;
 
-class function TfrmCandidateMain.ShowDocument(var aCandidateInfo: TCandidateInfo; aDialogMode: TDialogMode): TModalResult;
+class function TfrmCandidateMain.ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult;
 var
   frmCandidateMain: TfrmCandidateMain;
 begin
@@ -335,7 +335,7 @@ begin
     frmCandidateMain.IsLoaded := True;
     try
       frmCandidateMain.DialogMode := aDialogMode;
-      frmCandidateMain.FCandidateInfo := aCandidateInfo;
+      frmCandidateMain.FCandidate := TCandidate(aItem);
       frmCandidateMain.Initialize;
       frmCandidateMain.OpenSequenceRecord;
       frmCandidateMain.AutoTradeInfoToGUI;
@@ -348,14 +348,14 @@ begin
     if (Result = mrOk) then
     begin
       //frmCandidateMain.Denitialize;
-      aCandidateInfo.AssignFrom(frmCandidateMain.FCandidateInfo);
+      TCandidate(aItem).AssignFrom(frmCandidateMain.FCandidate);
     end;
   finally
     frmCandidateMain.Free;
   end;
 end;
 
-class function TfrmCandidateMain.Execute(const aCandidateInfo: TCandidateInfo): IAutoTrade;
+class function TfrmCandidateMain.Execute(const aCandidate: TCandidate): IAutoTrade;
 var
   CandidateMain: TfrmCandidateMain;
 begin
@@ -363,13 +363,13 @@ begin
   Result := CandidateMain;
   with CandidateMain do
   begin
-    FCandidateInfo := aCandidateInfo;
+    FCandidate := aCandidate;
     Initialize;
     TradesState := TTradesState.tsWorking;
     TPublishers.LogPublisher.Write([ltLogWriter], ddText, 'Execute', 'CandidateMain',
-                                       'Name='                    + FCandidateInfo.Name                       + sLineBreak +
-                                       'RecordId= '               + FCandidateInfo.RecordId.ToString          + sLineBreak +
-                                       'MaxNumberOrder='          + FCandidateInfo.MaxNumberOrder.ToString);
+                                       'Name='                    + FCandidate.Name                       + sLineBreak +
+                                       'RecordId= '               + FCandidate.RecordId.ToString          + sLineBreak +
+                                       'MaxNumberOrder='          + FCandidate.MaxNumberOrder.ToString);
     AutoTradesControllerPublisher.UpdateState(CandidateMain);
     AutoTradeInfoToGUI;
     if General.ViewMarketScanner then
@@ -384,7 +384,7 @@ end;
 
 function TfrmCandidateMain.GetTradesState: TTradesState;
 begin
-  //Result := FCandidateInfo.TradesState;
+  //Result := FCandidate.TradesState;
   Result := tsNotConsidered; //!!!!
 end;
 
@@ -423,7 +423,7 @@ begin
   if not FSilenceMode then
   begin
     if Showing and (CreatedOrdersCount > 0) then
-      CanClose := TMessageDialog.ShowQuestion(Format(rsInterruptAutotrade, [FCandidateInfo.Name])) = mrYes
+      CanClose := TMessageDialog.ShowQuestion(Format(rsInterruptAutotrade, [FCandidate.Name])) = mrYes
     else if not FExplorationMode then
       CanClose := CheckRequiredEmbargoColumn
     else if FExplorationMode then
@@ -437,7 +437,7 @@ begin
   TPublishers.HistoricalDataPublisher.Unsubscribe(Self);
   TPublishers.InstrumentSpecDetailsPublisher.Unsubscribe(Self);
   TPublishers.ScannerPublisher.Unsubscribe(Self);
-  //FCandidateInfo.TradesState := TTradesState.tsNotConsidered;
+  //FCandidate.TradesState := TTradesState.tsNotConsidered;
   AutoTradesControllerPublisher.UpdateState(Self);
   FreeAndNil(FSubscribedList);
   FreeAndNil(FColumns);
@@ -521,7 +521,7 @@ begin
     end
     else if not aInfo.IsEmpty then
     begin
-      Notification.Title := FCandidateInfo.Name;
+      Notification.Title := FCandidate.Name;
       Notification.AlertBody := aInfo;
       TThread.Queue(nil,
         procedure
@@ -560,8 +560,8 @@ begin
 
   if Assigned(FAutoTradesEdit) then
   begin
-    FCandidateInfo.ColumnsInfo := ColumnsInfoToXml;
-    //FAutoTradesEdit.SetAutoTradeInfo(FCandidateInfo);
+    FCandidate.ColumnsInfo := ColumnsInfoToXml;
+    //FAutoTradesEdit.SetAutoTradeInfo(FCandidate);
   end;
 end;
 
@@ -571,7 +571,7 @@ var
 begin
   Dock := TfrmAutoTradesDock.GetDock;
   Dock.Show;
-  Self.Caption := FCandidateInfo.Name;
+  Self.Caption := FCandidate.Name;
   Self.DragKind := dkDock;
   Self.DragMode := dmAutomatic;
   Self.ManualDock(Dock.pcTrades, Dock.pcTrades, alClient);
@@ -585,11 +585,11 @@ var
   Msg: string;
 begin
   Msg := '';
-  if FCandidateInfo.Name.Trim.IsEmpty then
+  if FCandidate.Name.Trim.IsEmpty then
     Msg := Msg + Format(rcRequiredValue, ['Candidate Name']);
-  if (DMod.GetIntegerValueFromSQL(Format(C_SQL_CHECK_TEXT, [FCandidateInfo.Name.Trim, FCandidateInfo.RecordId]), 'CNT') > 0) then
+  if (DMod.GetIntegerValueFromSQL(Format(C_SQL_CHECK_TEXT, [FCandidate.Name.Trim, FCandidate.RecordId]), 'CNT') > 0) then
     Msg := Msg + rcNameNotUnique;
-  if (FCandidateInfo.MaxNumberOrder <= 0) then
+  if (FCandidate.MaxNumberOrder <= 0) then
     Msg := Msg + Format(rcRequiredValue, ['Max number of order']);
   Result := Msg.IsEmpty;
   if not Result then
@@ -602,7 +602,7 @@ begin
   begin
     cbOrderCurrency.Items.Text             := General.XMLFile.ReadString(C_SECTION_Candidate_MAIN, C_KEY_ORDER_CURRENCY_LIST, C_DEFAULT_CURRENCY);
     cbOrderCurrency.Text                   := General.XMLFile.ReadString(C_SECTION_Candidate_MAIN, C_KEY_ORDER_CURRENCY, C_DEFAULT_CURRENCY);
-    FCandidateInfo.MaxNumberOrder          := General.XMLFile.ReadInteger(C_SECTION_Candidate_MAIN, C_KEY_ORDER_MAX_NUMBER, 0);
+    FCandidate.MaxNumberOrder          := General.XMLFile.ReadInteger(C_SECTION_Candidate_MAIN, C_KEY_ORDER_MAX_NUMBER, 0);
   end;
   AutoTradeInfoToGUI;
 end;
@@ -683,7 +683,7 @@ begin
     Node := vstCandidate.GetFirstChild(vstCandidate.RootNode);
     while Assigned(Node) do
     begin
-      //FCandidateInfo.TradesState := tsWorking;
+      //FCandidate.TradesState := tsWorking;
       Data := Node^.GetData;
       Data^.ExtraColumns.Position := Node.Index + 1;
       CheckRankingCriteria(Data);
@@ -706,7 +706,7 @@ var
   PrecSettings: TPrecautionarySettingTypes;
 begin
   if aData^.IsCriteria and
-    (CreatedOrdersCount < FCandidateInfo.MaxNumberOrder) then
+    (CreatedOrdersCount < FCandidate.MaxNumberOrder) then
   begin
     Info := 'Id=' + aData^.Id.ToString +
             ', Name=' + aData^.Name +
@@ -750,7 +750,7 @@ begin
       OrderAmount := 0;
       if (LastPrice > 0) and (LastExch > 0) then
       begin
-//        if (FCandidateInfo.TotalOrderAmount < LastPrice) then
+//        if (FCandidate.TotalOrderAmount < LastPrice) then
 //        begin
 //          aData^.Description := 'Not passed - No Total Money';
 //          aData^.IsLocked := True;
@@ -758,10 +758,10 @@ begin
 //          Exit;
 //        end;
 //
-//        if (FCandidateInfo.TotalOrderAmount >= FCandidateInfo.OrderAmount) then
-//          OrderAmount := FCandidateInfo.OrderAmount
+//        if (FCandidate.TotalOrderAmount >= FCandidate.OrderAmount) then
+//          OrderAmount := FCandidate.OrderAmount
 //        else
-//          OrderAmount := FCandidateInfo.TotalOrderAmount;
+//          OrderAmount := FCandidate.TotalOrderAmount;
 
         {if (OrderAmount <= 0) then
         begin
@@ -804,7 +804,7 @@ begin
           finally
             TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddWarning, Self, 'PreExecutionEvaluation', PrecSetting.ToString);
           end;
-        //Dec(FCandidateInfo.TotalOrderAmount, Trunc(Quantity * LastPrice));
+        //Dec(FCandidate.TotalOrderAmount, Trunc(Quantity * LastPrice));
       end;
 
       {if (Quantity = 0) then
@@ -819,14 +819,14 @@ begin
         TThread.Synchronize(nil,
           procedure
           begin
-            if FMonitor.CreateTemplateStructure(FCandidateInfo.OrderGroupId,
+            if FMonitor.CreateTemplateStructure(FCandidate.OrderGroupId,
                                                 aData,
                                                 TAutoTradesCommon.Create(Quantity,
-                                                                         FCandidateInfo.QualifierInstance,
-                                                                         FCandidateInfo.QualifierId,
-                                                                         FCandidateInfo.InstanceNum,
-                                                                         FCandidateInfo.RecordId,
-                                                                         FCandidateInfo.AllowSendDuplicateOrder)) <> nil then
+                                                                         FCandidate.QualifierInstance,
+                                                                         FCandidate.QualifierId,
+                                                                         FCandidate.InstanceNum,
+                                                                         FCandidate.RecordId,
+                                                                         FCandidate.AllowSendDuplicateOrder)) <> nil then
             begin
               if aData^.IsLocked then
                 CreatedOrdersCount := CreatedOrdersCount + 1;
@@ -936,7 +936,7 @@ var
 begin
   if (Length(aInstruments^) > 0) then
   begin
-    FCandidateInfo.ScanCount := Length(aInstruments^);
+    FCandidate.ScanCount := Length(aInstruments^);
     ColumnId := AddOrGetColumn(aColumnsInfo);
     if (ColumnId = 0) then
       Exit;
@@ -1082,7 +1082,7 @@ begin
 
 //      for var i := Low(NodeArray) to High(NodeArray) do
 //      begin
-//        if (i >= FCandidateInfo.MaxRows) then
+//        if (i >= FCandidate.MaxRows) then
 //        begin
 //          if Assigned(NodeArray[i]) then
 //            vstCandidate.DeleteNode(NodeArray[i], False);
@@ -1103,7 +1103,7 @@ begin
         end;
       end;
 
-//      if FCandidateInfo.HistoricalDataParams.SubscribeHistData then
+//      if FCandidate.HistoricalDataParams.SubscribeHistData then
 //      begin
 //        Node := vstCandidate.GetFirstChild(vstCandidate.RootNode);
 //        while Assigned(Node) do
@@ -1118,7 +1118,7 @@ begin
 //        end;
 //      end;
 
-      FCandidateInfo.ScanCount := vstCandidate.RootNode.ChildCount;
+      FCandidate.ScanCount := vstCandidate.RootNode.ChildCount;
       PreExecutionEvaluationOrders;
     finally
       FreeAndNil(ExistsItemsList);
@@ -1145,8 +1145,8 @@ begin
     TimerEmbargo.Enabled        := False;
     edAutoTradeTemplate.Text    := '';
     CreatedOrdersCount          := 0;
-    FCandidateInfo.Name         := '';
-    FCandidateInfo.ColumnsInfo  := ColumnsInfoToXml;
+    FCandidate.Name         := '';
+    FCandidate.ColumnsInfo  := ColumnsInfoToXml;
     AutoTradeInfoToGUI;
   finally
     vstCandidate.EndUpdate;
@@ -1438,12 +1438,12 @@ begin
     if (lbColumns.Items.IndexOf(ColumnName) < 0) and not ColumnName.IsEmpty then
       lbColumns.Items.AddObject(ColumnName, TObject(RunColumnsInfo.ColumnId));
   end;
-  FCandidateInfo.Columns := lbColumns.Items.Text;
-  {FCandidateInfo.Note    := lbColumns.Items.Text;
+  FCandidate.Columns := lbColumns.Items.Text;
+  {FCandidate.Note    := lbColumns.Items.Text;
   if Assigned(FAutoTradesEdit) then
   begin
-    FCandidateInfo.ColumnsInfo := ColumnsInfoToXml;
-    FAutoTradesEdit.SetAutoTradeInfo(FCandidateInfo);
+    FCandidate.ColumnsInfo := ColumnsInfoToXml;
+    FAutoTradesEdit.SetAutoTradeInfo(FCandidate);
   end; }
 end;
 
@@ -1457,7 +1457,7 @@ procedure TfrmCandidateMain.OpenSequenceRecord;
   begin
     XMLFile := TXMLFile.Create;
     try
-      XMLFile.XMLText        := FCandidateInfo.ColumnsInfo;
+      XMLFile.XMLText        := FCandidate.ColumnsInfo;
       XMLFile.CurrentSection := C_SECTION_COLUMNS;
       while not XMLFile.IsLastKey do
       begin
@@ -1522,7 +1522,7 @@ procedure TfrmCandidateMain.OpenSequenceRecord;
 var
   ColumnsInfo: TColumnsInfo;
 begin
-  if not FCandidateInfo.ColumnsInfo.IsEmpty then
+  if not FCandidate.ColumnsInfo.IsEmpty then
   begin
     vstCandidate.BeginUpdate;
     TimerCalculateGradient.Enabled := False;
@@ -1684,9 +1684,9 @@ procedure TfrmCandidateMain.aSaveAutoTradeTemplateAsExecute(Sender: TObject);
 begin
   if CheckRequiredEmbargoColumn then
   begin
-    FCandidateInfo.RecordId := -1;
-    FCandidateInfo.ColumnsInfo := ColumnsInfoToXml;
-    FCandidateInfo.SaveToDB;
+    FCandidate.RecordId := -1;
+    FCandidate.ColumnsInfo := ColumnsInfoToXml;
+    FCandidate.SaveToDB;
     AutoTradeInfoToGUI;
   end;
 end;
@@ -1695,10 +1695,10 @@ procedure TfrmCandidateMain.aSaveAutoTradeTemplateExecute(Sender: TObject);
 begin
   if CheckRequiredEmbargoColumn then
   begin
-    FCandidateInfo.ColumnsInfo := ColumnsInfoToXml;
-    if (FCandidateInfo.Name <> edAutoTradeTemplate.Text) then
-      FCandidateInfo.Name := edAutoTradeTemplate.Text;
-    FCandidateInfo.SaveToDB;
+    FCandidate.ColumnsInfo := ColumnsInfoToXml;
+    if (FCandidate.Name <> edAutoTradeTemplate.Text) then
+      FCandidate.Name := edAutoTradeTemplate.Text;
+    FCandidate.SaveToDB;
     AutoTradeInfoToGUI;
   end;
 end;
@@ -1709,13 +1709,13 @@ var
   MarkedNode: TMarkedNode;
 begin
   MarkedNode.DocType := ntAutoTrade;
-  MarkedNode.RecordId := FCandidateInfo.RecordId;
+  MarkedNode.RecordId := FCandidate.RecordId;
   Id := TfrmAutoTrades.ShowDocument(MarkedNode);
   if (Id > 0) then
     try
       IsLoaded := True;
-      FCandidateInfo.FromDB(Id);
-      edAutoTradeTemplate.Text := FCandidateInfo.Name;
+      FCandidate.FromDB(Id);
+      edAutoTradeTemplate.Text := FCandidate.Name;
       OpenSequenceRecord;
       AutoTradeInfoToGUI;
     finally
@@ -2316,7 +2316,7 @@ end;
 
 function TfrmCandidateMain.GetCreatedOrdersCount: Integer;
 begin
-  Result := FCandidateInfo.CreatedOrdersCount;
+  Result := FCandidate.CreatedOrdersCount;
 end;
 
 function TfrmCandidateMain.GetInstance: TObject;
@@ -2328,7 +2328,7 @@ procedure TfrmCandidateMain.SetAutoTradeInfo(const aAutoTradeInfo: TAutoTradeInf
 begin
 //  IsLoaded := True;
 //  try
-//    FCandidateInfo.AssignFrom(aAutoTradeInfo);
+//    FCandidate.AssignFrom(aAutoTradeInfo);
 //    AutoTradeInfoToGUI;
 //  finally
 //    IsLoaded := False;
@@ -2337,7 +2337,7 @@ end;
 
 procedure TfrmCandidateMain.SetCreatedOrdersCount(const Value: Integer);
 begin
-  FCandidateInfo.CreatedOrdersCount := Value;
+  FCandidate.CreatedOrdersCount := Value;
   CheckTradesState;
   if (Value > 0) then
     aExecute.ImageIndex := 49 //lightning red
@@ -2395,11 +2395,11 @@ begin
                                       Order.ContractId,
                                       Order,
                                       qpNormal);
-        {Request.HistoricalDataParams := THistoricalDataParams.Create(FCandidateInfo.HistoricalDataParams.DurationTimeUnits,
-                                                                     FCandidateInfo.HistoricalDataParams.DataDuration,
-                                                                     FCandidateInfo.HistoricalDataParams.BarSize,
-                                                                     FCandidateInfo.HistoricalDataParams.DataBasis,
-                                                                     FCandidateInfo.HistoricalDataParams.SubscribeHistData); }
+        {Request.HistoricalDataParams := THistoricalDataParams.Create(FCandidate.HistoricalDataParams.DurationTimeUnits,
+                                                                     FCandidate.HistoricalDataParams.DataDuration,
+                                                                     FCandidate.HistoricalDataParams.BarSize,
+                                                                     FCandidate.HistoricalDataParams.DataBasis,
+                                                                     FCandidate.HistoricalDataParams.SubscribeHistData); }
         IABClient.SendRequest(Request);
       end;
     finally
@@ -2435,7 +2435,7 @@ var
 begin
   if (Item = Count) and FInstrumentList.ContainsKey(DataId) then
   begin
-    {if not FCandidateInfo.HistoricalDataParams.KeepUpdated then
+    {if not FCandidate.HistoricalDataParams.KeepUpdated then
       IABClient.CancelHistoricalData(DataId);  }
 
     InstrumentItem := FInstrumentList.GetItem(DataId);
@@ -2551,9 +2551,9 @@ end;
 procedure TfrmCandidateMain.cbAutoOrderActiveClick(Sender: TObject);
 begin
   GUIToAutoTradeInfo;
-  if not FCandidateInfo.Active then
+  if not FCandidate.Active then
   begin
-    FCandidateInfo.Active := True;
+    FCandidate.Active := True;
     TradesState := tsSuspended;
   end
   else
@@ -2583,38 +2583,38 @@ procedure TfrmCandidateMain.aExecuteExecute(Sender: TObject);
     Problems: string;
   begin
     Problems := '';
-    {if (FCandidateInfo.MaxRows = 0) then
+    {if (FCandidate.MaxRows = 0) then
     begin
       SetFocusSafely(seMaxRows);
       Problems := Format(rcRequiredValue, ['Max rows']);
     end;
-    if (FCandidateInfo.OrderAmount = 0) then
+    if (FCandidate.OrderAmount = 0) then
     begin
       SetFocusSafely(seSingleOrderAmount);
       Problems := Problems + Format(rcRequiredValue, ['Single order amount']);
     end;
-    if (FCandidateInfo.TotalOrderAmount = 0) then
+    if (FCandidate.TotalOrderAmount = 0) then
     begin
       SetFocusSafely(seTotalOrderAmount);
       Problems := Problems + Format(rcRequiredValue, ['Total order amount']);
     end;
-    if FCandidateInfo.OrderCurrency.IsEmpty then
+    if FCandidate.OrderCurrency.IsEmpty then
     begin
       SetFocusSafely(cbOrderCurrency);
       Problems := Problems + Format(rcRequiredValue, ['Order Currency']);
     end;}
-    if (FCandidateInfo.MaxNumberOrder = 0) then
+    if (FCandidate.MaxNumberOrder = 0) then
     begin
       SetFocusSafely(seMaxNumberOrder);
       Problems := Problems + Format(rcRequiredValue, ['Max number of order']);
     end
-    else if (CreatedOrdersCount >= FCandidateInfo.MaxNumberOrder) then
+    else if (CreatedOrdersCount >= FCandidate.MaxNumberOrder) then
     begin
       SetFocusSafely(seMaxNumberOrder);
       Problems := Problems + rcCreatedOrdersCountGreater;
     end;
 
-    if not FCandidateInfo.Active then
+    if not FCandidate.Active then
     begin
       SetFocusSafely(cbAutoOrderActive);
       Problems := Problems + rcAutotradingNotActive;
@@ -2629,14 +2629,14 @@ begin
   try
     if not FExplorationMode then
     begin
-      //FCandidateInfo.TotalOrderAmount := seTotalOrderAmount.Value;
-      FCandidateInfo.Active := True;
+      //FCandidate.TotalOrderAmount := seTotalOrderAmount.Value;
+      FCandidate.Active := True;
     end;
     if CheckRequiredEmbargoColumn and CheckRequired then
       ApplyAutoOrder;
   finally
     if not FExplorationMode then
-      FCandidateInfo.Active := False;
+      FCandidate.Active := False;
   end;
 end;
 
@@ -2854,13 +2854,13 @@ begin
           ExtraColumns.Items.AddOrSetValue(ColumnsInfo.ColumnId, ColumnsItem);
         end;
       end;
-      FCandidateInfo.LastUpdate := Now;
+      FCandidate.LastUpdate := Now;
       AddInstrument(@Instruments, ColumnsInfo);
       TThread.Queue(nil,
         procedure
         begin
-          UpdateStatus(C_PANEL_TIME_UPDATE, TimeToStr(FCandidateInfo.LastUpdate));
-          {if not FCandidateInfo.AutoRefresh then
+          UpdateStatus(C_PANEL_TIME_UPDATE, TimeToStr(FCandidate.LastUpdate));
+          {if not FCandidate.AutoRefresh then
           begin
             IABClient.CancelScan(Scan.ScanId);
             TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddText, Self, 'OnCandidateData', 'Unsubscribed intentionally, to bypass the limit on the number of scans in IB');
@@ -2908,15 +2908,15 @@ end;
 
 procedure TfrmCandidateMain.UpdateCaptions;
 begin
-  {lblAutoTradesName.Caption := Concat('AutoTrade Name: ', FCandidateInfo.Name, ' (', FCandidateInfo.RecordId.ToString, ')').Replace(sLineBreak, '');
-  lblInstanceNum.Caption    := Concat('Instance Num: ', Abs(FCandidateInfo.InstanceNum).ToString);
-  if (FCandidateInfo.InstanceNum > 0) then
+  {lblAutoTradesName.Caption := Concat('AutoTrade Name: ', FCandidate.Name, ' (', FCandidate.RecordId.ToString, ')').Replace(sLineBreak, '');
+  lblInstanceNum.Caption    := Concat('Instance Num: ', Abs(FCandidate.InstanceNum).ToString);
+  if (FCandidate.InstanceNum > 0) then
     lblInstanceNum.Caption := Concat(lblInstanceNum.Caption, ' (Autotrade)')
   else
     lblInstanceNum.Caption := Concat(lblInstanceNum.Caption, ' (Manual)');
 
-  FCandidateInfo.Note := lbColumns.Items.Text;
-  if (FCandidateInfo.InstanceNum <= 0) then
+  FCandidate.Note := lbColumns.Items.Text;
+  if (FCandidate.InstanceNum <= 0) then
     AutoTradesControllerPublisher.UpdateState(Self); }
 end;
 
@@ -2932,41 +2932,41 @@ begin
   begin
     if FExplorationMode then
     begin
-      FCandidateInfo.Active                  := cbAutoOrderActive.Checked;
-      FCandidateInfo.MaxNumberOrder          := seMaxNumberOrder.Value;
+      FCandidate.Active                  := cbAutoOrderActive.Checked;
+      FCandidate.MaxNumberOrder          := seMaxNumberOrder.Value;
     end;
-    FCandidateInfo.Name := edAutoTradeTemplate.Text;
+    FCandidate.Name := edAutoTradeTemplate.Text;
 
-    if FCandidateInfo.Active and
-       (CreatedOrdersCount < FCandidateInfo.MaxNumberOrder) then
+    if FCandidate.Active and
+       (CreatedOrdersCount < FCandidate.MaxNumberOrder) then
       TradesState := tsWorking
     else
       TradesState := tsSuspended;
     CheckTradesState;
     AutoTradesControllerPublisher.UpdateState(Self);
 //    if Assigned(FAutoTradesEdit) then
-//      FAutoTradesEdit.SetAutoTradeInfo(FCandidateInfo);
+//      FAutoTradesEdit.SetAutoTradeInfo(FCandidate);
   end;
 end;
 
 procedure TfrmCandidateMain.AutoTradeInfoToGUI;
 begin
-  edAutoTradeTemplate.Text          := FCandidateInfo.Name;
-  cbAutoOrderActive.Checked         := FCandidateInfo.Active;
-  seMaxNumberOrder.Value            := FCandidateInfo.MaxNumberOrder;
+  edAutoTradeTemplate.Text          := FCandidate.Name;
+  cbAutoOrderActive.Checked         := FCandidate.Active;
+  seMaxNumberOrder.Value            := FCandidate.MaxNumberOrder;
   UpdateCaptions;
 //  if Assigned(FAutoTradesEdit) then
-//    FAutoTradesEdit.SetAutoTradeInfo(FCandidateInfo);
+//    FAutoTradesEdit.SetAutoTradeInfo(FCandidate);
 end;
 
 procedure TfrmCandidateMain.btnSaveClick(Sender: TObject);
 begin
   if CheckRequiredEmbargoColumn then
   begin
-    FCandidateInfo.ColumnsInfo := ColumnsInfoToXml;
-    if (FCandidateInfo.Name <> edAutoTradeTemplate.Text) then
-      FCandidateInfo.Name := edAutoTradeTemplate.Text;
-    //FCandidateInfo.SaveToDB;
+    FCandidate.ColumnsInfo := ColumnsInfoToXml;
+    if (FCandidate.Name <> edAutoTradeTemplate.Text) then
+      FCandidate.Name := edAutoTradeTemplate.Text;
+    //FCandidate.SaveToDB;
     //AutoTradeInfoToGUI;
     ModalResult := mrOk;
   end;
@@ -3066,7 +3066,7 @@ begin
 //    if not(csDestroying in Self.ComponentState) then
       if Assigned(FSubscribedList) and FSubscribedList.Contains(Data^.Id) then
       begin
-//        if FCandidateInfo.HistoricalDataParams.KeepUpdated then
+//        if FCandidate.HistoricalDataParams.KeepUpdated then
 //          FSubscribedList.Extract(Data^.Id);
         IABClient.CancelHistoricalData(Data^.Id);
       end;
@@ -3201,7 +3201,7 @@ end;
 
 function TfrmCandidateMain.GetAutoTradeInfo: TAutoTradeInfo;
 begin
-  //Result := FCandidateInfo;
+  //Result := FCandidate;
 end;
 
 procedure TfrmCandidateMain.CloseAutoTrade(const aSilenceMode: Boolean = False);
@@ -3212,36 +3212,36 @@ end;
 
 procedure TfrmCandidateMain.SetTradesState(const aValue: TTradesState);
 begin
-  {if (FCandidateInfo.TradesState <> aValue) then
+  {if (FCandidate.TradesState <> aValue) then
   begin
-    FCandidateInfo.TradesState := aValue;
-    case FCandidateInfo.TradesState of
+    FCandidate.TradesState := aValue;
+    case FCandidate.TradesState of
       tsSuspended:
-        FCandidateInfo.Active := False;
+        FCandidate.Active := False;
       tsExecuted:
         if CheckRequiredEmbargoColumn then
         begin
-          FCandidateInfo.Active := True;
+          FCandidate.Active := True;
           ApplyAutoOrder;
         end;
       tsWorking:
-        FCandidateInfo.Active := True;
+        FCandidate.Active := True;
       tsCancelled:
         begin
-          FCandidateInfo.Active := False;
+          FCandidate.Active := False;
           CancelScan;
         end;
       tsFinished:
         begin
-          FCandidateInfo.Active := False;
+          FCandidate.Active := False;
           CancelScan;
         end;
       tsRestarted:
         begin
           CreatedOrdersCount := 0;
-          FCandidateInfo.Active := True;
+          FCandidate.Active := True;
           OpenSequenceRecord;
-          FCandidateInfo.TradesState := tsWorking;
+          FCandidate.TradesState := tsWorking;
         end;
     end;
     CheckTradesState;
@@ -3252,28 +3252,28 @@ end;
 
 procedure TfrmCandidateMain.CheckTradesState;
 begin
-  {if (CreatedOrdersCount >= FCandidateInfo.MaxNumberOrder) then
+  {if (CreatedOrdersCount >= FCandidate.MaxNumberOrder) then
   begin
     pnlTop.Color := clSilver;
-    FCandidateInfo.TradesState := tsFinished;
-    FCandidateInfo.Active := False;
+    FCandidate.TradesState := tsFinished;
+    FCandidate.Active := False;
     CancelScan;
   end
-  else if FCandidateInfo.Active and (FCandidateInfo.OrderGroupId > 0) then
+  else if FCandidate.Active and (FCandidate.OrderGroupId > 0) then
   begin
     pnlTop.Color := clMoneyGreen;
-    FCandidateInfo.TradesState := tsWorking;
+    FCandidate.TradesState := tsWorking;
   end
   else
   begin
     pnlTop.Color := clInfoBk;
-    FCandidateInfo.TradesState := tsSuspended;
+    FCandidate.TradesState := tsSuspended;
   end;
 
   if Assigned(Self.Parent) then
     if (Self.Parent is TTabSheet) then
     begin
-      case FCandidateInfo.TradesState of
+      case FCandidate.TradesState of
         tsWorking:
           TTabSheet(Self.Parent).ImageIndex := C_COLOUR_INDEX_GREEN;
         tsSuspended:
@@ -3295,16 +3295,16 @@ var
   Info: string;
   WaitForTask: ITask;
 begin
-  Info := 'AutoTradeInfo.Active='                    + BoolToStr(FCandidateInfo.Active, True) +
-          ', AutoTradeInfo.MaxNumberOrder='          + FCandidateInfo.MaxNumberOrder.ToString +
+  Info := 'AutoTradeInfo.Active='                    + BoolToStr(FCandidate.Active, True) +
+          ', AutoTradeInfo.MaxNumberOrder='          + FCandidate.MaxNumberOrder.ToString +
           ', CreatedOrdersCount='                    + CreatedOrdersCount.ToString;
 
   TPublishers.LogPublisher.Write([ltLogWriter], ddEnterMethod, 'ApplyAutoOrder', Info);
-  if FCandidateInfo.Active then
+  if FCandidate.Active then
   begin
     TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddText, 'ApplyAutoOrder', 'Task WaitForAll');
     FIsPriceExists := False;
-//    if (FCandidateInfo.TotalOrderAmount <= 0) then
+//    if (FCandidate.TotalOrderAmount <= 0) then
 //      ShowNotification(nil, rsTotalOrderAmount);
 
     WaitForTask := System.Threading.TTask.Create(
@@ -3344,7 +3344,7 @@ begin
 //            LeftData := Left^.GetData;
 //            RightData := Right^.GetData;
 //            Result := 0;
-//            case FCandidateInfo.RankingCriteria of
+//            case FCandidate.RankingCriteria of
 //              rcSum:
 //                if (LeftData^.ExtraColumns.RankingSum < RightData^.ExtraColumns.RankingSum) then
 //                  Result := 1
@@ -3371,5 +3371,8 @@ begin
   end;
   TPublishers.LogPublisher.Write([ltLogWriter], ddExitMethod, 'ApplyAutoOrder');
 end;
+
+initialization
+  ListFormFactory.RegisterList(ntCandidates, TCandidate, TfrmCandidateMain);
 
 end.

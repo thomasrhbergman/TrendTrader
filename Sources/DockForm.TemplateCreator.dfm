@@ -199,7 +199,7 @@ inherited frmDockFormTemplateCreator: TfrmDockFormTemplateCreator
           Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus, coUseCaptionAlignment, coEditable, coStyleColor]
           Position = 2
           Text = 'Calc Type'
-          Width = 124
+          Width = 143
         end>
     end
   end

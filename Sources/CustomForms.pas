@@ -49,7 +49,10 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     property DialogMode: TDialogMode read FDialogMode write FDialogMode;
+    class function ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult; virtual;
   end;
+
+  TCustomFormClass = class of TCustomForm;
 
 implementation
 
@@ -148,6 +151,12 @@ begin
     General.XMLFile.WriteInteger(IdentityName, C_KEY_FORM_LEFT, Self.Left);
     General.XMLFile.WriteInteger(IdentityName, C_KEY_FORM_TOP, Self.Top);
   end;
+end;
+
+class function TCustomForm.ShowEditForm(aItem: TBaseClass;
+  aDialogMode: TDialogMode): TModalResult;
+begin
+  Result := mrNone;
 end;
 
 procedure TCustomForm.LoadFormPosition;

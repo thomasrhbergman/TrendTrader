@@ -12,7 +12,7 @@ object frmCustomJournalForm: TfrmCustomJournalForm
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter
-  
+  PixelsPerInch = 96
   TextHeight = 13
   object pnlOptions: TPanel
     Left = 0
@@ -108,6 +108,8 @@ object frmCustomJournalForm: TfrmCustomJournalForm
       OnColumnResize = vstTreeColumnResize
       OnHeaderDragged = vstTreeHeaderDragged
       OnMeasureItem = vstTreeMeasureItem
+      Touch.InteractiveGestures = [igPan, igPressAndTap]
+      Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
       Columns = <>
     end
   end

@@ -11,9 +11,11 @@ object frmParameters: TfrmParameters
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  OldCreateOrder = True
   Position = poOwnerFormCenter
   ShowHint = True
   OnCreate = FormCreate
+  PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0

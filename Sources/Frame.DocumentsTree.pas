@@ -13,7 +13,7 @@ uses
   MessageDialog, Monitor.Types, DaImages, Edit.OrderGroup, Edit.Condition, Edit.Algos, Edit.OrderDocument, Edit.Factor,
   Qualifiers.Types, Qualifiers.Edit, AutoTrades.Edit, Edit.OrderGroupSet, Vcl.ComCtrls, InformationDialog, Common.Types,
   VirtualTrees.ExportHelper, Monitor.Info, System.Types, MonitorTree.Helper, MonitorTree.Document,
-  MonitorTree.EditDocuments, FireDAC.Comp.Client;
+  MonitorTree.EditDocuments, FireDAC.Comp.Client, AutoTrades.Types;
 {$ENDREGION}
 
 type

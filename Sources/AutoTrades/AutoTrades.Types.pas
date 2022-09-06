@@ -8,7 +8,8 @@ uses
   Winapi.msxml, Vcl.Graphics, {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} DebugWriter, System.DateUtils,
   XmlFiles, Data.DB, DaModule, System.Math, HtmlLib, DaModule.Utils, VirtualTrees, Common.Types,
   Publishers, Global.Types, Publishers.Interfaces, Vcl.Forms, IABFunctions.RequestsQueue, IABSocketAPI_const,
-  System.StrUtils, FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet;
+  System.StrUtils, FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet, Utils,
+  Qualifiers.Types, Candidate.Types, Quantities.Types, OrderTemplate.Types;
 {$ENDREGION}
 
 type
@@ -22,18 +23,15 @@ type
     function ToColor: TColor;
   end;
 
-  TAutoTradeInfo = record
+  TAutoTradeInfo = class(TBaseClass)
   private
     FOrderGroupId: Integer;
     function GetOrderGroupId: Integer;
     procedure SetOrderGroupId(const Value: Integer);
   public
     InstanceNum: Integer;
-    RecordId: Integer;
     QualifierInstance: Integer;
-    QualifierId: Integer;
     ColumnsInfo: string;
-    Name: string;
     OrderAmount: Integer;
     OrderCurrency: string;
     MaxRows: Integer;
@@ -52,17 +50,27 @@ type
     TotalOrderAmount: Integer;
     CreateTime: TTime;
     HistoricalDataParams: THistoricalDataParams;
+
+    Qualifier: TQualifier;
+    Candidate: TCandidate;
+    Quantity: TQuantity;
+    OrderTemplate: TOrderTemplate;
+
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure FromDB(aID: Integer); override;
+    procedure SaveToDB; override;
+    class function GetListSQL: string; override;
+    class function GetListCaption: string; override;
+    class procedure DeleteFromDB(aID: Integer); override;
+
     function IsEquals(AAutoTradeInfo: TAutoTradeInfo): Boolean;
     function ToList: string;
     function ToValueString: string;
     procedure AssignFrom(aAutoTrade: TAutoTradeInfo);
     procedure Clear;
-    procedure FromDB(aID: Integer);
     procedure FromList(aValue: string);
-    procedure SaveToDB;
     property OrderGroupId: Integer read GetOrderGroupId write SetOrderGroupId;
-    class procedure DeleteFromDB(aID: Integer); static;
-    constructor Create(AAutoRefresh: Boolean);
   end;
 
   IAutoTrade = interface(ICustomInterface)
@@ -132,7 +140,6 @@ begin
   Self.Clear;
   Self.InstanceNum             := aAutoTrade.InstanceNum;
   Self.RecordId                := aAutoTrade.RecordId;
-  Self.QualifierID             := aAutoTrade.QualifierID;
   Self.QualifierInstance       := aAutoTrade.QualifierInstance;
   Self.ColumnsInfo             := aAutoTrade.ColumnsInfo;
   Self.OrderGroupId            := aAutoTrade.OrderGroupId;
@@ -153,6 +160,10 @@ begin
   Self.TradesState             := aAutoTrade.TradesState;
   Self.TotalOrderAmount        := aAutoTrade.TotalOrderAmount;
   Self.HistoricalDataParams    := aAutoTrade.HistoricalDataParams;
+  Self.Qualifier.AssignFrom(aAutoTrade.Qualifier);
+  Self.Candidate.AssignFrom(aAutoTrade.Candidate);
+  Self.Quantity.AssignFrom(aAutoTrade.Quantity);
+  Self.OrderTemplate.AssignFrom(aAutoTrade.OrderTemplate);
 end;
 
 procedure TAutoTradeInfo.Clear;
@@ -160,15 +171,14 @@ begin
   Self := Default(TAutoTradeInfo);
 end;
 
-constructor TAutoTradeInfo.Create(AAutoRefresh: Boolean);
+constructor TAutoTradeInfo.Create;
 begin
-  AutoRefresh := AAutoRefresh;
+  AutoRefresh := False;
   Active := False;
   Enabled := True;
   RecordId := -1;
   ColumnsInfo := '';
   OrderGroupId := -1;
-  QualifierId := -1;
   QualifierInstance := 0;
   AllowSendDuplicateOrder := False;
   InstanceNum := 0;
@@ -176,6 +186,10 @@ begin
   ScanCount := 0;
   TotalOrderAmount := 0;
   HistoricalDataParams := Default(THistoricalDataParams);
+  Qualifier := TQualifier.Create;
+  Candidate := TCandidate.Create;
+  Quantity := TQuantity.Create;
+  OrderTemplate := TOrderTemplate.Create;
 end;
 
 class procedure TAutoTradeInfo.DeleteFromDB(aID: Integer);
@@ -184,6 +198,19 @@ resourcestring
 begin
   DMod.ExecuteSQL(Format(C_SQL_DELETE, [aID]));
   DMod.RefreshQuery(DMod.fbqAutoTrades);
+end;
+
+destructor TAutoTradeInfo.Destroy;
+begin
+  if Assigned(Qualifier) then
+    Qualifier.Free;
+  if Assigned(Candidate) then
+    Candidate.Free;
+  if Assigned(Quantity) then
+    Quantity.Free;
+  if Assigned(OrderTemplate) then
+    OrderTemplate.Free;
+  inherited;
 end;
 
 procedure TAutoTradeInfo.FromDB(aID: Integer);
@@ -210,7 +237,7 @@ begin
         Self.RecordId                := aID;
         Self.Name                    := Query.FieldByName('NAME').AsString;
         Self.ColumnsInfo             := Query.FieldByName('COLUMNS_INFO').AsString;
-        Self.OrderGroupId            := Query.FieldByName('ORDER_TEMPLATE_ID').AsInteger;
+        Self.OrderGroupId            := Query.FieldByName('ORDER_GROUP_ID').AsInteger;
         Self.OrderAmount             := Query.FieldByName('ORDER_AMOUNT').AsInteger;
         Self.AutoRefresh             := Query.FieldByName('AUTO_REFRESH').AsBoolean;
         Self.OrderCurrency           := Query.FieldByName('ORDER_CURRENCY').AsString;
@@ -228,6 +255,12 @@ begin
         Self.HistoricalDataParams.KeepUpdated       := Query.FieldByName('HIST_DATA_KEEP_UPDATED').AsBoolean;
         Self.HistoricalDataParams.SubscribeHistData := Query.FieldByName('SUBSCRIBE_HIST_DATA').AsBoolean;
         Self.HistoricalDataParams.BarSize           := TIABChartBarSize(Query.FieldByName('HIST_BAR_SIZE').AsInteger);
+
+        Self.Qualifier.FromDB(Query.FieldByName('QUALIFIER_ID').AsInteger);
+        Self.Candidate.FromDB(Query.FieldByName('CANDIDATE_ID').AsInteger);
+        Self.Quantity.FromDB(Query.FieldByName('QUANTITY_ID').AsInteger);
+        Self.OrderTemplate.FromDB(Query.FieldByName('ORDER_TEMPLATE_ID').AsInteger);
+        Self.Active                  := Query.FieldByName('ACTIVE').AsBoolean;
       end;
     finally
       FreeAndNil(Query);
@@ -248,18 +281,20 @@ end;
 procedure TAutoTradeInfo.SaveToDB;
 resourcestring
   C_SQL_EXISTS_TEXT = 'SELECT COUNT(*) AS CNT FROM AUTOTRADES WHERE ID=:RecordId';
-  C_SQL_INSERT_TEXT = 'INSERT INTO AUTOTRADES(ID, NAME, COLUMNS_INFO, ORDER_TEMPLATE_ID, ORDER_AMOUNT, ORDER_CURRENCY, ' +
+  C_SQL_INSERT_TEXT = 'INSERT INTO AUTOTRADES(ID, NAME, COLUMNS_INFO, ORDER_GROUP_ID, ORDER_AMOUNT, ORDER_CURRENCY, ' +
                                              'MAX_NUMBER_ORDER, TOTAL_ORDER_AMOUNT, MAX_ROWS, ALLOW_SEND_DUPLICATE_ORDER, ' +
                                              'NOTE, ENABLED, AUTO_REFRESH, SUBSCRIBE_HIST_DATA, HIST_DATA_KEEP_UPDATED, ' +
-                                             'HIST_DURATION_TIME_UNITS, HIST_DATA_DURATION, HIST_DATA_BASIS, HIST_BAR_SIZE) ' +
-                                    ' VALUES(:ID,:NAME,:COLUMNS_INFO,:ORDER_TEMPLATE_ID,:ORDER_AMOUNT,:ORDER_CURRENCY, ' +
+                                             'HIST_DURATION_TIME_UNITS, HIST_DATA_DURATION, HIST_DATA_BASIS, HIST_BAR_SIZE, '+
+                                             'QUALIFIER_ID, CANDIDATE_ID, QUANTITY_ID, ORDER_TEMPLATE_ID, ACTIVE) ' +
+                                    ' VALUES(:ID,:NAME,:COLUMNS_INFO,:ORDER_GROUP_ID,:ORDER_AMOUNT,:ORDER_CURRENCY, ' +
                                             ':MAX_NUMBER_ORDER,:TOTAL_ORDER_AMOUNT,:MAX_ROWS,:ALLOW_SEND_DUPLICATE_ORDER,' +
                                             ':NOTE,:ENABLED,:AUTO_REFRESH,:SUBSCRIBE_HIST_DATA,:HIST_DATA_KEEP_UPDATED,' +
-                                            ':HIST_DURATION_TIME_UNITS,:HIST_DATA_DURATION,:HIST_DATA_BASIS,:HIST_BAR_SIZE); ';
+                                            ':HIST_DURATION_TIME_UNITS,:HIST_DATA_DURATION,:HIST_DATA_BASIS,:HIST_BAR_SIZE,'+
+                                            ':QUALIFIER_ID,:CANDIDATE_ID,:QUANTITY_ID,:ORDER_TEMPLATE_ID,:ACTIVE); ';
   C_SQL_UPDATE_TEXT = 'UPDATE AUTOTRADES SET '                                   +
                       'NAME=:NAME,  '                                            +
                       'COLUMNS_INFO=:COLUMNS_INFO, '                             +
-                      'ORDER_TEMPLATE_ID=:ORDER_TEMPLATE_ID, '                   +
+                      'ORDER_GROUP_ID=:ORDER_GROUP_ID, '                   +
                       'ORDER_AMOUNT=:ORDER_AMOUNT, '                             +
                       'ORDER_CURRENCY=:ORDER_CURRENCY, '                         +
                       'TOTAL_ORDER_AMOUNT=:TOTAL_ORDER_AMOUNT, '                 +
@@ -274,7 +309,13 @@ resourcestring
                       'HIST_DATA_DURATION=:HIST_DATA_DURATION, '                 +
                       'HIST_DATA_BASIS=:HIST_DATA_BASIS, '                       +
                       'HIST_BAR_SIZE=:HIST_BAR_SIZE, '                           +
-                      'HIST_DATA_KEEP_UPDATED=:HIST_DATA_KEEP_UPDATED '          +
+                      'HIST_DATA_KEEP_UPDATED=:HIST_DATA_KEEP_UPDATED, '         +
+
+                      'QUALIFIER_ID=:QUALIFIER_ID, '                             +
+                      'CANDIDATE_ID=:CANDIDATE_ID, '                             +
+                      'QUANTITY_ID=:QUANTITY_ID, '                               +
+                      'ORDER_TEMPLATE_ID=:ORDER_TEMPLATE_ID, '                   +
+                      'ACTIVE=:ACTIVE '                                          +
                       'WHERE ID=:ID;';
 var
   IsExists: Boolean;
@@ -324,7 +365,7 @@ begin
     Query.ParamByName('TOTAL_ORDER_AMOUNT').AsInteger         := Self.TotalOrderAmount;
     Query.ParamByName('ORDER_AMOUNT').AsInteger               := Self.OrderAmount;
     Query.ParamByName('ORDER_CURRENCY').AsString              := Self.OrderCurrency.Substring(0, 10);
-    Query.ParamByName('ORDER_TEMPLATE_ID').AsInteger          := Self.OrderGroupId;
+    Query.ParamByName('ORDER_GROUP_ID').AsInteger             := Self.OrderGroupId;
     Query.ParamByName('NOTE').AsString                        := Self.Note.Substring(0, 500);
     Query.ParamByName('ENABLED').AsBoolean                    := Self.Enabled;
     Query.ParamByName('SUBSCRIBE_HIST_DATA').AsBoolean        := Self.HistoricalDataParams.SubscribeHistData;
@@ -333,6 +374,12 @@ begin
     Query.ParamByName('HIST_DATA_DURATION').AsInteger         := Self.HistoricalDataParams.DataDuration;
     Query.ParamByName('HIST_DATA_BASIS').AsInteger            := Ord(Self.HistoricalDataParams.DataBasis);
     Query.ParamByName('HIST_BAR_SIZE').AsInteger              := Ord(Self.HistoricalDataParams.BarSize);
+
+    Query.ParamByName('QUALIFIER_ID').Value                   := NullIf(Self.Qualifier.RecordId, -1);
+    Query.ParamByName('CANDIDATE_ID').Value                   := NullIf(Self.Candidate.RecordId, -1);
+    Query.ParamByName('QUANTITY_ID').Value                    := NullIf(Self.Quantity.RecordId, -1);
+    Query.ParamByName('ORDER_TEMPLATE_ID').Value              := NullIf(Self.OrderTemplate.RecordId, -1);
+    Query.ParamByName('ACTIVE').AsBoolean                     := Self.Active;
     try
       Query.Prepare;
       Query.ExecSQL;
@@ -345,6 +392,16 @@ begin
     FreeAndNil(Query);
     DMod.RefreshQuery(DMod.fbqAutoTrades);
   end;
+end;
+
+class function TAutoTradeInfo.GetListCaption: string;
+begin
+  Result := 'Autotrades list';
+end;
+
+class function TAutoTradeInfo.GetListSQL: string;
+begin
+  Result := 'SELECT ID, NAME, ACTIVE FROM AUTOTRADES ORDER BY LOWER(NAME)';
 end;
 
 function TAutoTradeInfo.GetOrderGroupId: Integer;
@@ -402,7 +459,7 @@ begin
       .AppendFormat('OrderCurrency=%s', [OrderCurrency]).AppendLine
       .AppendFormat('MaxNumberOrder=%d', [MaxNumberOrder]).AppendLine
       .AppendFormat('MaxRows=%d', [MaxRows]).AppendLine
-      .AppendFormat('QualifierId=%d', [QualifierId]).AppendLine
+      .AppendFormat('QualifierId=%d', [Qualifier.RecordId]).AppendLine
       .AppendFormat('QualifierInstance=%d', [QualifierInstance]).AppendLine
       .AppendFormat('TotalOrderAmount=%d', [TotalOrderAmount]).AppendLine
       .AppendFormat('AllowSendDuplicateOrder=%s', [BoolToStr(AllowSendDuplicateOrder, True)]).AppendLine
@@ -431,7 +488,7 @@ end;
 procedure TTradesData.AssignFrom(aAutoTradeInfo: TAutoTradeInfo);
 begin
   Self.AutoTradesId       := aAutoTradeInfo.RecordId;
-  Self.QualifierId        := aAutoTradeInfo.QualifierId;
+  Self.QualifierId        := aAutoTradeInfo.Qualifier.RecordId;
   Self.QualifierInstance  := aAutoTradeInfo.QualifierInstance;
   Self.AutotradesName     := aAutoTradeInfo.Name;
   Self.Columns            := aAutoTradeInfo.Columns;
@@ -444,7 +501,7 @@ begin
   Self.NodeType           := TNodeType.ntNode;
   Self.OrderAmount        := aAutoTradeInfo.OrderAmount;
   Self.OrderGroupId       := aAutoTradeInfo.OrderGroupId;
-  Self.Qualifier          := DMod.GetStringValueFromSQL('SELECT NAME FROM QUALIFIERS WHERE ID=' + aAutoTradeInfo.QualifierId.ToString, 'NAME');
+  Self.Qualifier          := DMod.GetStringValueFromSQL('SELECT NAME FROM QUALIFIERS WHERE ID=' + aAutoTradeInfo.Qualifier.RecordId.ToString, 'NAME');
   Self.ScanCount          := aAutoTradeInfo.ScanCount;
   Self.CreateTime         := aAutoTradeInfo.CreateTime;
 end;
