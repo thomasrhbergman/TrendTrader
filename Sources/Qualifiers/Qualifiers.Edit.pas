@@ -108,7 +108,7 @@ type
   private
     FQualifierItem: TQualifier;
     function CheckData: Boolean;
-    function GetCalcValue(aQualifierInstrument: TQualifierInstrument): Double;
+    //function GetCalcValue(aQualifierInstrument: TQualifierInstrument): Double;
     procedure CalculateInstrument1;
     procedure CalculateInstrument2;
     procedure QualifierInstrumentToGUI(Sender: TObject; aQualifierInstrument: TQualifierInstrument);
@@ -475,7 +475,7 @@ begin
       CalculateInstrument2;
 end;
 
-function TfrmQualifierEdit.GetCalcValue(aQualifierInstrument: TQualifierInstrument): Double;
+{function TfrmQualifierEdit.GetCalcValue(aQualifierInstrument: TQualifierInstrument): Double;
 var
   Value1: Double;
   Value2: Double;
@@ -488,7 +488,7 @@ begin
   end
   else
     Result := Value1;
-end;
+end;}
 
 procedure TfrmQualifierEdit.CalculateInstrument1;
 begin

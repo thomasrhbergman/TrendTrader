@@ -193,6 +193,7 @@ end;
 
 procedure TframeDocumentsTree.Initialize;
 begin
+  Exit;
 //  TMonitorTree.Initialize(vstTree);
   LoadFromXml(vstTree);
   case DocType of

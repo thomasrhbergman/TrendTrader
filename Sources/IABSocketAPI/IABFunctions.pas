@@ -142,6 +142,7 @@ begin
   FMarketSubscribeList := TSubscribeList.Create;
   FHistSubscribeList   := TSubscribeList.Create;
   FThreadIABSocket     := TThreadIABSocket.Create(Self);
+  FThreadIABSocket.Start;
 end;
 
 destructor TIABClient.Destroy;
@@ -724,7 +725,7 @@ begin
   FIABClient := aIABClient;
   FreeOnTerminate := True;
   Priority := tpNormal;
-  FRequestsQueue := TIABRequestsQueue.Create;
+  FRequestsQueue := TIABRequestsQueue.Create(C_POP_TIMEOUT);
   FStopwatch := TStopwatch.StartNew;
 end;
 

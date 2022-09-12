@@ -1061,11 +1061,13 @@ constructor TPriceCache.Create(Ownerships: TDictionaryOwnerships; ACapacity: Int
 begin
   inherited Create(Ownerships, ACapacity);
   FThread := TThreadPriceCache.Create;
+  FThread.Start;
 end;
 
 destructor TPriceCache.Destroy;
 begin
   FThread.Terminate;
+  WaitForSingleObject(FThread.Handle, INFINITE);
   inherited;
 end;
 

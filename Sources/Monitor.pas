@@ -577,6 +577,7 @@ type
     procedure CancelSiblingsOrders(const aNode: PVirtualNode);
     procedure SaveToDBTreeElement(const aGroupName: string = '');
     procedure WriteHistoricalDataToConditionDoc(const aNode: PVirtualNode);
+    function GetPanelRect(APanelIndex: Integer): TRect;
 
     property Connected     : Boolean read FConnected     write SetConnected;
     property ConnectedIB   : Boolean read GetConnectedIB write SetConnectedIB;
@@ -757,6 +758,7 @@ end;
 
 procedure TfrmMonitor.FormDestroy(Sender: TObject);
 begin
+  Disconnect;
   if Assigned(FStorageOrders) then
     FreeAndNil(FStorageOrders);
   TMonitorLists.DestroyLists;
@@ -1035,56 +1037,50 @@ begin
   aUseIBfeeds.Checked       := General.XmlFile.ReadBool(C_SECTION_MONITOR, C_KEY_USE_IB_FEEDS, False);
 end;
 
+function TfrmMonitor.GetPanelRect(APanelIndex: Integer): TRect;
+var I: integer;
+begin
+  Result.Left := 0;
+  for I := 0 to APanelIndex - 1 do
+    if I < sbMain.Panels.Count then
+      Result.Left := Result.Left + sbMain.Panels[I].Width;
+  Result.Top := 2;
+  Result.Right := Result.Left + sbMain.Panels[APanelIndex].Width - 1;
+  Result.Height := sbMain.Height - 1;
+end;
+
 procedure TfrmMonitor.OnDocumentQueueNotifyEvent(Sender: TObject; const Item: PVirtualNode; Action: TCollectionNotification);
-var
-  Rect: TRect;
 begin
   if not Application.Terminated then
   begin
-    Rect.Top := 2;
-    Rect.Left := 350;
-    Rect.Right := Rect.Left + sbMain.Panels[5].Width - 1;
-    Rect.Height := sbMain.Height - 1;
     TThread.Queue(nil,
       procedure()
       begin
-        sbMainDrawPanel(sbMain, sbMain.Panels[5], Rect);
+        sbMainDrawPanel(sbMain, sbMain.Panels[5], GetPanelRect(5));
       end);
   end;
 end;
 
 procedure TfrmMonitor.SetRealTradesText;
-var
-  Rect: TRect;
 begin
   if not Application.Terminated then
   begin
-    Rect.Top := 2;
-    Rect.Left := 390;
-    Rect.Right := Rect.Left + sbMain.Panels[7].Width - 1;
-    Rect.Height := sbMain.Height - 1;
     TThread.Queue(nil,
       procedure()
       begin
-        sbMainDrawPanel(sbMain, sbMain.Panels[7], Rect);
+        sbMainDrawPanel(sbMain, sbMain.Panels[7], GetPanelRect(7));
       end);
   end;
 end;
 
 procedure TfrmMonitor.SetNetworkText;
-var
-  Rect: TRect;
 begin
   if not Application.Terminated then
   begin
-    Rect.Top := 2;
-    Rect.Left := 370;
-    Rect.Right := Rect.Left + sbMain.Panels[6].Width - 1;
-    Rect.Height := sbMain.Height - 1;
     TThread.Queue(nil,
       procedure()
       begin
-        sbMainDrawPanel(sbMain, sbMain.Panels[6], Rect);
+        sbMainDrawPanel(sbMain, sbMain.Panels[6], GetPanelRect(6));
       end);
   end;
 end;
@@ -1127,9 +1123,10 @@ end;
 procedure TfrmMonitor.sbMainDrawPanel(StatusBar: TStatusBar; Panel: TStatusPanel; const Rect: TRect);
 resourcestring
  rsIBConnected = 'IB Connected';
+ rsIBDisconnected = 'IB Disconnected';
  rsIBDisabled  = 'IB Disabled';
- rsOnLine      = 'OnLine';
- rsOffLine     = 'OffLine ' + C_NETWORK;
+ rsOnLine      = 'Internet OnLine';
+ rsOffLine     = 'Internet OffLine';
  rsNNConnected = 'NN Connected';
  rsNNDisabled  = 'NN Disabled';
  rsPaperTrade  = 'Paper Trade';
@@ -1139,10 +1136,8 @@ resourcestring
 var
   RectForText: TRect;
   IsUseIB: Boolean;
-  IsUseNN: Boolean;
 begin
   IsUseIB := General.XMLFile.ReadBool(TGeneral.C_SECTION_COMMON_PARAMS, TGeneral.C_KEY_USE_IB, True);
-  IsUseNN := General.XMLFile.ReadBool(TGeneral.C_SECTION_COMMON_PARAMS, TGeneral.C_KEY_USE_NN, True);
   if (Panel = StatusBar.Panels[0]) then       //IB Connected
   begin
     if not IsUseIB then
@@ -1152,11 +1147,16 @@ begin
     end
     else
     begin
-      Panel.Text := rsIBConnected;
       if (IABClient.State = twsReady) then
-        StatusBar.Canvas.Font.Color := clGreen
+      begin
+        Panel.Text := rsIBConnected;
+        StatusBar.Canvas.Font.Color := clGreen;
+      end
       else
+      begin
+        Panel.Text := rsIBDisconnected;
         StatusBar.Canvas.Font.Color := clRed;
+      end;
     end;
     RectForText := Rect;
     StatusBar.Canvas.FillRect(RectForText);
@@ -1182,7 +1182,7 @@ begin
     StatusBar.Canvas.FillRect(RectForText);
     DrawText(StatusBar.Canvas.Handle, PChar(Panel.Text), -1, RectForText, DT_SINGLELINE or DT_VCENTER or DT_LEFT);
   end
-  else if (Panel = StatusBar.Panels[3]) then  //NN Connected
+  {else if (Panel = StatusBar.Panels[3]) then  //NN Connected
   begin
     if not IsUseNN then
     begin
@@ -1219,7 +1219,7 @@ begin
     RectForText := Rect;
     StatusBar.Canvas.FillRect(RectForText);
     DrawText(StatusBar.Canvas.Handle, PChar(Panel.Text), -1, RectForText, DT_SINGLELINE or DT_VCENTER);
-  end
+  end}
   else if (Panel = StatusBar.Panels[5]) then  //Nodes Without Feed
   begin
     if not IsUseIB then
@@ -2008,6 +2008,16 @@ begin
       while Assigned(Node) do
       begin
         CurData := Node^.GetData;
+        if CurData.DocType = ntAutoTrade then
+        begin
+          // no qualifier in the tree
+          if Node.ChildCount = 0 then
+          begin
+            if CurData.AutoTrade.Qualifier.IsCondition then
+
+          end;
+        end;
+
         if (vstMonitor.GetNodeLevel(Node) <> 0) and
            CurData.Enabled and
            Assigned(CurData.ConditionDoc) and
@@ -3481,6 +3491,11 @@ begin
     CellText := NodeData^.NodeId.ToString;
 
   case NodeData^.DocType of
+    ntAutoTrade:
+      case Column of
+        COL_ITEMS:
+          CellText := NodeData^.AutoTrade.Name;
+      end;
     ntOrderGroupSet:
       case Column of
         COL_ITEMS:
@@ -4301,6 +4316,16 @@ end;
 procedure TfrmMonitor.SetConnected(const Value: Boolean);
 begin
   FConnected := Value;
+  if FConnected then
+  begin
+    btnLogin.ImageIndex := 54;
+    btnLogin.Hint := 'Disconnect';
+  end
+  else
+  begin
+    btnLogin.ImageIndex := 53;
+    btnLogin.Hint := 'Connect';
+  end;
 end;
 
 function TfrmMonitor.GetConnectedIB: Boolean;
@@ -4316,12 +4341,12 @@ begin
       IABClient.Connected := False
     else if (IABClient.Connected <> Value) then
       IABClient.Connected := Value;
+    Connected := IABClient.Connected;
   end;
 end;
 
 procedure TfrmMonitor.SetConnectedNN(const Value: Boolean);
 var
-  Rect: TRect;
   Connect: Boolean;
 begin
   if not (csDestroying in Self.ComponentState) then
@@ -4332,54 +4357,38 @@ begin
     FConnectedNN := Connect;
     if not Value then
       RecieveDataNN := Connect;
-    Rect.Top    := 2;
-    Rect.Left   := 182;
-    Rect.Right  := Rect.Left + sbMain.Panels[3].Width - 2;
-    Rect.Height := sbMain.Height - 1;
     TThread.Queue(nil,
       procedure()
       begin
-        sbMainDrawPanel(sbMain, sbMain.Panels[3], Rect)
+        sbMainDrawPanel(sbMain, sbMain.Panels[3], GetPanelRect(3))
       end);
   end;
 end;
 
 procedure TfrmMonitor.SetRecieveDataIB(const Value: Boolean);
-var
-  Rect: TRect;
 begin
   if not(csDestroying in Self.ComponentState) then
     if (Value <> FRecieveDataIB) then
     begin
       FRecieveDataIB := Value;
-      Rect.Top    := 2;
-      Rect.Left   := 83;
-      Rect.Right  := Rect.Left + sbMain.Panels[1].Width - 2;
-      Rect.Height := sbMain.Height - 1;
       TThread.Queue(nil,
         procedure()
         begin
-          sbMainDrawPanel(sbMain, sbMain.Panels[1], Rect)
+          sbMainDrawPanel(sbMain, sbMain.Panels[1], GetPanelRect(1))
         end);
     end;
 end;
 
 procedure TfrmMonitor.SetRecieveDataNN(const Value: Boolean);
-var
-  Rect: TRect;
 begin
   if not(csDestroying in Self.ComponentState) then
 //    if (Value <> FRecieveDataNN) then
     begin
       FRecieveDataNN := Value;
-      Rect.Top    := 2;
-      Rect.Left   := 273;
-      Rect.Right  := Rect.Left + sbMain.Panels[4].Width - 2;
-      Rect.Height := sbMain.Height - 1;
       TThread.Queue(nil,
         procedure()
         begin
-          sbMainDrawPanel(sbMain, sbMain.Panels[4], Rect)
+          sbMainDrawPanel(sbMain, sbMain.Panels[4], GetPanelRect(4))
         end);
     end;
 end;
@@ -4402,7 +4411,6 @@ end;
 procedure TfrmMonitor.OnConnectionState(Sender: TObject; State: TIABConnection);
 var
   s: string;
-  Rect: TRect;
 begin
   case State of
     twsClosed:
@@ -4443,14 +4451,10 @@ begin
   end;
   TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddText, 'OnConnectionState', s);
 
-  Rect.Top    := 2;
-  Rect.Left   := 2;
-  Rect.Right  := sbMain.Panels[0].Width - 1;
-  Rect.Height := sbMain.Height - 1;
   TThread.Queue(nil,
     procedure()
     begin
-      sbMainDrawPanel(sbMain, sbMain.Panels[0], Rect);
+      sbMainDrawPanel(sbMain, sbMain.Panels[0], GetPanelRect(0));
     end);
 
   TPublishers.LogPublisher.Write([ltLogWriter], ddText, Self, 'OnConnectionState', s);
@@ -5776,11 +5780,8 @@ end;
 procedure TfrmMonitor.Connect;
 begin
   Connected := True;
-  btnLogin.ImageIndex := 54;
-  btnLogin.Hint := 'Disconnect';
-
   ConnectToIBBroker;
-  SubscribeNNFeeds;
+  //SubscribeNNFeeds;
   TPublishers.LogPublisher.Write([ltLogWriter], ddText, THtmlLib.GetColorTag('Connect', clGreen));
 end;
 
@@ -6430,8 +6431,6 @@ begin
   if Assigned(Broker) then
     Broker.Leave;
 
-  btnLogin.ImageIndex := 53;
-  btnLogin.Hint := 'Connect';
   ConnectedIB := False;
   ConnectedNN := False;
   TPublishers.LogPublisher.Write([ltLogWriter], ddText, THtmlLib.GetColorTag('Disconnect', clGreen));
@@ -6506,8 +6505,16 @@ end;
 procedure TfrmMonitor.aActivateAllExecute(Sender: TObject);
 var
   Node: PVirtualNode;
+  LAutoTrade: TAutoTradeInfo;
 begin
-  Node := vstMonitor.GetFirst;
+  vstMonitor.Clear;
+  AutoTradeCollection.LoadActiveAutotrades;
+  for LAutoTrade in AutoTradeCollection do
+  begin
+    Node := TTreeDocument.CreateAutoTrade(nil, vstMonitor, LAutoTrade);
+    Node.CheckState := csCheckedNormal;
+  end;
+  {Node := vstMonitor.GetFirst;
   while Assigned(Node) do
   begin
     if (TTreeDocument.GetDocType(vstMonitor, Node) = ntOrder) then
@@ -6522,7 +6529,7 @@ begin
       SetIcon(Node);
     end;
     Node := vstMonitor.GetNext(Node);
-  end;
+  end;}
   if (aActivateAll.ImageIndex = 12) then
     aActivateAll.ImageIndex := 13
   else
@@ -7367,8 +7374,8 @@ end;
 function TfrmMonitor.DoAutoTradesInstance(const aAutoTradeId, aQualifierId, aQualifierInstance: Integer): IAutoTrade;
 var
   AutoTradeInfo: TAutoTradeInfo;
-  Qualifier: TQualifier;
-  Index : Integer;
+  //Qualifier: TQualifier;
+  //Index : Integer;
 begin
   Result := nil;
   if (aAutoTradeId > 0) then

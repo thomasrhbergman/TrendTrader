@@ -8,7 +8,7 @@ uses
   Vcl.Forms, Winapi.Messages, DebugWriter, {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} IABSocketAPI_const,
   Data.DB, HtmlLib, System.IOUtils, System.Threading, System.Types, DaModule.Constants,
   DaModule.Utils, System.Variants, Common.Types, Global.Types, Publishers, System.Math, Vcl.Graphics,
-  FireDAC.Comp.Client, IBX.IB, FireDAC.Stan.Param, FireDAC.Comp.DataSet;
+  FireDAC.Comp.Client, IBX.IB, FireDAC.Stan.Param, FireDAC.Comp.DataSet, Utils;
 {$ENDREGION}
 
 type
@@ -51,7 +51,7 @@ begin
   inherited Create(True);
   FreeOnTerminate := True;
   Priority := tpLowest;
-  FQueue := TThreadedQueue<TStoredPrice>.Create(100000);
+  FQueue := TThreadedQueue<TStoredPrice>.Create(100000, C_POP_TIMEOUT, C_PUSH_TIMEOUT);
   CreateFeedConnect;
   CreateStockConnect;
 end;
@@ -59,21 +59,21 @@ end;
 destructor TThreadPriceCache.Destroy;
 begin
   FStoredProc.UnPrepare;
-  FreeAndNil(FStoredProc);
   if FTransactionFeed.Active then
     FTransactionFeed.Commit;
-  FreeAndNil(FTransactionFeed);
   if FConnectionFeed.Connected then
     FConnectionFeed.Connected := False;
+  FreeAndNil(FStoredProc);
+  FreeAndNil(FTransactionFeed);
   FreeAndNil(FConnectionFeed);
 
   FQuerySokid.Unprepare;
-  FreeAndNil(FQuerySokid);
   if FTransactionSokid.Active then
     FTransactionSokid.Commit;
-  FreeAndNil(FTransactionSokid);
   if FConnectionSokid.Connected then
     FConnectionSokid.Connected := False;
+  FreeAndNil(FQuerySokid);
+  FreeAndNil(FTransactionSokid);
   FreeAndNil(FConnectionSokid);
 
   FreeAndNil(FQueue);
@@ -107,7 +107,7 @@ begin
   FTransactionFeed.Connection := FConnectionFeed;
   FTransactionFeed.Options.AutoCommit := false;
 
-  FStoredProc := TFDStoredProc.Create(FConnectionSokid);
+  FStoredProc := TFDStoredProc.Create(FConnectionFeed);
   FStoredProc.StoredProcName := C_PROC_NAME;
   FStoredProc.Connection     := FConnectionFeed;
   FStoredProc.Transaction    := FTransactionFeed;
@@ -170,7 +170,7 @@ begin
                                                                          ', SQLCode: ' + E.SQLCode.ToString +
                                                                          ', IBErrorCode: ' +  E.IBErrorCode.ToString +
                                                                          TDModUtils.GetQueryInfo(FQuerySokid));
-          UpdateSokidIB(aStoredPrice);
+          //UpdateSokidIB(aStoredPrice); ????
         end;
         on Er: Exception do
           TPublishers.LogPublisher.Write([ltLogWriter], ddError, Self, 'UpdateSokidIB', Er.Message + TDModUtils.GetQueryInfo(FQuerySokid));
@@ -210,7 +210,7 @@ begin
                                                                        ', SQLCode: ' + E.SQLCode.ToString +
                                                                        ', IBErrorCode: ' +  E.IBErrorCode.ToString +
                                                                        TDModUtils.GetQueryInfo(FStoredProc));
-        SaveRecordToDB(aStoredPrice);
+        //SaveRecordToDB(aStoredPrice);  ???
       end;
       on Er: Exception do
         TPublishers.LogPublisher.Write([ltLogWriter], ddError, Self, 'UpdateSokidIB', Er.Message + TDModUtils.GetQueryInfo(FStoredProc));

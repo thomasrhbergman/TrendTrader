@@ -3202,6 +3202,7 @@ end;
 function TfrmCandidateMain.GetAutoTradeInfo: TAutoTradeInfo;
 begin
   //Result := FCandidate;
+  Result := nil;
 end;
 
 procedure TfrmCandidateMain.CloseAutoTrade(const aSilenceMode: Boolean = False);

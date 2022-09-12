@@ -316,7 +316,7 @@ type
     property XMLFile                 : TXMLFile                read FXMLFile                 write FXMLFile;
   end;
 
-  TBaseClass = class
+  TBaseClass = class(TInterfacedObject)
   private
     FRecordId: Integer;
     FName: String;

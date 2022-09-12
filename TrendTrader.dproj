@@ -1755,7 +1755,7 @@
         <DCCReference Include="Sources\Virtual TreeView\VirtualTrees.ExportHelper.pas"/>
         <DCCReference Include="Sources\Virtual TreeView\VirtualTrees.Helper.pas"/>
         <DCCReference Include="Sources\XmlFiles.pas"/>
-        <DCCReference Include="Sources\ListForm\ListForm.pas">
+        <DCCReference Include="Sources\ListForm.pas">
             <Form>frmListForm</Form>
         </DCCReference>
         <DCCReference Include="Sources\Candidates\Candidate.AllFilters.pas">

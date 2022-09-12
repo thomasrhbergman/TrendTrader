@@ -428,6 +428,7 @@ destructor TFileWriter.Destroy;
 begin
   if Assigned(FFileStream) then
     FreeAndNil(FFileStream);
+  DeleteCriticalSection(FCriticalSection);
   inherited;
 end;
 
@@ -503,5 +504,9 @@ end;
 initialization
   if not Assigned(LogWriter) and not System.IsLibrary then
     LogWriter := TLogWriter.Create(Application);
+
+finalization
+//  if Assigned(LogWriter) then
+//    LogWriter.Free;
 
 end.

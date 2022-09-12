@@ -11,6 +11,7 @@
 *.~dsk
 *.zip
 *.dsk
+*.mes
 /.svn/
 /__history/
 /__recovery/

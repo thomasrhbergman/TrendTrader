@@ -72,10 +72,11 @@ type
     FQueueNotEmpty : TObject;
     FQueueNotFull  : TObject;
     FShutDown      : Boolean;
+    FPopTimeout    : Cardinal;
     function GetCount: Integer;
     procedure DoShutDown;
   public
-    constructor Create;
+    constructor Create(PopTimeout: Cardinal = INFINITE);
     destructor Destroy; override;
     function PopItem(out AItem: TIABRequest): TWaitResult;
     function PushItem(aCommand: TIABCommand; aContractId: Integer; aOrder: TIABOrder = nil; aPriority: TQueuePriority = qpNormal): TWaitResult; overload;
@@ -110,13 +111,14 @@ implementation
 
 { TIABRequestsQueue}
 
-constructor TIABRequestsQueue.Create;
+constructor TIABRequestsQueue.Create(PopTimeout: Cardinal = INFINITE);
 begin
   FList          := TList<TIABRequest>.Create;
   FQueueLock     := TObject.Create;
   FQueueNotEmpty := TObject.Create;
   FQueueNotFull  := TObject.Create;
   FShutDown      := False;
+  FPopTimeout    := PopTimeout;
   FComparer := TComparer<TIABRequest>.Construct(
     function(const Left, Right: TIABRequest): Integer
     begin
@@ -163,9 +165,9 @@ begin
   try
     Result := wrSignaled;
     while (Result = wrSignaled) and (FList.Count = 0) and not FShutDown do
-      if not System.TMonitor.Wait(FQueueNotEmpty, FQueueLock, INFINITE) then
+      if not System.TMonitor.Wait(FQueueNotEmpty, FQueueLock, FPopTimeout) then
         Result := wrTimeout;
-    if Application.Terminated then
+    if not Assigned(Application) or Application.Terminated then
       Exit
     else if (FShutDown and (FList.Count = 0)) then
       Exit

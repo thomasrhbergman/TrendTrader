@@ -9,7 +9,7 @@ uses
   IABFunctions, Data.DB, Common.Types, HtmlLib, System.IOUtils, System.Threading, System.Types, System.Math, VirtualTrees,
   DaModule.Constants, DaModule.Utils, System.Variants, Global.Types, Publishers, Publishers.Interfaces, Generics.Helper,
   InstrumentList, DaModule, Document, Monitor.Types, IABFunctions.Helpers, FireDAC.Comp.Client, IBX.IB,
-  FireDAC.Stan.Param, FireDAC.Comp.DataSet;
+  FireDAC.Stan.Param, FireDAC.Comp.DataSet, Utils;
 {$ENDREGION}
 
 type
@@ -105,7 +105,7 @@ begin
   inherited Create(True);
   FreeOnTerminate := True;
   Priority := tpLowest;
-  FQueue := TThreadedQueue<TStatusData>.Create(10000);
+  FQueue := TThreadedQueue<TStatusData>.Create(10000, C_POP_TIMEOUT, C_PUSH_TIMEOUT);
   CreateConnect;
 end;
 
@@ -125,12 +125,12 @@ end;
 
 destructor TThreadStorageOrders.Destroy;
 begin
-  FreeAndNil(FQuery);
   if FTransaction.Active then
     FTransaction.Commit;
-  FreeAndNil(FTransaction);
   if FConnection.Connected then
     FConnection.Connected := False;
+  FreeAndNil(FQuery);
+  FreeAndNil(FTransaction);
   FreeAndNil(FConnection);
   FreeAndNil(FQueue);
   inherited Destroy;
@@ -456,6 +456,7 @@ end;
 destructor TStorageOrders.Destroy;
 begin
   FThread.Terminate;
+  WaitForSingleObject(FThread.Handle, INFINITE);
   TPublishers.OrderStatusPublisher.Unsubscribe(Self);
   inherited;
 end;

@@ -372,6 +372,7 @@ begin
   if Assigned(aNode) then
   begin
     Data := aNode^.GetData;
+    AutoTrade     := nil;
     OrderGroup    := nil;
     Order         := nil;
     Condition     := nil;

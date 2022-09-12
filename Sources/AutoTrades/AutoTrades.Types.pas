@@ -128,8 +128,14 @@ type
     procedure Clear;
   end;
 
+  TAutoTradeCollection = class(TObjectList<TAutoTradeInfo>)
+  public
+    procedure LoadActiveAutotrades;
+  end;
+
 var
   AutoTradesControllerPublisher: TAutoTradesControllerPublisher;
+  AutoTradeCollection: TAutoTradeCollection;
 
 implementation
 
@@ -168,11 +174,6 @@ end;
 
 procedure TAutoTradeInfo.Clear;
 begin
-  Self := Default(TAutoTradeInfo);
-end;
-
-constructor TAutoTradeInfo.Create;
-begin
   AutoRefresh := False;
   Active := False;
   Enabled := True;
@@ -186,10 +187,19 @@ begin
   ScanCount := 0;
   TotalOrderAmount := 0;
   HistoricalDataParams := Default(THistoricalDataParams);
+  Qualifier.Clear;
+  Candidate.Clear;
+  Quantity.Clear;
+  OrderTemplate.Clear;
+end;
+
+constructor TAutoTradeInfo.Create;
+begin
   Qualifier := TQualifier.Create;
   Candidate := TCandidate.Create;
   Quantity := TQuantity.Create;
   OrderTemplate := TOrderTemplate.Create;
+  Clear;
 end;
 
 class procedure TAutoTradeInfo.DeleteFromDB(aID: Integer);
@@ -203,7 +213,10 @@ end;
 destructor TAutoTradeInfo.Destroy;
 begin
   if Assigned(Qualifier) then
+  begin
+    Qualifier.DeInitialize;
     Qualifier.Free;
+  end;
   if Assigned(Candidate) then
     Candidate.Free;
   if Assigned(Quantity) then
@@ -567,11 +580,52 @@ begin
   Result := TradesStateString[Self];
 end;
 
+{ TAutoTradeCollection }
+
+procedure TAutoTradeCollection.LoadActiveAutotrades;
+const C_SELECT_SQL =
+  'SELECT ID FROM AUTOTRADES '+ sLineBreak +
+  'WHERE ACTIVE = TRUE '+ sLineBreak +
+  '  AND QUALIFIER_ID IS NOT NULL '+ sLineBreak +
+  '  AND CANDIDATE_ID IS NOT NULL '+ sLineBreak +
+  '  AND QUANTITY_ID IS NOT NULL '+ sLineBreak +
+  '  AND ORDER_TEMPLATE_ID IS NOT NULL '+ sLineBreak +
+  'ORDER BY LOWER(NAME)';
+
+var LQuery: TFDQuery;
+    LAutoTrade: TAutoTradeInfo;
+begin
+  Clear;
+  LQuery := TFDQuery.Create(nil);
+  try
+    LQuery.Connection := DMod.ConnectionStock;
+    LQuery.SQL.Text := C_SELECT_SQL;
+    LQuery.Open;
+    while not LQuery.Eof do
+    begin
+      LAutoTrade := TAutoTradeInfo.Create;
+      LAutoTrade.FromDB(LQuery.FieldByName('ID').AsInteger);
+      LAutoTrade.Qualifier.Initialize;
+      Add(LAutoTrade);
+      LQuery.Next;
+    end;
+  finally
+    LQuery.Free;
+  end;
+end;
+
 initialization
   AutoTradesControllerPublisher := TAutoTradesControllerPublisher.Create;
+  AutoTradeCollection := TAutoTradeCollection.Create;
+  AutoTradeCollection.OwnsObjects := true;
 
 finalization
   if Assigned(AutoTradesControllerPublisher) then
     FreeAndNil(AutoTradesControllerPublisher);
+  if Assigned(AutoTradeCollection) then
+  begin
+    AutoTradeCollection.Clear;
+    FreeAndNil(AutoTradeCollection);
+  end;
 
 end.

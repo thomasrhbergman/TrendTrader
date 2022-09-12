@@ -59,6 +59,7 @@ implementation
 
 procedure TTreeData.Clear;
 begin
+  Exit;
   if Assigned(TradeChart) then
     FreeAndNil(TradeChart);
   if (DocType = ntCondition) then
@@ -68,6 +69,8 @@ begin
     if Assigned(ConditionChart) then
       FreeAndNil(ConditionChart);
   end;
+  if Assigned(AutoTrade) then
+    FreeAndNil(AutoTrade);
   if Assigned(Qualifier) then
     FreeAndNil(Qualifier);
   if Assigned(OrderGroupSetDoc) then
@@ -88,7 +91,7 @@ begin
     FreeAndNil(TradeChart);
 
   //Qualifier.Clear;
-  AutoTrade.Clear;
+  //AutoTrade.Clear;
 
   Enabled      := True;
   CreationType := ctUser;

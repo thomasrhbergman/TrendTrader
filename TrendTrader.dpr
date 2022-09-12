@@ -225,7 +225,7 @@ uses
 
 begin
 {$IFDEF DEBUG}
-  // ReportMemoryLeaksOnShutdown := DebugHook <> 0;
+  ReportMemoryLeaksOnShutdown := DebugHook <> 0;
 {$ENDIF}
   try
     DeleteFile('CrntStreamIn.txt');
@@ -236,9 +236,9 @@ begin
     Application.MainFormOnTaskbar := True;
     Application.HintPause := 50;
     Application.CreateForm(TDMod, DMod);
-  Application.CreateForm(TDMImage, DMImage);
-  Application.CreateForm(TfrmMonitor, frmMonitor);
-  TfrmSplashScreen.ShowSplashScreen;
+    Application.CreateForm(TDMImage, DMImage);
+    Application.CreateForm(TfrmMonitor, frmMonitor);
+    TfrmSplashScreen.ShowSplashScreen;
     try
       DMod.Initialize;
       frmMonitor.Initialize;

@@ -90,23 +90,27 @@ procedure TfrmAutoTrades.aCreateExecute(Sender: TObject);
 var
   AutoTrade: TAutoTradeInfo;
 begin
-  AutoTrade.Clear;
-  AutoTrade.RecordId                := -1;
-  AutoTrade.Active                  := True;
-  AutoTrade.AllowSendDuplicateOrder := False;
-  AutoTrade.AutoRefresh             := True;
-  AutoTrade.Enabled                 := True;
-  AutoTrade.MaxNumberOrder          := 1;
-  AutoTrade.MaxRows                 := 10;
-  AutoTrade.Name                    := 'Auto Trade';
-  AutoTrade.OrderAmount             := 1000;
-  AutoTrade.OrderCurrency           := C_DEFAULT_CURRENCY;
+  AutoTrade := TAutoTradeInfo.Create;
+  try
+    AutoTrade.RecordId                := -1;
+    AutoTrade.Active                  := True;
+    AutoTrade.AllowSendDuplicateOrder := False;
+    AutoTrade.AutoRefresh             := True;
+    AutoTrade.Enabled                 := True;
+    AutoTrade.MaxNumberOrder          := 1;
+    AutoTrade.MaxRows                 := 10;
+    AutoTrade.Name                    := 'Auto Trade';
+    AutoTrade.OrderAmount             := 1000;
+    AutoTrade.OrderCurrency           := C_DEFAULT_CURRENCY;
 
-  if (TfrmAutoTradesEdit.ShowEditForm(AutoTrade, dmInsert) = mrOk) then
-  begin
-    AutoTrade.SaveToDB;
-    DMod.RefreshQuery(DMod.fbqAutoTrades);
-    frameAutoTrades.LoadTree;
+    if (TfrmAutoTradesEdit.ShowEditForm(AutoTrade, dmInsert) = mrOk) then
+    begin
+      AutoTrade.SaveToDB;
+      DMod.RefreshQuery(DMod.fbqAutoTrades);
+      frameAutoTrades.LoadTree;
+    end;
+  finally
+    AutoTrade.Free;
   end;
 
 end;

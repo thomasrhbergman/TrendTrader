@@ -821,7 +821,7 @@ object frmMonitor: TfrmMonitor
       item
         Style = psOwnerDraw
         Text = 'IB Connected'
-        Width = 80
+        Width = 90
       end
       item
         Style = psOwnerDraw
@@ -835,12 +835,12 @@ object frmMonitor: TfrmMonitor
       item
         Style = psOwnerDraw
         Text = 'NN Connected'
-        Width = 90
+        Width = 0
       end
       item
         Style = psOwnerDraw
         Text = 'Recieve data'
-        Width = 80
+        Width = 0
       end
       item
         Bevel = pbRaised
@@ -852,7 +852,7 @@ object frmMonitor: TfrmMonitor
         Bevel = pbRaised
         Style = psOwnerDraw
         Text = 'Line '
-        Width = 60
+        Width = 100
       end
       item
         Alignment = taCenter
@@ -1452,6 +1452,7 @@ object frmMonitor: TfrmMonitor
       object miUseNN: TMenuItem
         Action = aUseNN
         AutoCheck = True
+        Visible = False
       end
       object miSep01: TMenuItem
         Caption = '-'
@@ -1462,6 +1463,7 @@ object frmMonitor: TfrmMonitor
       object miUseIBfeeds: TMenuItem
         Action = aUseIBfeeds
         AutoCheck = True
+        Visible = False
       end
       object miSep02: TMenuItem
         Caption = '-'

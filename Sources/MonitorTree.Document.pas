@@ -21,7 +21,7 @@ type
   TTreeDocument = class
   public
     class function CreateAlgos(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
-    class function CreateAutoTrade(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
+    class function CreateAutoTrade(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree; const aAutoTrade: TAutoTradeInfo = nil): PVirtualNode; inline;
     class function CreateCondition(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
     class function CreateFactor(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
     class function CreateOrder(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree; const aBrokerType: TBrokerType): PVirtualNode; inline;
@@ -70,7 +70,7 @@ implementation
 
 { TTreeDocument }
 
-class function TTreeDocument.CreateAutoTrade(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode;
+class function TTreeDocument.CreateAutoTrade(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree; const aAutoTrade: TAutoTradeInfo = nil): PVirtualNode;
 var
   Data: PTreeData;
   ParentNode: PVirtualNode;
@@ -87,16 +87,21 @@ begin
   Data^.CreationType := ctUser;
   Data^.RelationId     := -1;
 
-  Data^.AutoTrade                         := TAutoTradeInfo.Create;
-  Data^.AutoTrade.Active                  := True;
-  Data^.AutoTrade.AllowSendDuplicateOrder := False;
-  Data^.AutoTrade.AutoRefresh             := True;
-  Data^.AutoTrade.Enabled                 := True;
-  Data^.AutoTrade.MaxNumberOrder          := 1;
-  Data^.AutoTrade.MaxRows                 := 10;
-  Data^.AutoTrade.Name                    := 'Auto Trade';
-  Data^.AutoTrade.OrderAmount             := 1000;
-  Data^.AutoTrade.OrderCurrency           := C_DEFAULT_CURRENCY;
+  if not Assigned(aAutoTrade) then
+  begin
+    Data^.AutoTrade                         := TAutoTradeInfo.Create;
+    Data^.AutoTrade.Active                  := True;
+    Data^.AutoTrade.AllowSendDuplicateOrder := False;
+    Data^.AutoTrade.AutoRefresh             := True;
+    Data^.AutoTrade.Enabled                 := True;
+    Data^.AutoTrade.MaxNumberOrder          := 1;
+    Data^.AutoTrade.MaxRows                 := 10;
+    Data^.AutoTrade.Name                    := 'Auto Trade';
+    Data^.AutoTrade.OrderAmount             := 1000;
+    Data^.AutoTrade.OrderCurrency           := C_DEFAULT_CURRENCY;
+  end
+  else
+    Data^.AutoTrade := aAutoTrade;
 
   Data^.AutoTrade.OwnerNode := Result;
   Data^.RecordId := -1;

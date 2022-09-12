@@ -40,6 +40,9 @@ uses
 
 const
   C_ROUND_SEC = 2;
+  C_QUEUE_DEPTH = 10;
+  C_POP_TIMEOUT = 1000;
+  C_PUSH_TIMEOUT = 1000;
 
 var
   NoDecimalSeparator: string;

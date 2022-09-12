@@ -172,21 +172,22 @@ class procedure TFireBirdConnect.SetConnectParams(var aConnection: TFDConnection
   aDBName: string);
 var
   ConnectParams: TDBConnectParams;
-  Params: TStringList;
+  //Params: TStringList;
 begin
   CriticalSection.Enter;
   try
     ConnectParams := GetConnectParams(aDBName);
+    aConnection.Params.Text := ConnectParams.AdditionalParameters;
     //aConnection.Params.Database        := ConnectParams.ConnectionString;
     aConnection.LoginPrompt            := False;
-    Params := TStringList.Create;
+    {Params := TStringList.Create;
     try
       Params.Text := ConnectParams.AdditionalParameters;
       aConnection.Params.Clear;
       aConnection.Params.AddStrings(Params);
     finally
       FreeAndNil(Params);
-    end;
+    end; }
   finally
     CriticalSection.Leave;
   end;
@@ -194,16 +195,10 @@ begin
 end;
 
 initialization
-  if not Assigned(TInterbaseConnect.CriticalSection) then
-    TInterbaseConnect.CriticalSection := TCriticalSection.Create;
-
   if not Assigned(TFireBirdConnect.CriticalSection) then
     TFireBirdConnect.CriticalSection := TCriticalSection.Create;
 
 finalization
-  if Assigned(TInterbaseConnect.CriticalSection) then
-    FreeAndNil(TInterbaseConnect.CriticalSection);
-
   if Assigned(TFireBirdConnect.CriticalSection) then
     FreeAndNil(TFireBirdConnect.CriticalSection);
 

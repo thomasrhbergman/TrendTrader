@@ -164,20 +164,20 @@ begin
 end;
 
 procedure TframeQualifiers.vstTreeDrawText(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; const Text: string; const CellRect: TRect; var DefaultDraw: Boolean);
-var
-  Data: PQualifierData;
-  State: TTradesState;
+//var
+//  Data: PQualifierData;
+//  State: TTradesState;
 begin
   inherited;
-  Data := Node^.GetData;
+  {Data := Node^.GetData;
   if (Data^.DocType = ntQualifier) then
   begin
     if (Column = COL_STATE) then
     begin
-      {if Assigned(Data^.Qualifier.AutoTradesInstance) then
+      if Assigned(Data^.Qualifier.AutoTradesInstance) then
         State := Data^.Qualifier.AutoTradesInstance.GetTradesState
       else
-        State := Data^.Qualifier.State; }
+        State := Data^.Qualifier.State;
       case State of
         tsSuspended:
           TargetCanvas.Font.Color := clWebOrange;
@@ -189,7 +189,7 @@ begin
           TargetCanvas.Font.Color := clBlack;
       end;
     end;
-  end;
+  end; }
 end;
 
 procedure TframeQualifiers.vstTreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -365,8 +365,8 @@ begin
   end
   else
   begin
-    ParentNode := FNodeList.Items[aQualifier.InstanceNum];
-    Data := ParentNode^.GetData;
+    //ParentNode := FNodeList.Items[aQualifier.InstanceNum];
+    //Data := ParentNode^.GetData;
     vstTree.Invalidate;
   end;
 end;

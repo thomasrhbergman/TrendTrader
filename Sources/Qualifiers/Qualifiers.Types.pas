@@ -65,7 +65,7 @@ type
   *)
 
   PQualifier = ^TQualifier;
-  TQualifier = class(TBaseClass)
+  TQualifier = class(TBaseClass, IUpdateFeeds)
   private const
     C_SECTION = 'Params';
     C_SECTION_INSTRUMENT1 = 'Instrument1';
@@ -413,9 +413,9 @@ begin
     if Assigned(FTimer) then
       FreeAndNil(FTimer);
 
-    if Self.Bypass then
+    {if Self.Bypass then
       OnPriceChange(Self, -1, ttNotSet, 1, Now) //bypass execute
-    else
+    else}
     begin
       if (Self.Instrument1.SokidInfo.ContractId > 0) then
       begin

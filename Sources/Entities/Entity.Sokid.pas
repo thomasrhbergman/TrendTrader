@@ -339,6 +339,7 @@ end;
 destructor TSokidList.Destroy;
 begin
   FThread.Terminate;
+  WaitForSingleObject(FThread.Handle, INFINITE);
   inherited;
 end;
 
@@ -902,7 +903,7 @@ begin
   inherited Create(True);
   FreeOnTerminate := True;
   Priority := tpLowest;
-  FQueue := TThreadedQueue<TSokidInfo>.Create;
+  FQueue := TThreadedQueue<TSokidInfo>.Create(C_QUEUE_DEPTH, C_POP_TIMEOUT, C_PUSH_TIMEOUT);
   CreateConnect;
 end;
 
@@ -922,12 +923,12 @@ end;
 
 destructor TThreadSokid.Destroy;
 begin
-  FreeAndNil(FQuery);
   if FTransaction.Active then
     FTransaction.Commit;
-  FreeAndNil(FTransaction);
   if FConnection.Connected then
     FConnection.Connected := False;
+  FreeAndNil(FQuery);
+  FreeAndNil(FTransaction);
   FreeAndNil(FConnection);
   FreeAndNil(FQueue);
   inherited;
