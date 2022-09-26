@@ -10,21 +10,25 @@ uses
   HtmlConsts, AutoTrades.Types, Common.Types, System.StrUtils, Utils, Global.Types,
   InstrumentList, Entity.Sokid, IABFunctions.MarketRules, System.Generics.Defaults, System.Generics.Collections,
   System.DateUtils, DaModule.Utils, ArrayHelper, Monitor.Types, Order.Utils, System.Math, Publishers, MonitorTree.Helper,
-  MonitorTree.Document;
+  MonitorTree.Document, Candidate.Types;
 {$ENDREGION}
 
 type
   TTreeFactory = class
   private
-    class procedure FillAlgos(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
-    class procedure FillCondition(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
-    class procedure FillFactor(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
-    class procedure FillOrder(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
-    class procedure FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+    class procedure FillAlgos(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+    class procedure FillCondition(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
+    class procedure FillCondition(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
+    class procedure FillFactor(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+    class procedure FillOrder(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
+    class procedure FillOrder(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
+    class procedure FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
+    class procedure FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
     class procedure SetPriceValue(const aOrderDoc: TOrderIBDoc; const aPrice: Double = 0);
   public
     class procedure FillOrderPrice(const aOrder: TCustomOrderDoc; const aPrice: Currency);
-    class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc);
+    class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
+    class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
   end;
 
 implementation
@@ -32,7 +36,7 @@ implementation
 { TTreeFactory }
 
 class procedure TTreeFactory.FillDocuments(const aNode: PVirtualNode;
-                                           const aInstrumentData: TInstrumentData;
+                                           const aInstrumentData: Scanner.Types.TInstrumentData;
                                            const aPrice: Currency;
                                            const aAutoTradesCommon: TAutoTradesCommon;
                                            const aAfterLoadProc: TAfterLoadEachDocumentProc;
@@ -73,7 +77,52 @@ begin
       aAfterLoadTreeProc(aNode);
 end;
 
-class procedure TTreeFactory.FillAlgos(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+class procedure TTreeFactory.FillDocuments(const aNode: PVirtualNode;
+                                           const aInstrumentData: Candidate.Types.TInstrumentData;
+                                           const aPrice: Currency;
+                                           const aAutoTradesCommon: TAutoTradesCommon;
+                                           const aAfterLoadProc: TAfterLoadEachDocumentProc;
+                                           const aAfterLoadTreeProc: TAfterLoadTreeProc);
+var
+  NodeArray: TNodeArray;
+  Data: PTreeData;
+begin
+  NodeArray := TTreeDocument.GetNodesList(aNode);
+  for var Node in NodeArray do
+    if Assigned(Node) then
+    begin
+      Node.States := Node.States + [vsVisible];
+      Data := Node^.GetData;
+      Data^.RecordId := -1;
+      case Data.DocType of
+        ntQualifier:
+          ;
+        ntAutoTrade:
+          ;
+        ntOrderGroupSet:
+          ;
+        ntOrderGroup:
+          FillOrderGroup(Node, aInstrumentData, aPrice, aAutoTradesCommon);
+        ntOrder:
+          begin
+            FillOrder(Node, aInstrumentData, aPrice, aAutoTradesCommon);
+            Node.CheckState := csCheckedNormal;
+          end;
+        ntCondition:
+          FillCondition(Node, aInstrumentData, aPrice, aAutoTradesCommon);
+        ntAlgos:
+          ;//FillAlgos(Node, aInstrumentData, aPrice, aAutoTradesCommon);
+        ntFactor:
+          ;//FillFactor(Node, aInstrumentData, aPrice, aAutoTradesCommon);
+      end;
+      if Assigned(aAfterLoadProc) then
+        aAfterLoadProc(Node);
+    end;
+    if Assigned(aAfterLoadTreeProc) then
+      aAfterLoadTreeProc(aNode);
+end;
+
+class procedure TTreeFactory.FillAlgos(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
 var
   Data: PTreeData;
 begin
@@ -88,7 +137,7 @@ begin
   end;
 end;
 
-class procedure TTreeFactory.FillCondition(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+class procedure TTreeFactory.FillCondition(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
 var
   Data: PTreeData;
 begin
@@ -105,7 +154,30 @@ begin
   end;
 end;
 
-class procedure TTreeFactory.FillFactor(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+class procedure TTreeFactory.FillCondition(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+var
+  Data: PTreeData;
+begin
+  Data := aNode.GetData;
+  if Assigned(Data^.ConditionDoc) then
+  begin
+    aNode.CheckType := ctNone;
+    Data^.ConditionDoc.UseInAutoOrder     := False;
+    Data^.ConditionDoc.IsCondition        := Data^.ConditionDoc.Active and Data^.ConditionDoc.Bypass and (Data^.ConditionDoc.CalcValue > 0);
+    Data^.ConditionDoc.AutoTradesID       := aAutoTradesCommon.AutoTradesID;
+    Data^.ConditionDoc.AutoTradesInstance := aAutoTradesCommon.AutoTradesInstance;
+    Data^.ConditionDoc.QualifierID        := aAutoTradesCommon.QualifierID;
+    Data^.ConditionDoc.QualifierInstance  := aAutoTradesCommon.QualifierInstance;
+    if Data^.ConditionDoc.Instrument.SokidInfo.ContractId = 0 then
+    begin
+      Data^.ConditionDoc.Instrument.SokidInfo.ContractId := aInstrumentData.Id;
+      if SokidList.ContainsKey(Data^.ConditionDoc.Instrument.SokidInfo.ContractId) then
+        Data^.ConditionDoc.Instrument.SokidInfo.AssignFrom(SokidList.Items[Data^.ConditionDoc.Instrument.SokidInfo.ContractId]);
+    end;
+  end;
+end;
+
+class procedure TTreeFactory.FillFactor(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
 var
   Data: PTreeData;
 begin
@@ -137,7 +209,7 @@ begin
   end;
 end;
 
-class procedure TTreeFactory.FillOrder(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+class procedure TTreeFactory.FillOrder(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
 var
   Data: PTreeData;
   SokidInfo: TSokidInfo;
@@ -149,6 +221,65 @@ begin
   begin
     aNode.CheckType  := ctCheckBox;
     aNode.CheckState := csCheckedNormal;
+
+    SokidInfo := SokidList.GetItem(aInstrumentData.Id);
+    if Data^.OrderDoc.MarketList.IsEmpty then
+      Data^.OrderDoc.MarketList := SokidInfo.MarketRuleIds;
+    Data^.OrderDoc.Multiplier         := StrToFloatDef(SokidInfo.Multiplier, 0);
+    Data^.OrderDoc.Id                 := aInstrumentData.Id;
+    Data^.OrderDoc.InstrumentName     := aInstrumentData.Name;
+    Data^.OrderDoc.Currency           := aInstrumentData.Currency;
+    Data^.OrderDoc.Exchange           := aInstrumentData.Exchange;
+    Data^.OrderDoc.Symbol             := aInstrumentData.Symbol;
+    Data^.OrderDoc.PrimaryExchange    := aInstrumentData.PrimaryExchange;
+    Data^.OrderDoc.Quantity           := aAutoTradesCommon.Quantity;
+
+    Data^.OrderDoc.AutoTradesID       := aAutoTradesCommon.AutoTradesID;
+    Data^.OrderDoc.AutoTradesInstance := aAutoTradesCommon.AutoTradesInstance;
+    Data^.OrderDoc.QualifierID        := aAutoTradesCommon.QualifierID;
+    Data^.OrderDoc.QualifierInstance  := aAutoTradesCommon.QualifierInstance;
+
+    if (Data^.OrderDoc.BrokerType = TBrokerType.brIB) then
+    begin
+      OrderIB := Data^.OrderDoc as TOrderIBDoc;
+      ExtOptions := Default(TCustomOrderDoc.TExtendedOptions);
+      ExtOptions.LimitPriceRelative     := OrderIB.Limit;
+      ExtOptions.AuxPriceRelative       := OrderIB.AuxPrice;
+      ExtOptions.TrailStopPriceRelative := OrderIB.TrailStopPrice;
+      ExtOptions.LimitPriceOffset       := OrderIB.LmtPriceOffset;
+
+      ExtOptions.AuxBasePrice       := OrderIB.ExtendedOptions.AuxBasePrice;
+      ExtOptions.LimitBasePrice     := OrderIB.ExtendedOptions.LimitBasePrice;
+      ExtOptions.LmtOffsetBasePrice := OrderIB.ExtendedOptions.LmtOffsetBasePrice;
+      ExtOptions.TrailStopBasePrice := OrderIB.ExtendedOptions.TrailStopBasePrice;
+      ExtOptions.BasisForPrice      := OrderIB.ExtendedOptions.BasisForPrice;
+
+      OrderIB.Limit           := 0;
+      OrderIB.AuxPrice        := 0;
+      OrderIB.TrailStopPrice  := 0;
+      OrderIB.LmtPriceOffset  := 0;
+      OrderIB.ExtendedOptions := ExtOptions;
+    end
+    else if (Data^.OrderDoc.BrokerType = TBrokerType.brNN) then
+    begin
+
+    end;
+    FillOrderPrice(Data^.OrderDoc, aPrice);
+  end;
+end;
+
+class procedure TTreeFactory.FillOrder(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+var
+  Data: PTreeData;
+  SokidInfo: TSokidInfo;
+  ExtOptions: TCustomOrderDoc.TExtendedOptions;
+  OrderIB: TOrderIBDoc;
+begin
+  Data := aNode^.GetData;
+  if Assigned(Data^.OrderDoc) then
+  begin
+    //aNode.CheckType  := ctCheckBox;
+    //aNode.CheckState := csCheckedNormal;
 
     SokidInfo := SokidList.GetItem(aInstrumentData.Id);
     if Data^.OrderDoc.MarketList.IsEmpty then
@@ -441,7 +572,25 @@ begin
     end;
 end;
 
-class procedure TTreeFactory.FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+class procedure TTreeFactory.FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
+var
+  Data: PTreeData;
+begin
+  aNode.CheckType := ctNone;
+  Data := aNode^.GetData;
+  if Assigned(Data^.OrderGroupDoc) then
+  begin
+    Data^.CreationType := ctProgramm;
+    Data^.OrderGroupDoc.IsAutoOrder        := True;
+    Data^.OrderGroupDoc.AutoTradesID       := aAutoTradesCommon.AutoTradesID;
+    Data^.OrderGroupDoc.AutoTradesInstance := aAutoTradesCommon.AutoTradesInstance;
+    Data^.OrderGroupDoc.QualifierID        := aAutoTradesCommon.QualifierID;
+    Data^.OrderGroupDoc.QualifierInstance  := aAutoTradesCommon.QualifierInstance;
+    aNode.States := aNode.States + [vsVisible];
+  end;
+end;
+
+class procedure TTreeFactory.FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
 var
   Data: PTreeData;
 begin

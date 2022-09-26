@@ -338,9 +338,9 @@ begin
         case Column of
           COL_ITEMS:
             if (Data^.ConditionDoc.CondType = ctRealtimeValue) then
-              CellText := Data^.ConditionDoc.Description + ' (' + Data^.ConditionDoc.ValueArray[ctRealtimeValue].ToString + ') / ' + Data^.ConditionDoc.CondType.ToString + IfThen(Data^.ConditionDoc.Bypass, ' [BYPASS]')
+              CellText := Data^.ConditionDoc.Name + ' (' + Data^.ConditionDoc.ValueArray[ctRealtimeValue].ToString + Data^.ConditionDoc.GetRealTimeTypeAsString + ') / ' + Data^.ConditionDoc.CondType.ToString + IfThen(Data^.ConditionDoc.Bypass, ' [BYPASS]')
             else
-              CellText := Data^.ConditionDoc.Description + ' / ' + Data^.ConditionDoc.CondType.ToString + IfThen(Data^.ConditionDoc.Bypass, ' [BYPASS]');
+              CellText := Data^.ConditionDoc.Name + ' / ' + Data^.ConditionDoc.CondType.ToString + IfThen(Data^.ConditionDoc.Bypass, ' [BYPASS]');
           COL_CALCTYPE:
             CellText := Data^.ConditionDoc.ToString;
           COL_VALUE:

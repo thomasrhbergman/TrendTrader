@@ -14,7 +14,6 @@ object frameCustom: TframeCustom
     Header.Height = 18
     Header.MainColumn = -1
     Header.Options = [hoColumnResize, hoDblClickResize, hoDrag, hoShowHint, hoShowImages, hoShowSortGlyphs, hoVisible, hoHeaderClickAutoSort]
-    Images = DMImage.ilDocumentState
     LineStyle = lsSolid
     ParentShowHint = False
     ShowHint = True
@@ -25,6 +24,8 @@ object frameCustom: TframeCustom
     OnColumnResize = vstTreeColumnResize
     OnFreeNode = vstTreeFreeNode
     OnHeaderDragged = vstTreeHeaderDragged
+    Touch.InteractiveGestures = [igPan, igPressAndTap]
+    Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
     Columns = <>
   end
 end

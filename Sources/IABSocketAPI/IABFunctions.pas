@@ -127,7 +127,7 @@ begin
   OnRebuildFromTWS        := DoRebuildFromTWS;
   OnScannerData           := DoScannerData;
   OnScannerParam          := DoScannerParam;
-  OnTickByTick            := DoTickByTick;
+  OnTickByTickData        := DoTickByTick;
   OnTickGeneric           := DoTickGeneric;
   OnTickOptionComputation := DoTickOptionComputation;
   OnTickPrice             := DoTickPrice;

@@ -42,9 +42,9 @@ type
     procedure aSaveExecute(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure OnGUIToAutoTradeInfo(Sender: TObject);
-    procedure btnSelectQualifierClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure btnSelectQualifierClick(Sender: TObject);
     procedure btnSelectCandidateClick(Sender: TObject);
     procedure btnSelectQuantityClick(Sender: TObject);
     procedure btnSelectOrderTemplateClick(Sender: TObject);
@@ -181,7 +181,7 @@ procedure TfrmAutoTradesEdit.btnSelectCandidateClick(Sender: TObject);
 var lRecordId: Integer;
 begin
   inherited;
-  lRecordId := ListFormFactory.Select(ntCandidates);
+  lRecordId := ListFormFactory.Select(ntCandidates, FAutoTradeInfo.Candidate.RecordId);
   if lRecordId > 0 then
   begin
     FAutoTradeInfo.Candidate.FromDB(lRecordId);
@@ -193,7 +193,7 @@ procedure TfrmAutoTradesEdit.btnSelectOrderTemplateClick(Sender: TObject);
 var lRecordId: Integer;
 begin
   inherited;
-  lRecordId := ListFormFactory.Select(ntOrderTemplate);
+  lRecordId := ListFormFactory.Select(ntOrderTemplate, FAutoTradeInfo.OrderTemplate.RecordId);
   if lRecordId > 0 then
   begin
     FAutoTradeInfo.OrderTemplate.FromDB(lRecordId);
@@ -205,7 +205,7 @@ procedure TfrmAutoTradesEdit.btnSelectQualifierClick(Sender: TObject);
 var lRecordId: Integer;
 begin
   inherited;
-  lRecordId := ListFormFactory.Select(ntQualifier);
+  lRecordId := ListFormFactory.Select(ntQualifier, FAutoTradeInfo.Qualifier.RecordId);
   if lRecordId > 0 then
   begin
     FAutoTradeInfo.Qualifier.FromDB(lRecordId);
@@ -217,7 +217,7 @@ procedure TfrmAutoTradesEdit.btnSelectQuantityClick(Sender: TObject);
 var lRecordId: Integer;
 begin
   inherited;
-  lRecordId := ListFormFactory.Select(ntQuantities);
+  lRecordId := ListFormFactory.Select(ntQuantities, FAutoTradeInfo.Quantity.RecordId);
   if lRecordId > 0 then
   begin
     FAutoTradeInfo.Quantity.FromDB(lRecordId);

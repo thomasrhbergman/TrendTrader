@@ -13,7 +13,7 @@ object FHistoricalData: TFHistoricalData
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
-  
+  PixelsPerInch = 96
   TextHeight = 13
   object Bevel1: TBevel
     Left = 28

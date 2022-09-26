@@ -8,7 +8,8 @@ uses
   UXcution in 'UXcution.pas' {FExecution},
   UScanForm in 'UScanForm.pas' {FScanForm},
   UTextForm in 'UTextForm.pas' {FTextForm},
-  UHistoricalData in 'UHistoricalData.pas' {FHistoricalData};
+  UHistoricalData in 'UHistoricalData.pas' {FHistoricalData},
+  UHostport in 'UHostport.pas' {FHostPort};
 
 {$R *.RES}
 
@@ -22,5 +23,6 @@ begin
   Application.CreateForm(TFScanForm, FScanForm);
   Application.CreateForm(TFTextForm, FTextForm);
   Application.CreateForm(TFHistoricalData, FHistoricalData);
+  Application.CreateForm(TFHostPort, FHostPort);
   Application.Run;
 end.

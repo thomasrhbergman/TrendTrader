@@ -524,7 +524,7 @@ begin
         vstTree.BeginUpdate;
         try
           Node := nil;
-          if FNodeList.ContainsKey(AutoTradeInfo.InstanceNum) and (TradesState = tsNotConsidered) then
+          {if FNodeList.ContainsKey(AutoTradeInfo.InstanceNum) and (TradesState = tsNotConsidered) then
           begin
             Node := FNodeList.Items[AutoTradeInfo.InstanceNum];
             Data := Node^.GetData;
@@ -540,7 +540,7 @@ begin
             Node.CheckType := ctCheckBox;
             FNodeList.Add(AutoTradeInfo.InstanceNum, Node);
             IsNeedRebuild := True;
-          end;
+          end; }
 
           if not Assigned(Node) then
             Exit;

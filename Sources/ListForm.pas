@@ -46,6 +46,7 @@ type
       CellRect: TRect);
     procedure FormShow(Sender: TObject);
     procedure vstListDblClick(Sender: TObject);
+    procedure vstListFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     { Private declarations }
     FBaseClass: TCustomBaseClass;
@@ -72,7 +73,7 @@ type
 
     procedure RegisterList(const AType: TDocType; ABaseClass: TCustomBaseClass; AFormClass: TCustomFormClass);
     procedure Show(const AType: TDocType);
-    function Select(const AType: TDocType): Integer;
+    function Select(const AType: TDocType; const AId: integer = 0): Integer;
   end;
 
 var
@@ -170,7 +171,7 @@ begin
   inherited;
   actSelect.Enabled := FListMode = lmSelect;
   Caption := FBaseClass.GetListCaption;
-  PopulateList;
+  PopulateList(FSelectedId);
 end;
 
 procedure TfrmListForm.PopulateList(aID: integer = 0);
@@ -243,6 +244,15 @@ begin
     actSelect.Execute;
 end;
 
+procedure TfrmListForm.vstListFreeNode(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var
+  Item: PListNodeItem;
+begin
+  Item := Node^.GetData;
+  Item.Name := '';
+end;
+
 procedure TfrmListForm.vstListGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
   var CellText: string);
@@ -282,7 +292,7 @@ begin
   FDictionary.AddOrSetValue(AType, lRecord);
 end;
 
-function TListFormFactory.Select(const AType: TDocType): Integer;
+function TListFormFactory.Select(const AType: TDocType; const AId: integer = 0): Integer;
 var
   lRecord: TListFormRecord;
 begin
@@ -294,6 +304,7 @@ begin
       FBaseClass := lRecord.BaseClass;
       FFormClass := lRecord.FormClass;
       FListMode := lmSelect;
+      FSelectedId := AId;
       ShowModal;
       if (ModalResult = mrOk) then
         Result := FSelectedId;

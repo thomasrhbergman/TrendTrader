@@ -6,7 +6,7 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, System.Generics.Collections, System.Generics.Defaults,
   Winapi.Messages, IABSocketAPI, IABSocketAPI_const, Scanner.Types, VirtualTrees, Vcl.Controls, Common.Types,
-  AutoTrades.Types;
+  AutoTrades.Types, Candidate.Types;
 {$ENDREGION}
 
 type
@@ -22,7 +22,8 @@ type
     function GetIABClient: TIABSocket;
     function GetMainTree: TVirtualStringTree;
     function GetParentNode(aNode: PVirtualNode; aDocType: TDocType): PVirtualNode;
-    function CreateTemplateStructure(const aOrderGroupId: Integer; aInstrumentData: PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
+    function CreateTemplateStructure(const aOrderGroupId: Integer; aInstrumentData: Scanner.Types.PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
+    function CreateOrders(const aAutoTrade: TAutoTradeInfo; aInstrumentData: Candidate.Types.PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
 
     function IsCreateOrModify(const aNode, aOrderGroupNode: PVirtualNode): Boolean;
     function UseIBFeeds: Boolean;

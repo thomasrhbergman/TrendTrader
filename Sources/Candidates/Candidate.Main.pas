@@ -204,6 +204,7 @@ type
     C_PANEL_AUTO_REFRESH        = 10;
   private
     [weak] FAutoTradesEdit: IAutoTrade;
+    FAutoTrade: TAutoTradeInfo;
     FCandidate: TCandidate;
     FCacheNodesWeight: TObjectDictionary<Integer, TExtraColumns>;
     FColumns: TAutoTradeColumns;
@@ -281,12 +282,13 @@ type
     procedure SaveParamsToXml;
     procedure SetCreatedOrdersCount(const Value: Integer);
     procedure SetValueFromPriceCache(const aData: PInstrumentData; const aColumnsInfo: TColumnsInfo);
+    procedure DisableEditors;
 
     property CreatedOrdersCount : Integer      read GetCreatedOrdersCount write SetCreatedOrdersCount;
     property IsLoaded           : Boolean      read FIsLoaded             write FIsLoaded;
     property TradesState        : TTradesState read GetTradesState        write SetTradesState;
   public
-    class function Execute(const aCandidate: TCandidate): IAutoTrade;
+    class function Execute(const aAutoTrade: TAutoTradeInfo): IAutoTrade;
     class function ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult; overload; override;
     class procedure ShowDocument; overload;
     procedure Initialize;
@@ -348,14 +350,14 @@ begin
     if (Result = mrOk) then
     begin
       //frmCandidateMain.Denitialize;
-      TCandidate(aItem).AssignFrom(frmCandidateMain.FCandidate);
+      //TCandidate(aItem).AssignFrom(frmCandidateMain.FCandidate);
     end;
   finally
     frmCandidateMain.Free;
   end;
 end;
 
-class function TfrmCandidateMain.Execute(const aCandidate: TCandidate): IAutoTrade;
+class function TfrmCandidateMain.Execute(const aAutoTrade: TAutoTradeInfo): IAutoTrade;
 var
   CandidateMain: TfrmCandidateMain;
 begin
@@ -363,8 +365,10 @@ begin
   Result := CandidateMain;
   with CandidateMain do
   begin
-    FCandidate := aCandidate;
+    FAutoTrade := aAutoTrade;
+    FCandidate := aAutoTrade.Candidate;
     Initialize;
+    DisableEditors;
     TradesState := TTradesState.tsWorking;
     TPublishers.LogPublisher.Write([ltLogWriter], ddText, 'Execute', 'CandidateMain',
                                        'Name='                    + FCandidate.Name                       + sLineBreak +
@@ -558,11 +562,19 @@ begin
             TIABMarket.CancelMarketData(Data^.Id);
         end;
 
+  vstCandidate.Clear;
   if Assigned(FAutoTradesEdit) then
   begin
     FCandidate.ColumnsInfo := ColumnsInfoToXml;
     //FAutoTradesEdit.SetAutoTradeInfo(FCandidate);
   end;
+end;
+
+procedure TfrmCandidateMain.DisableEditors;
+begin
+  edAutoTradeTemplate.ReadOnly := true;
+  seMaxNumberOrder.ReadOnly := true;
+  pnlButtons.Visible := false;
 end;
 
 procedure TfrmCandidateMain.DockTo;
@@ -622,6 +634,7 @@ var
   IsExists: Boolean;
 begin
   IsExists := False;
+  if not Assigned(FColumns) then Exit;
   for ColumnsInfo in FColumns.Values do
   begin
     aData^.IsCriteria := True;
@@ -705,7 +718,9 @@ var
   OrderAmount: Double;
   PrecSettings: TPrecautionarySettingTypes;
 begin
-  if aData^.IsCriteria and
+  if Assigned(FAutoTrade) and
+     aData^.IsCriteria and
+     not aData^.IsLocked and
     (CreatedOrdersCount < FCandidate.MaxNumberOrder) then
   begin
     Info := 'Id=' + aData^.Id.ToString +
@@ -733,7 +748,8 @@ begin
     end
     else
     begin
-      Currency := aData^.Currency;
+      //Currency := aData^.Currency;
+      Currency := FAutoTrade.Quantity.Currency;
       LastExch := 1;
       if Currency.IsEmpty then
         Currency := SokidList.GetItem(aData^.Id).Currency;
@@ -747,29 +763,29 @@ begin
       end;
 
       //Quantity := 0;
-      OrderAmount := 0;
+      OrderAmount := FAutoTrade.Quantity.OrderAmount;
       if (LastPrice > 0) and (LastExch > 0) then
       begin
-//        if (FCandidate.TotalOrderAmount < LastPrice) then
-//        begin
-//          aData^.Description := 'Not passed - No Total Money';
-//          aData^.IsLocked := True;
-//          ShowNotification(aData, 'No Total Money');
-//          Exit;
-//        end;
-//
-//        if (FCandidate.TotalOrderAmount >= FCandidate.OrderAmount) then
-//          OrderAmount := FCandidate.OrderAmount
-//        else
-//          OrderAmount := FCandidate.TotalOrderAmount;
+        if (FAutoTrade.Quantity.TotalOrderAmount < LastPrice) then
+        begin
+          aData^.Description := 'Not passed - No Total Money';
+          aData^.IsLocked := True;
+          ShowNotification(aData, 'No Total Money');
+          Exit;
+        end;
 
-        {if (OrderAmount <= 0) then
+        if (FAutoTrade.Quantity.TotalOrderAmount >= FAutoTrade.Quantity.OrderAmount) then
+          OrderAmount := FAutoTrade.Quantity.OrderAmount
+        else
+          OrderAmount := FAutoTrade.Quantity.TotalOrderAmount;
+
+        if (OrderAmount <= 0) then
         begin
           aData^.Description := 'Not passed - OrderAmount Is 0';
           aData^.IsLocked := True;
           ShowNotification(aData, 'OrderAmount is 0');
           TPublishers.LogPublisher.Write([ltLogWriter], ddWarning, 'PreExecutionEvaluation', 'OrderAmount=0');
-        end; }
+        end;
 
         if (aData^.Multiplier > 0) then
           Quantity := Trunc((OrderAmount * LastExch / (LastPrice * aData^.Multiplier)))
@@ -804,10 +820,10 @@ begin
           finally
             TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddWarning, Self, 'PreExecutionEvaluation', PrecSetting.ToString);
           end;
-        //Dec(FCandidate.TotalOrderAmount, Trunc(Quantity * LastPrice));
+        FAutoTrade.Quantity.TotalOrderAmount := FAutoTrade.Quantity.TotalOrderAmount - Trunc(Quantity * LastPrice);
       end;
 
-      {if (Quantity = 0) then
+      if (Quantity = 0) then
       begin
         aData^.Description := 'Not passed - Trade limit overdue';
         aData^.IsLocked := True;
@@ -819,7 +835,20 @@ begin
         TThread.Synchronize(nil,
           procedure
           begin
-            if FMonitor.CreateTemplateStructure(FCandidate.OrderGroupId,
+            if FMonitor.CreateOrders(FAutoTrade,
+                                     aData,
+                                     TAutoTradesCommon.Create(Quantity,
+                                                              0{FAutoTrade.Qualifier.QualifierInstance},
+                                                              FAutoTrade.Qualifier.RecordId,
+                                                              FAutoTrade.Qualifier.InstanceNum,
+                                                              FCandidate.RecordId,
+                                                              false{AllowSendDuplicateOrder})) <> nil then
+            begin
+              if aData^.IsLocked then
+                CreatedOrdersCount := CreatedOrdersCount + 1;
+              aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
+            end;
+            {if FMonitor.CreateTemplateStructure(FCandidate.OrderGroupId,
                                                 aData,
                                                 TAutoTradesCommon.Create(Quantity,
                                                                          FCandidate.QualifierInstance,
@@ -831,9 +860,9 @@ begin
               if aData^.IsLocked then
                 CreatedOrdersCount := CreatedOrdersCount + 1;
               aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
-            end;
+            end;}
           end);
-      end; }
+      end;
     end;
     CheckTradesState;
     AutoTradeInfoToGUI;
@@ -2964,8 +2993,8 @@ begin
   if CheckRequiredEmbargoColumn then
   begin
     FCandidate.ColumnsInfo := ColumnsInfoToXml;
-    if (FCandidate.Name <> edAutoTradeTemplate.Text) then
-      FCandidate.Name := edAutoTradeTemplate.Text;
+    FCandidate.Name := edAutoTradeTemplate.Text;
+    FCandidate.MaxNumberOrder := seMaxNumberOrder.Value;
     //FCandidate.SaveToDB;
     //AutoTradeInfoToGUI;
     ModalResult := mrOk;

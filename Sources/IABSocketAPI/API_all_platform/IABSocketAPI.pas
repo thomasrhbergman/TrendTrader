@@ -2,19 +2,24 @@ unit IABSocketAPI;
 
 //**************************************************************************
 //
-//    IABSocketAPI - for use with InteractiveBrokers TradeWorkStation(TWS)
-//                   direct order placement API
+//    IABSocketAPI - for use with InteractiveBrokers TradeWorkStation(TWS) and
+//                   the IB Gateway, direct order placement API.
 //
-//    by Ross Hemingway - support@hhssoftware.com - Dec 2021
+//    by Ross Hemingway - support@hhssoftware.com - Sep 2022
 //
 //    https://www.hhssoftware.com/iabsocketapi/
 //
-//    This version is for use with TWS API 10.11.01 (or later)
+//    This version is built to the TWS API spec version 10.18.1
 //
-//    API will function on Delphi 6 upwards, including all current XE, 10 and 11 versions.
+//    Note that any API version will work with any TWS version (in the last 5 years).
+//    Both ends have version control inbuilt.
 //
-//    However, the use of BigDecimals requires XE2 or later: see the top of the
+//    This API will function on Delphi 6 upwards, including all the XE, 10 and 11 versions.
+//
+//    However, the use of BigDecimals requires XE2 or later: see the end of the
 //    IABSocketAPI_const.pas file for details.
+//
+//    Requires use of companion files IABSocketAPI_const, IABSocketAPI_tcpclient.
 //
 //
 //**************************************************************************
@@ -55,7 +60,7 @@ unit IABSocketAPI;
 
 {  *******   BigDecimal / bitcoin  ********
 
-    See the comments at top of IABSocketAPI_const file
+    See the comments at end of IABSocketAPI_const file
 
 {  ***************************  }
 
@@ -75,38 +80,23 @@ unit IABSocketAPI;
 
 {  ***************************  }
 
-{Ross Hemingway regards TIABDepthMarketDataDescripItemEvent
-The value 2147483647 is equal to a MAX_Int ($7FFFFFFF). The TWS defines this to mean a non-set value in that field,
-or field not appropriate for the particular instrument or condition. Ideally they code the API to convert these
-to meaningful empty values like 0 or -1, but not this time. Just add some code in your handler to do
 
-  if UNSET_INTEGER = DepthMarketDataDescrip.AggGroup then
-    s := s + '0'
-  else
-    s := s + IntToStr(DepthMarketDataDescrip.AggGroup);
-
-They do the same non-set meaning with a MAX_Double, but that's got problems with comparing floating values. }
 
 {$WARN SYMBOL_DEPRECATED OFF}
 
 interface
 
-{$IF CompilerVersion < 24.0}  // XE3
-uses  SysUtils, Classes, Windows, Winsock, Math,  // DateUtils,
+uses
+{$IF CompilerVersion < 24.0}  // 24 = XE3
+SysUtils, Classes, Windows, Winsock, Math,
 {$ELSE}
-uses  System.SysUtils, System.Classes, Winapi.Windows, Winapi.WinSock, System.Math, // System.DateUtils,
+System.SysUtils, System.Classes, Winapi.Windows, Winapi.WinSock, System.Math,
 {$IFEND}
-IABSocketAPI_const
+IABSocketAPI_const, IABSocketAPI_tcpclient
 {$IFDEF USE_BIGDECIMAL}
-, Velthuis.BigDecimals  // see top of IABSocketAPI_const.pas for information on this.
+, Velthuis.BigDecimals  // see end of IABSocketAPI_const.pas for information on this.
 {$ENDIF}
 ;
-
-{$IF CompilerVersion < 23.0}  // XE2 (first 64bit version)
-type
-  NativeUInt = LongWord;
-  NativeInt = Integer;
-{$IFEND}
 
 
 type
@@ -347,7 +337,7 @@ type
 	  FIsPeggedChangeAmountDecrease: Boolean;
 	  FReferenceChangeAmount: Double;
 	  FReferenceExchangeId: string;
-	  FAdjustedOrderType: string;
+	  FAdjustedOrderType: TIABOrderType;
 	  FTriggerPrice: Double;
 	  FAdjustedStopPrice: Double;
 	  FAdjustedStopLimitPrice: Double;
@@ -356,7 +346,6 @@ type
 	  FLmtPriceOffset: Double;
     FSoftDollarTier: TIABSoftDollarTier;
     FCashQuantity: Double;
-
     FMifid2DecisionMaker: string;
     FMifid2DecisionAlgo: string;
     FMifid2ExecutionTrader: string;
@@ -375,6 +364,13 @@ type
     FUsePriceMgmtAlgo: Integer;
   	FDuration: Integer;
   	FPostToAts: Integer;
+    FAdvancedErrorOverride: string;
+	  FManualOrderTime: TDateTime;
+	  FMinTradeQty: Integer;
+	  FMinCompeteSize: Integer;
+	  FCompeteAgainstBestOffset: Double;
+	  FMidOffsetAtWhole: Double;
+	  FMidOffsetAtHalf: Double;
     FCompletedTime: string;
     FCompletedStatus: string;
     FMarketCapPrice: Double;
@@ -537,7 +533,7 @@ type
 	  property IsPeggedChangeAmountDecrease: Boolean read FIsPeggedChangeAmountDecrease write FIsPeggedChangeAmountDecrease;
 	  property ReferenceChangeAmount: Double read FReferenceChangeAmount write FReferenceChangeAmount;
 	  property ReferenceExchangeId: string read FReferenceExchangeId write FReferenceExchangeId;
-	  property AdjustedOrderType: string read FAdjustedOrderType write FAdjustedOrderType;
+	  property AdjustedOrderType: TIABOrderType read FAdjustedOrderType write FAdjustedOrderType;
 	  property TriggerPrice: Double read FTriggerPrice write FTriggerPrice;
 	  property AdjustedStopPrice: Double read FAdjustedStopPrice write FAdjustedStopPrice;
 	  property AdjustedStopLimitPrice: Double read FAdjustedStopLimitPrice write FAdjustedStopLimitPrice;
@@ -568,6 +564,16 @@ type
     property CompletedStatus: string read FCompletedStatus write FCompletedStatus;
     property Duration: Integer read FDuration write FDuration;
   	property PostToAts: Integer read FPostToAts write FPostToAts;
+
+
+  	property AdvancedErrorOverride: string read FAdvancedErrorOverride write FAdvancedErrorOverride;
+
+  	property ManualOrderTime: TDateTime read FManualOrderTime write FManualOrderTime;
+  	property MinTradeQty: Integer read FMinTradeQty write FMinTradeQty;
+  	property MinCompeteSize: Integer read FMinCompeteSize write FMinCompeteSize;
+  	property CompeteAgainstBestOffset: Double read FCompeteAgainstBestOffset write FCompeteAgainstBestOffset;
+  	property MidOffsetAtWhole: Double read FMidOffsetAtWhole write FMidOffsetAtWhole;
+  	property MidOffsetAtHalf: Double read FMidOffsetAtHalf write FMidOffsetAtHalf;
 
     property OnFill: TNotifyEvent read FOnFill write FOnFill;
     property OnCompleted: TNotifyEvent read FOnCompleted write FOnCompleted;
@@ -686,12 +692,13 @@ type
   TIABProfitLossSingleEvent = procedure(Sender: TObject; DataId: Integer; Pos: BigDecimal; DailyPnL, UnrealizedPnL, RealizedPnL, Value: Double) of object;
   TIABCompletedOrdersEvent = procedure(Sender: TObject; Order: TIABOrder) of object;
   TIABHistoricalTickDataEvent = procedure(Sender: TObject; DataID: Integer; TickData: TIABTickData) of object;
-  TIABTickByTickEvent = procedure(Sender: TObject; DataID: Integer; TickData: TIABTickData) of object;
-  // new
+  TIABTickByTickDataEvent = procedure(Sender: TObject; DataID: Integer; TickData: TIABTickData) of object;
   TIABReplaceFAEndEvent = procedure(Sender: TObject; DataID: Integer; DataStr: string) of object;
   TIABWsHorizonEventsEvent = procedure(Sender: TObject; DataID: Integer; DataStr: string) of object;
   TIABWsHorizonMetaEvent = procedure(Sender: TObject; DataID: Integer; DataStr: string) of object;
-
+  // new
+  TIABHistoricalSessionEvent = procedure(Sender: TObject; DataId, Item, Count: Integer; StartDateTime, EndDateTime, TimeZone: string; HistoricalSessionElement: TIABHistoricalSession) of object;
+  TIABUserInfo = procedure(Sender: TObject; DataID: Integer; UserInfo: string) of object;
 
   TIABSocketThread = class(TThread)
   private
@@ -704,7 +711,6 @@ type
     constructor Create(Creator: TIABSocket);
   end;
 
-  TIABTCPClient = class;
   EIABSocket = class(Exception);
   EIABDeprecatedItem = class(Exception);
   
@@ -783,7 +789,7 @@ type
     FOnDepthMarketDataDescripItem: TIABDepthMarketDataDescripItemEvent;
     FClientv100plus: Boolean;
     FClientMaxVerOverride: Integer;
-    FConnectionOptions: string;
+    FConnectionOptions: string;    //connectionOptions is a field reserved for future extensions.  Was used with '+PACEAPI', but not needed from 10.16 - option in TWS config page.
     FOptionalCapabilities: string;
     FOnSymbolSample: TIABSymbolSampleEvent;
     FOnNewsTick: TIABNewsTickEvent;
@@ -804,11 +810,13 @@ type
     FOnCompletedOrders: TIABCompletedOrdersEvent;
     FOnCompletedOrdersEnd: TNotifyEvent;
     FOnHistoricalTickData: TIABHistoricalTickDataEvent;
-    FOnTickByTick: TIABTickByTickEvent;
-
+    FOnTickByTickData: TIABTickByTickDataEvent;
     FOnReplaceFAEnd: TIABReplaceFAEndEvent;
     FOnWsHorizonEvents: TIABWsHorizonEventsEvent;
     FOnWsHorizonMeta: TIABWsHorizonMetaEvent;
+
+    FOnHistoricalSession: TIABHistoricalSessionEvent;
+    FOnUserInfo: TIABUserInfo;
 
     function GetPriorVerMaxVerNo: Integer;
     procedure SetConnected(State: Boolean);
@@ -848,7 +856,6 @@ type
     procedure AttachExecToOrder(OrderIndex: Integer; NewExec: TIABExecution);
     procedure DoPlaceOrModifyOrder(Order: TIABOrder; Id: Integer; Verify: Boolean);
     procedure GetMarketDataGeneric(DataId: Integer; Order: TIABOrder; ExMarketDataString: string; SnapShot: Boolean);
-
     procedure EncodeContract(Contract: TIABContract; SkipIncExp: Boolean);
     procedure EncodeTagValueList(TagValue: TIABTagValueArray);
 
@@ -857,6 +864,7 @@ type
     destructor Destroy; override;
     procedure CancelAccountUpdates;
     procedure CancelOrder(TempID: Integer);
+    procedure CancelOrderAtTime(TempID: Integer; CancelDateTime: TDateTime);
     procedure CancelMarketData(DataId: Integer);
     procedure CancelMarketDepth(DataId: Integer);
     procedure GetAccountUpdates(AccountCode: string);
@@ -922,7 +930,7 @@ type
     procedure RequestGlobalCancel;
     procedure RequestMarketDataType(DataType: TIABMarketDataType);
     procedure RequestSecDefOptParams(DataId: Integer; UnderlyingSymbol, FutFopExchange, UnderlyingSecType: string; UnderlyingConId: Integer);
-    procedure RequestSoftDollarTiers(DataId: Integer);    
+    procedure RequestSoftDollarTiers(DataId: Integer);
     procedure GetScannerParameters;
     procedure RequestScan(ScanId: Integer; Criteria: TIABScanCriteria);
     procedure CancelScan(ScanId: Integer);
@@ -943,8 +951,10 @@ type
     procedure CancelPnL(DataId: Integer);
     procedure RequestPnLSingle(DataId: Integer; Account, ModelCode: string; ConId: Integer);
     procedure CancelPnLSingle(DataId: Integer);
-    procedure RequestWSHorizonEventsData(DataID: Integer; ConID: Integer);
+    //procedure RequestWSHorizonEventsData(DataID: Integer; ConID: Integer);  // updated to this below in 10.16
+    procedure RequestWSHorizonEventsData(DataID: Integer; WSHRequestSpecs: TIABWSHorizonEventData);
     procedure RequestWSHorizonMetaData(DataID: Integer);
+    procedure RequestUserInfo(DataId: Integer);
 
     property Orders: TIABOrders read FOrders write FOrders;
     property VerifiedOrders: TIABOrders read FVerifiedOrders write FVerifiedOrders;
@@ -1027,106 +1037,26 @@ type
     property OnCompletedOrders: TIABCompletedOrdersEvent read FOnCompletedOrders write FOnCompletedOrders;
     property OnCompletedOrdersEnd: TNotifyEvent read FOnCompletedOrdersEnd write FOnCompletedOrdersEnd;
     property OnHistoricalTickData: TIABHistoricalTickDataEvent read FOnHistoricalTickData write FOnHistoricalTickData;
-    property OnTickByTick: TIABTickByTickEvent read FOnTickByTick write FOnTickByTick;
-
+    property OnTickByTickData: TIABTickByTickDataEvent read FOnTickByTickData write FOnTickByTickData;
     property OnReplaceFAEnd: TIABReplaceFAEndEvent read FOnReplaceFAEnd write FOnReplaceFAEnd;
     property OnWsHorizonEvents: TIABWsHorizonEventsEvent read FOnWsHorizonEvents write FOnWsHorizonEvents;
     property OnWsHorizonMeta: TIABWsHorizonMetaEvent read FOnWsHorizonMeta write FOnWsHorizonMeta;
+    // new
+    property OnHistoricalSession: TIABHistoricalSessionEvent read FOnHistoricalSession write FOnHistoricalSession;
+    property OnUserInfo: TIABUserInfo read FOnUserInfo write FOnUserInfo;
 
     property OnEndOfStreamRead: TNotifyEvent read FOnEndOfStreamRead write FOnEndOfStreamRead;
   end;
 
-{ TIABTCPClient }
-
-  TIABSocketDataEvent = procedure (Sender: TObject; Buf: pAnsiChar; var DataLen: Integer) of object;
-  TIABSocketErrorEvent = procedure (Sender: TObject; SocketError: Integer) of object;
-  EIABSocketError = class(Exception);
-  TServerSocketBlockMode = (bmBlocking, bmNonBlocking, bmThreadBlocking);
-  TSocketBlockMode = bmBlocking..bmNonBlocking;
-
-  TIABTCPClient = class(TComponent)
-  private
-    FActive: Boolean;
-    FBlockMode: TSocketBlockMode;
-    FBytesReceived: Cardinal;
-    FBytesSent: Cardinal;
-    FSocket: TSocket;
-    FOnCreateHandle: TNotifyEvent;
-    FOnDestroyHandle: TNotifyEvent;
-    FOnError: TIABSocketErrorEvent;
-    FOnReceive: TIABSocketDataEvent;
-    FOnSend: TIABSocketDataEvent;
-    FLocalHost: string;
-    FLocalPort: string;
-    FRemoteHost: string;
-    FRemotePort: string;
-    FConnected: Boolean;
-    FOnConnect: TNotifyEvent;
-    FOnDisconnect: TNotifyEvent;
-    procedure SetActive(Value: Boolean);
-    procedure SetLocalHost(Value: string);
-    procedure SetLocalPort(Value: string);
-    procedure SetRemoteHost(Value: string);
-    procedure SetRemotePort(Value: string);
-    procedure Open;
-    procedure Close;
-  protected
-    procedure DoCreateHandle; dynamic;
-    procedure DoDestroyHandle; dynamic;
-    procedure DoHandleError; dynamic;
-    procedure DoReceive(Buf: pAnsiChar; var DataLen: Integer); virtual;
-    procedure DoSend(Buf: pAnsiChar; var DataLen: Integer); virtual;
-    function ErrorCheck(rc: Integer): Integer; virtual;
-    procedure Loaded; override;
-    procedure SetBlockMode(Value: TSocketBlockMode);
-    procedure SetBytesReceived(Value: Cardinal);
-    procedure SetBytesSent(Value: Cardinal);
-    procedure DoConnect; virtual;
-    procedure DoDisconnect; virtual;
-  public
-    constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
-    function PeekBuf(var Buf; BufSize: Integer): Integer;
-    function ReceiveBuf(var Buf; BufSize: Integer; Flags: Integer = 0): Integer;
-    function Select(ReadReady, WriteReady, ExceptFlag: PBoolean; TimeOut: Integer = 0): Boolean;
-    function SendBuf(var Buf; BufSize: Integer; Flags: Integer = 0): Integer;
-    function SendStream(AStream: TStream): Integer;
-    function WaitForData(TimeOut: Integer = 0): Boolean;
-    property Active: Boolean read FActive write SetActive default False;
-    property BlockMode: TSocketBlockMode read FBlockMode write SetBlockMode default bmBlocking;
-    property BytesReceived: Cardinal read FBytesReceived;
-    property BytesSent: Cardinal read FBytesSent;
-    property Handle: TSocket read FSocket;
-    property OnCreateHandle: TNotifyEvent read FOnCreateHandle write FOnCreateHandle;
-    property OnDestroyHandle: TNotifyEvent read FOnDestroyHandle write FOnDestroyHandle;
-    property OnError: TIABSocketErrorEvent read FOnError write FOnError;
-    property OnReceive: TIABSocketDataEvent read FOnReceive write FOnReceive;
-    property OnSend: TIABSocketDataEvent read FOnSend write FOnSend;
-    function GetSocketAddr(h: string; p: string): TSockAddr;
-    function LookupHostName(const ipaddr: string): string;
-    function LookupHostAddr(const hn: string): string;
-    function LookupPort(const sn: string; pn: pAnsiChar = nil): word;
-    function ReceiveFrom(var buf; bufsize: Integer; ToAddr: TSockAddr; var len: Integer; flags: Integer = 0): Integer;
-    function SendTo(var buf; bufsize: Integer; ToAddr: TSockAddr; flags: Integer = 0): Integer;
-    property LocalHost: string read FLocalHost write SetLocalHost;
-    property LocalPort: string read FLocalPort write SetLocalPort;
-    property RemoteHost: string read FRemoteHost write SetRemoteHost;
-    property RemotePort: string read FRemotePort write SetRemotePort;
-    function Connect: Boolean;
-    procedure Disconnect;
-    property Connected: Boolean read FConnected;
-    property OnConnect: TNotifyEvent read FOnConnect write FOnConnect;
-    property OnDisconnect: TNotifyEvent read FOnDisconnect write FOnDisConnect;
-  end;
 
 
   procedure Register;
 
   function OrderTypeToStr(IABOrderType: TIABOrderType): string;
   function IABDateTimeStrToDateTime(const Value: string): TDateTime;
-  function DateTimeToIABDateTimeStr(const Value: TDateTime): string;
+  function DateTimeToIABDateTimeStr(Value: TDateTime; Timezone: string = ''): string;
   procedure FillContractFromOrder(Order: TIABOrder; var contract: TIABContract);
-
+  procedure InitIABContract(var contract: TIABContract);
 
 implementation
 
@@ -1144,6 +1074,7 @@ var
   BondSpecItem: TIABBondSpecItem;
   NewExec: TIABExecution;
   HistoricalChartData: TIABHistoricalChartData;
+  HistoricalSession: TIABHistoricalSession;
   IABScan: TIABScan;
   RealTimeData: TIABRealTimeData;
   S_Ver: Integer = 0;
@@ -1154,7 +1085,6 @@ var
   ASoftDollarTier: TIABSoftDollarTier;
   TickAttrib: TIABTickAttrib;
   TickData: TIABTickData;
-
 
 
 function OrderTypeToStr(IABOrderType: TIABOrderType): string;
@@ -1181,9 +1111,26 @@ begin
   Result := EncodeDate(y,m,d) + EncodeTime(h,n,c,0);
 end;
 
-function DateTimeToIABDateTimeStr(const Value: TDateTime): string;
+function DateTimeToIABDateTimeStr(Value: TDateTime; Timezone: string = ''): string;
+var SystemTime: TSystemTime; SystemDateTime: TDateTime;
 begin
-  DateTimeToString(Result,'yyyymmdd" "hh":"nn":"ss',Value);
+  // Assumed value is in local time or exchange local time.  Convert to UTC from OS time zone.
+
+  if TimeZone = '' then
+    begin
+      GetSystemTime(SystemTime);
+      SystemDateTime := SystemTimeToDateTime(SystemTime);
+      Value := Value - (Now - SystemDateTime);
+      TimeZone := 'UTC';
+    end;
+  DateTimeToString(Result,'yyyymmdd" "hh":"nn":"ss', Value);
+  Result := Result + ' ' + Timezone;
+
+  {
+  The correct format is yyyymmdd hh:mm:ss xxx where yyyymmdd and xxx are optional. E.g.: 20031126 15:59:00 US/Eastern
+  Note that there is a space between the date and time, and between the time and time-zone.
+  If no date is specified, current date is assumed. If no time-zone is specified, local time-zone is assumed(deprecated).
+  }
 end;
 
 function ActionStringType(Action: string): TIABAction;
@@ -1234,6 +1181,18 @@ begin
 //  Contract.ComboLegList := Copy(Order.ComboLegList);
 //  Contract.DeltaNeutralContract := Order.DeltaNeutralContract;
 end;
+
+procedure InitIABContract(var Contract: TIABContract);
+begin
+  Contract.ContractId := 0;
+  Contract.Strike := 0.0;
+  Contract.IncludeExpired := false;
+  Contract.ComboLegList := nil;
+  Contract.DeltaNeutralContract.ConId := 0;
+  Contract.DeltaNeutralContract.Delta := 0.0;
+  Contract.DeltaNeutralContract.Price := 0.0;
+end;
+
 
 function DecodeOrderType(ot: string): TIABOrderType;
 var i: Integer;
@@ -1295,6 +1254,7 @@ begin
 end;
 
 
+
 { TIABSocket }
 procedure TIABSocket.AddToOut(Value: string);
 var i: Integer; AnsiStr: AnsiString;
@@ -1321,10 +1281,11 @@ begin
   {$ELSE}
   DecSep := DecimalSeparator;
   {$IFEND}
-  if Value >= UNSET_DOUBLE_TEST_VALUE then // = UNSET_DOUBLE then //MaxDouble then
+  if IsInfinite(Value) then s := INFINITY_STR
+  else if Value >= UNSET_DOUBLE_TEST_VALUE then // = UNSET_DOUBLE then //MaxDouble then
     s := '1.7976931348623157E308' // the java expected version of a maxdouble
   else
-    s := FormatFloat('0.00######',Value);
+    s := FormatFloat('0.00########',Value);
   if DecSep <> '.' then
     begin                           // all this because TWS or Java can't read the systems DecimalSeparator !!
       for i := 1 to Length(s) do
@@ -1337,7 +1298,7 @@ end;
 procedure TIABSocket.AddToOut(Value: BigDecimal);
 var s: string;
 begin
-  s := Value.ToString;
+  s := Value.ToPlainString;
   AddToOut(s);
 end;
 
@@ -1357,12 +1318,14 @@ end;
 
 procedure TIABSocket.AddToOutNullValueDef(Value: Integer);
 begin
-  if Value = UNSET_INTEGER then AddToOut('') else AddToOut(Value);
+  if Value = UNSET_INTEGER then AddToOut('')
+  else AddToOut(Value);
 end;
 
 procedure TIABSocket.AddToOutNullValueDef(Value: Double);
 begin
-  if Value >= UNSET_DOUBLE_TEST_VALUE then AddToOut('') else AddToOut(Value);
+  if Value >= UNSET_DOUBLE_TEST_VALUE then AddToOut('')
+  else AddToOut(Value);
 end;
 
 function TIABSocket.AmendOrderCancel(TempId, ClientId, PermId: Integer): TIABOrder;
@@ -1396,9 +1359,9 @@ begin
 
 
       {$IFDEF USE_BIGDECIMAL}
-      if (BigDecimal.Compare(Filled, Result.FFilled) = 0) and (os = osFilled){ Roman: Added condition } and Result.Completed then
+      if (BigDecimal.Compare(Filled, Result.FFilled) = 0) and (os = osFilled) then
       {$ELSE}
-      if (SameValue(Filled, Result.FFilled)) and (os = osFilled) { Roman: Added condition } and Result.Completed then
+      if (SameValue(Filled, Result.FFilled)) and (os = osFilled) then
       {$ENDIF}
         begin
           Result := nil;
@@ -1627,6 +1590,33 @@ begin
   AddToOut(CANCEL_ORDER);
   AddToOut(VERSION);
   AddToOut(TempID);
+  if (FServerVersion >= MIN_SERVER_VER_MANUAL_ORDER_TIME) then  // 169
+    AddToOut('');
+  SendToSocket(TempID);
+end;
+
+procedure TIABSocket.CancelOrderAtTime(TempID: Integer; CancelDateTime: TDateTime);
+const VERSION = 1;
+var s: string;
+begin
+  FRebuildFromTWS := false;
+  if not FSocket.Active then
+    begin
+      DoErrorEvent(TempID, NOT_CONNECTED);
+      Exit;
+    end;
+  if FServerVersion < MIN_SERVER_VER_MANUAL_ORDER_TIME then  // 169
+    begin
+      DoErrorEvent(TempID, UPDATE_TWS, ' CancelOrderAtTime, is not supported.');
+      Exit;
+    end;
+  AddToOut(CANCEL_ORDER);
+  AddToOut(VERSION);
+  AddToOut(TempID);
+  if CancelDateTime <= 1.0 then
+    CancelDateTime := CancelDateTime + Date;  // add missing date ( today )
+  s := FormatDateTime('yyyymmdd hh":"nn":"ss":"', CancelDateTime);  //   "20220314 19:00:00"
+  AddToOut(s);
   SendToSocket(TempID);
 end;
 
@@ -1738,7 +1728,7 @@ var MsgId, Version, p1, p2, p3, p4, p5, p6, i, j: Integer;
     s1, s2, s3, s4, s5: string;
     os: TIABOrderState;
     pa, BOS, EOS: pAnsiChar;
-    msgLen, netLen: u_long;//Longword;
+    msgLen, netLen: u_long;
     time64t, pp1: Int64;
     b1: Boolean;
     AttrMask: LongWord;
@@ -1802,6 +1792,8 @@ var MsgId, Version, p1, p2, p3, p4, p5, p6, i, j: Integer;
     s := ReadStream;
     if (s = '') or (s = 'NaN') then
       Result := 0.0
+    else if s = INFINITY_STR then
+      Result := _INFINITY
     else if (Pos('1.7976931348',s) = 1) and (Pos('308', s) = Length(s) - 2) then
       Result := UNSET_DOUBLE  //MaxDouble  //1.7976931348623157081E+308    // 64 bit java has some other ideas re max double
     else if (Pos('4.9406564584',s) = 1) and (Pos('-324', s) = Length(s) - 3) then  // not used normally
@@ -1943,7 +1935,6 @@ begin
     	      if (FServerVersion >= MIN_SERVER_VER_PRE_OPEN_BID_ASK) then // 132
               Tickattrib.PreOpen := p4 and $04 > 0;
           end;
-
         if Assigned(FOnTickPrice) then FOnTickPrice(Self,p1,TIABTickType(p2),d, TickAttrib);
         BOS := pa;
       end;
@@ -2134,10 +2125,17 @@ begin
           end
         else
           begin
-            if not ScanAhead(3) then Break;
+            if not ScanAhead(3 + Integer(FServerVersion >= MIN_SERVER_VER_ADVANCED_ORDER_REJECT)) then Break;
             p1 := ReadInt; // id
-            p2 := ReadInt; // code
+            p2 := ReadInt; // errorCode
             s1 := ReadStream;           // msg
+
+           	if (FServerVersion >= MIN_SERVER_VER_ADVANCED_ORDER_REJECT) then
+              s2 := ReadStream  // advancedOrderRejectJson
+            else
+              s2 := '';
+            if s2 <> '' then
+              s1 := s1 + ' >>> ' + s2;
             if p1 = $7fffffff then p1 := -1;  // fix a type cast problem in TWS.
             if Assigned(FOnError) then FOnError(Self,p1,p2,s1);
           end;
@@ -2515,7 +2513,6 @@ begin
             FOrderState.RandomizeSize := ReadBool;
             FOrderState.RandomizePrice := ReadBool;
           end;
-
         // decodePegBenchParams
 	      if (FServerVersion >= MIN_SERVER_VER_PEGGED_TO_BENCHMARK) then  // 102
           begin
@@ -2529,7 +2526,6 @@ begin
 			          FOrderState.ReferenceExchangeId := ReadStream;
               end;
           end;
-
         // decodeConditions
 	      if (FServerVersion >= MIN_SERVER_VER_PEGGED_TO_BENCHMARK) then  // 102
           begin
@@ -2546,12 +2542,11 @@ begin
                 s1 := s1 + ReadStream;     // conditionsCancelOrder
               end;
           end;
-
         // decodeAdjustedOrderParams
 	      if (FServerVersion >= MIN_SERVER_VER_PEGGED_TO_BENCHMARK) then  // 102
           begin
             if not ScanAhead(8) then Break;
-		        FOrderState.AdjustedOrderType := ReadStream;
+		        FOrderState.AdjustedOrderType := DecodeOrderType(ReadStream);
 		        FOrderState.TriggerPrice := ReadFloat;
               //decodeStopPriceAndLmtPriceOffset
   		        FOrderState.TrailStopPrice := ReadFloat;
@@ -2571,7 +2566,8 @@ begin
               Integer(FServerVersion >= MIN_SERVER_VER_PRICE_MGMT_ALGO) +
               Integer(FServerVersion >= MIN_SERVER_VER_DURATION) +
               Integer(FServerVersion >= MIN_SERVER_VER_POST_TO_ATS) +
-              Integer(FServerVersion >= MIN_SERVER_VER_AUTO_CANCEL_PARENT)
+              Integer(FServerVersion >= MIN_SERVER_VER_AUTO_CANCEL_PARENT) +
+              5 * Integer(FServerVersion >= MIN_SERVER_VER_PEGBEST_PEGMID_OFFSETS)
               ;
         if (i > 0) and (not ScanAhead(i)) then Break;
 
@@ -2607,7 +2603,15 @@ begin
 
       	if FServerVersion >= MIN_SERVER_VER_PRICE_MGMT_ALGO then // 151
 
-          FOrderState.FUsePriceMgmtAlgo := ReadInt;
+          begin
+
+            FOrderState.FUsePriceMgmtAlgo := ReadInt;
+
+            if FOrderState.FUsePriceMgmtAlgo = 2 then
+
+              FOrderState.FUsePriceMgmtAlgo := UNSET_INTEGER;
+
+          end;
 
 
       	if FServerVersion >= MIN_SERVER_VER_DURATION then // 158
@@ -2623,6 +2627,21 @@ begin
       	if FServerVersion >= MIN_SERVER_VER_AUTO_CANCEL_PARENT then // 162
 
           FOrderState.FAutoCancelParent := ReadBool;
+
+
+        // decodePegBestPegMidOrderAttributes
+
+        if (FServerVersion >= MIN_SERVER_VER_PEGBEST_PEGMID_OFFSETS) then
+
+          begin
+
+            FOrderState.MinTradeQty := ReadInt;
+            FOrderState.MinCompeteSize := ReadInt;
+            FOrderState.CompeteAgainstBestOffset := ReadFloat;
+            FOrderState.MidOffsetAtWhole := ReadFloat;
+            FOrderState.MidOffsetAtHalf := ReadFloat;
+
+          end;
 
 
 
@@ -2885,12 +2904,22 @@ begin
         //  decodeLastTradeDate function
         i := Pos(' ', s1);
         InsSpecItem.LastTradeTime := '';
+        InsSpecItem.TimeZoneID := '';
         if i = 0 then
           InsSpecItem.Expiry := s1
         else
           begin
             InsSpecItem.Expiry := Copy(s1, 1, i -1);
-            InsSpecItem.LastTradeTime := Copy(s1, i + 1, 100);
+            Delete(s1, 1, i + 1);
+            i := Pos(' ', s1);
+            if i = 0 then
+              InsSpecItem.LastTradeTime := s1
+            else
+              begin
+                InsSpecItem.LastTradeTime := Copy(s1, 1, i -1);
+                Delete(s1, 1, i + 1);
+                InsSpecItem.TimeZoneID := s1;
+              end;
           end;
 
         InsSpecItem.Strike := ReadFloat;
@@ -2907,7 +2936,6 @@ begin
   	      // InsSpecItem.mdSizeMultiplier := ReadInt;  // dropped in API 10.10
         if (FServerVersion >= MIN_SERVER_VER_MD_SIZE_MULTIPLIER) and (FServerVersion < MIN_SERVER_VER_SIZE_RULES) then
           ReadInt;    // not used anymore
-
         InsSpecItem.Multiplier := ReadStream;          // multiplier
         if InsSpecItem.Multiplier = '' then InsSpecItem.Multiplier := '0';
         InsSpecItem.OrderTypes := [];
@@ -3004,7 +3032,6 @@ begin
         		InsSpecItem.SizeIncrement := ReadDecimal;
         		InsSpecItem.SuggestedSizeIncrement := ReadDecimal;
           end;
-
 
         // ****  end of streamed data read, now put it into saved objects / classes  *****
 
@@ -3245,10 +3272,8 @@ begin
 
         if (FServerVersion >= MIN_SERVER_VER_MODELS_SUPPORT) then  // 103
           NewExec.ModelCode := ReadStream;
-
         if (FServerVersion >= MIN_SERVER_VER_LAST_LIQUIDITY) then   // 136
            NewExec.LastLiquidity := ReadInt;
-
 
 
         // end of data reads.  Now assign to objects.
@@ -3378,7 +3403,6 @@ begin
           Version := ReadInt
         else
           Version := MaxInt;
-
         p2 := ReadInt; // req ID
         s2 := 'finished';
         if not ScanAhead(2) then Break;
@@ -3403,7 +3427,6 @@ begin
                 //else
                   //HistoricalChartData.Volume := ReadInt64;
                 HistoricalChartData.Volume := ReadDecimal;
-
                 HistoricalChartData.WAP := ReadDecimal;//ReadFloat;
                 HistoricalChartData.HasGaps := false;
                 if (FServerVersion < MIN_SERVER_VER_SYNT_REALTIME_BARS) then  // 124
@@ -3658,13 +3681,11 @@ begin
 				s1 := s1 + ReadStream; // DECODE_FIELD( contract.localSymbol);
 				if Version >= 2 then
 					s1 := s1 + ReadStream; // DECODE_FIELD( contract.tradingClass);
-
             //if (m_serverVersion >= MIN_SERVER_VER_FRACTIONAL_POSITIONS)
             
 				s1 := s1 + ReadStream; // DECODE_FIELD( position);
 				if Version >= 3 then
 					s1 := s1 + ReadStream; // DECODE_FIELD( avgCost);
-
         if s1 = 'qwertyuiop' then Break; //  to force all junk code above to compile.
         BOS := pa;
       end;
@@ -3756,7 +3777,6 @@ begin
         if s1 = 'qwertyuiop' then Break; //  to force all junk code above to compile.
         BOS := pa;
       end;
-
     POSITION_MULTI: begin
       // ***  These callbacks not implemented: ***
         if not ScanAhead(17) then Break;
@@ -3767,7 +3787,6 @@ begin
         if s1 = 'qwertyuiop' then Break; //  to force all junk code above to compile.
         BOS := pa;
       end;
-
     POSITION_MULTI_END: begin
       // ***  These callbacks not implemented: ***
         if not ScanAhead(2) then Break;
@@ -3776,7 +3795,6 @@ begin
         if s1 = 'qwertyuiop' then Break; //  to force all junk code above to compile.
         BOS := pa;
       end;
-
     ACCOUNT_UPDATE_MULTI: begin
       // ***  These callbacks not implemented: ***
         if not ScanAhead(7) then Break;
@@ -3787,7 +3805,6 @@ begin
         if s1 = 'qwertyuiop' then Break; //  to force all junk code above to compile.
         BOS := pa;
       end;
-
     ACCOUNT_UPDATE_MULTI_END: begin
       // ***  These callbacks not implemented: ***
         if not ScanAhead(2) then Break;
@@ -3796,7 +3813,6 @@ begin
         if s1 = 'qwertyuiop' then Break; //  to force all junk code above to compile.
         BOS := pa;
       end;
-
 
     SECURITY_DEFINITION_OPTION_PARAMETER: begin
         if not ScanAhead(6) then Break;
@@ -3822,7 +3838,6 @@ begin
           FOnSecurityDefinitionOptionalParameter(Self, p1, s1, p2, s2, s3, s4, s5);
         BOS := pa;
       end;
-
     SECURITY_DEFINITION_OPTION_PARAMETER_END: begin
         if not ScanAhead(1) then Break;
         // Version := ReadInt;
@@ -3831,7 +3846,6 @@ begin
           FOnSecurityDefinitionOptionalParameterEnd(Self, p2);
         BOS := pa;
       end;
-
     SOFT_DOLLAR_TIERS: begin
         if not ScanAhead(2) then Break;
         // Version := ReadInt;
@@ -3889,7 +3903,6 @@ begin
           end;
         BOS := pa;
       end;
-
       MKT_DEPTH_EXCHANGES: begin
         if not ScanAhead(2) then Break;
         //p1 := ReadInt;  //reqId error - dropped 10.11.2
@@ -3898,7 +3911,6 @@ begin
         p3 := p2 * 3;
         if (FServerVersion >= MIN_SERVER_VER_SERVICE_DATA_TYPE) then // 120
           p3 := p2 * 5;
-
         if (p2 > 0) and (not ScanAhead(p3)) then Break;
         for i := 0 to p2 -1 do
           begin
@@ -3921,17 +3933,14 @@ begin
                   DepthMarketDataDescripItem.ServiceDataType := 'Deep2'
                 else
                   DepthMarketDataDescripItem.ServiceDataType := 'Deep';
-
                 DepthMarketDataDescripItem.ListingExchange := '';
                 DepthMarketDataDescripItem.AggGroup := 0;
               end;
-
             if Assigned(FOnDepthMarketDataDescripItem) then
               FOnDepthMarketDataDescripItem(Self, i + 1, p2, DepthMarketDataDescripItem);
           end;
         BOS := pa;
       end;
-
       TICK_NEWS: begin
         if not ScanAhead(5) then Break;
         p1 := ReadInt;  //tickerId
@@ -3944,7 +3953,6 @@ begin
           FOnNewsTick(Self, p1, time64t / 86400 + 25569, s1, s2, s3, s4);
         BOS := pa;
       end;
-
 		  NEWS_PROVIDERS: begin
         if not ScanAhead(1) then Break;
         p1 := ReadInt;  // nNewsProviders
@@ -3961,7 +3969,6 @@ begin
           end;
         BOS := pa;
       end;
-
 		  NEWS_ARTICLE: begin
         if not ScanAhead(3) then Break;
         p1 := ReadInt;  //reqId
@@ -3971,7 +3978,6 @@ begin
           FOnNewsArticle(Self, p1, p2, s1);
         BOS := pa;
       end;
-
 		 HISTORICAL_NEWS: begin
         if not ScanAhead(5) then Break;
         p1 := ReadInt;  //reqId
@@ -3983,7 +3989,6 @@ begin
           FOnHistoricalNews(Self, p1, s1, s2, s3, s4);
         BOS := pa;
       end;
-
      HISTORICAL_NEWS_END: begin
         if not ScanAhead(2) then Break;
         p1 := ReadInt;  //reqId
@@ -3992,7 +3997,6 @@ begin
           FOnHistoricalNewsEnd(Self, p1, b1);
         BOS := pa;
       end;
-
 		  MARKET_RULE: begin
         if not ScanAhead(2) then Break;
         p1 := ReadInt;  //marketRuleId);
@@ -4010,7 +4014,6 @@ begin
           end;
         BOS := pa;
       end;
-
  		  SMART_COMPONENTS: begin
         if not ScanAhead(2) then Break;
         p1 := ReadInt;  //reqId
@@ -4029,7 +4032,6 @@ begin
           end;
         BOS := pa;
       end;
-
 		  TICK_REQ_PARAMS: begin
         if not ScanAhead(4) then Break;
         p1 := ReadInt;  //tickerId
@@ -4040,7 +4042,6 @@ begin
           FOnTickReqParams(Self, p1, d, s1, p2);
         BOS := pa;
       end;
-
 		  HEAD_TIMESTAMP: begin
         if not ScanAhead(2) then Break;
         p1 := ReadInt;  //reqId
@@ -4049,7 +4050,6 @@ begin
           FOnHeadTimestamp(Self, p1, s1);
         BOS := pa;
       end;
-
       HISTOGRAM_DATA: begin
         if not ScanAhead(2) then Break;
         p1 := ReadInt;   //reqId
@@ -4068,7 +4068,6 @@ begin
           end;
         BOS := pa;
       end;
-
 		  REROUTE_MKT_DATA_REQ: begin
         if not ScanAhead(3) then Break;
         p1 := ReadInt;  //reqId
@@ -4078,7 +4077,6 @@ begin
           FOnRerouteMktDataReq(Self, p1, p2, s1);
         BOS := pa;
       end;
-
 		  REROUTE_MKT_DEPTH_REQ: begin
         if not ScanAhead(3) then Break;
         p1 := ReadInt;  //reqId
@@ -4088,7 +4086,6 @@ begin
           FOnRerouteMktDepthReq(Self, p1, p2, s1);
         BOS := pa;
       end;
-
       PNL: begin
         if not ScanAhead(2) then Break;
         p1 := ReadInt;  //reqId
@@ -4103,7 +4100,6 @@ begin
           FOnProfitLoss(Self, p1, d, d2, d3);
         BOS := pa;
       end;
-
       PNL_SINGLE: begin
         if not ScanAhead(4) then Break;
         p1 := ReadInt;  //reqId
@@ -4121,7 +4117,6 @@ begin
           FOnProfitLossSingle(Self, p1, dm1, d, d2, d4, d3);
         BOS := pa;
       end;
-
       HISTORICAL_TICKS,
 
       HISTORICAL_TICKS_BID_ASK,
@@ -4185,7 +4180,6 @@ begin
         ReadInt;  // done
         BOS := pa;
       end;
-
       TICK_BY_TICK: begin
 
         if not ScanAhead(3) then Break;
@@ -4224,11 +4218,10 @@ begin
               TickData.MidPoint := ReadFloat;
             end;
         end;
-        if Assigned(FOnTickByTick) then
-          FOnTickByTick(Self, p1, TickData);
+        if Assigned(FOnTickByTickData) then
+          FOnTickByTickData(Self, p1, TickData);
         BOS := pa;
       end;
-
       ORDER_BOUND: begin
 
         if not ScanAhead(3) then Break;
@@ -4251,7 +4244,6 @@ begin
         BOS := pa;
 
       end;
-
       COMPLETED_ORDER: begin
 
 
@@ -4555,7 +4547,6 @@ begin
         // decodeOrderStatus
         ReadStream;  // status - not used in our API
 
-
         // decodeVolRandomizeFlags
         if (Version >= 34) then
           begin
@@ -4563,7 +4554,6 @@ begin
             FOrderState.RandomizeSize := ReadBool;
             FOrderState.RandomizePrice := ReadBool;
           end;
-
         // decodePegBenchParams
 	      if (FServerVersion >= MIN_SERVER_VER_PEGGED_TO_BENCHMARK) then  // 102
           begin
@@ -4577,7 +4567,6 @@ begin
 			          FOrderState.ReferenceExchangeId := ReadStream;
               end;
           end;
-
         // decodeConditions
 	      if (FServerVersion >= MIN_SERVER_VER_PEGGED_TO_BENCHMARK) then  // 102
           begin
@@ -4595,13 +4584,11 @@ begin
               end;
           end;
 
-
         i :=  Integer(FServerVersion >= MIN_SERVER_VER_CASH_QTY) +
               Integer(FServerVersion >= MIN_SERVER_VER_AUTO_PRICE_FOR_HEDGE) +
               Integer(FServerVersion >= MIN_SERVER_VER_ORDER_CONTAINER) +
               12;
         if not ScanAhead(i) then Break;
-
 
          // decodeStopPriceAndLmtPriceOffset
         FOrderState.FTrailStopPrice := ReadFloat;             // trailStopPrice
@@ -4679,6 +4666,21 @@ begin
         FOrderState.FCompletedStatus := ReadStream;
 
 
+        // decodePegBestPegMidOrderAttributes
+
+        if (FServerVersion >= MIN_SERVER_VER_PEGBEST_PEGMID_OFFSETS) then
+
+          begin
+
+            FOrderState.MinTradeQty := ReadInt;
+            FOrderState.MinCompeteSize := ReadInt;
+            FOrderState.CompeteAgainstBestOffset := ReadFloat;
+            FOrderState.MidOffsetAtWhole := ReadFloat;
+            FOrderState.MidOffsetAtHalf := ReadFloat;
+
+          end;
+
+
 
         // ****  end of streamed data read, now put it into saved objects / classes  *****
 
@@ -4704,13 +4706,11 @@ begin
         BOS := pa;
 
       end;
-
       COMPLETED_ORDERS_END: begin
         if Assigned(FOnCompletedOrdersEnd) then
             FOnCompletedOrdersEnd(Self);
         BOS := pa;
       end;
-
 		  REPLACE_FA_END: begin
         if not ScanAhead(2) then Break;
         p1 := ReadInt;  // reqID
@@ -4738,6 +4738,34 @@ begin
         BOS := pa;
       end;
 
+		  HISTORICAL_SCHEDULE: begin
+        if not ScanAhead(5) then Break;
+        p1 := ReadInt; // reqID
+        s1 := ReadStream; // startDateTime
+        s2 := ReadStream; // endDateTime
+        s3 := ReadStream; // timeZone
+        p2 := ReadInt; // sessionsCount
+        if not ScanAhead(p2 * 3) then Break;
+        for i := 0 to p2 -1 do
+          begin
+            HistoricalSession.StartDateTime := ReadStream;
+            HistoricalSession.EndDateTime := ReadStream;
+            HistoricalSession.RefDate := ReadStream;
+            if Assigned(FOnHistoricalSession) then
+              FOnHistoricalSession(Self, p1, i + 1, p2, s1, s2, s3, HistoricalSession);
+          end;
+        BOS := pa;
+      end;
+
+      USER_INFO: begin
+        if not ScanAhead(2) then Break;
+        p1 := ReadInt; // reqID
+        s1 := ReadStream; // whiteBrandingId
+        if Assigned(FOnUserInfo) then
+          FOnUserInfo(Self, p1, s1);
+        BOS := pa;
+      end;
+
 
       // end of known msg's
 
@@ -4747,7 +4775,7 @@ begin
           BOS := EOS;
         end;
     end; // case
-    
+
 
     if (BOS = EOS) or (Version = -1) then Break;
   until false;                  // loop indefinately until forced break test above
@@ -4779,7 +4807,7 @@ begin
       FOnConnectionState := nil;
       FOnError := nil;
       FSocketThread.Terminate;
-      FSocket.Close;
+      FSocket.Disconnect;
       FSocketThread.WaitFor;
       FSocketThread.Free;
     end;
@@ -4974,7 +5002,6 @@ begin
           else
             AddToOut(Exchange);
         end;
-
       AddToOut(Currency);
       AddToOut(LocalSymbol);
       if FServerVersion >= MIN_SERVER_VER_TRADING_CLASS then // 68
@@ -5068,8 +5095,26 @@ begin
       DoErrorEvent(NO_VALID_ID, NOT_CONNECTED);
       Exit;
     end;
+
+  if (FServerVersion < MIN_SERVER_VER_TRADING_CLASS) then
+    begin
+      if (TradingClass <> '') or (ContractId > 0) then
+        begin
+           DoErrorEvent(DataId, UPDATE_TWS, ' It does not support conId and tradingClass parameters in reqHistoricalData.');
+           Exit;
+        end;
+    end;
+    if (FServerVersion < MIN_SERVER_VER_HISTORICAL_SCHEDULE) then
+      begin
+        if DataBasis = cdSchedule then
+          begin
+            DoErrorEvent(DataId, UPDATE_TWS, ' It does not support requesting of historical schedule.');
+            Exit;
+          end;
+      end;
+
   AddToOut(REQ_HISTORICAL_DATA);
-	if (FServerVersion < MIN_SERVER_VER_SYNT_REALTIME_BARS) then  // 124  // stupid !
+	if (FServerVersion < MIN_SERVER_VER_SYNT_REALTIME_BARS) then  // 124
     AddToOut(VERSION);
   AddToOut(DataId);
   if FServerVersion >= MIN_SERVER_VER_TRADING_CLASS then // 68
@@ -5105,7 +5150,6 @@ begin
 
 	if (FServerVersion >= MIN_SERVER_VER_SYNT_REALTIME_BARS) then // 124
     AddToOut(KeepUpdated);
-
 
   if FServerVersion >= MIN_SERVER_VER_LINKING then  //  70
     begin
@@ -5505,6 +5549,11 @@ begin
       DoErrorEvent(NO_VALID_ID, NOT_CONNECTED);
       Exit;
     end;
+  if not (DataBasis in [cdTrades..cdBidAsk]) then
+    begin
+      DoErrorEvent(DataId, FAIL_SEND_REQRTBARS, ' DataBasis paramater out of range for the GetRealTimeData procedure.');
+      Exit;
+    end;
   AddToOut(REQ_REAL_TIME_BARS);
   AddToOut(VERSION);
   AddToOut(DataId);
@@ -5634,7 +5683,7 @@ begin
 end;
 
 procedure TIABSocket.Initialize;
-var pa: PAnsiChar; conFailed: Boolean; netLen, msgLen: u_long;//Longword;
+var pa: PAnsiChar; conFailed: Boolean; netLen, msgLen: u_long;
 begin
   conFailed := true;
 
@@ -5671,7 +5720,8 @@ begin
       Exit;
     end;
   FInStream.Position := 0;
-  if FServerVersion < MIN_SERVER_VERSION then  // 38 at present
+  //if FServerVersion < MIN_SERVER_VERSION then  // 38 at present  // old system - no longer suppurted
+  if FServerVersion < MIN_CLIENT_VER then   // 100
     begin
       DoErrorEvent(NO_VALID_ID, UPDATE_TWS);
       if Assigned(FOnConnectionState) then FOnConnectionState(Self,twsFailed);
@@ -5894,7 +5944,6 @@ begin
       err_str := 'SoftDollarTier';
 	if (FServerVersion < MIN_SERVER_VER_CASH_QTY) and (Order.CashQuantity > 0) then
     err_str := 'cash quantity';
-
 	if (FServerVersion < MIN_SERVER_VER_DECISION_MAKER) and
     ((Length(Order.Mifid2DecisionMaker) > 0) or (Length(Order.Mifid2DecisionAlgo) > 0)) then
       err_str := 'MIFID II decision maker';
@@ -5911,6 +5960,41 @@ begin
     err_str := 'Use Price Management Algo requests';
 
 
+
+	if (FServerVersion <MIN_SERVER_VER_DURATION) and (Order.Duration <> UNSET_INTEGER) then
+
+    err_str := 'Duration attribute';
+
+	if (FServerVersion < MIN_SERVER_VER_POST_TO_ATS) and (Order.postToAts <> UNSET_INTEGER) then
+
+    err_str := 'PostToAts attribute';
+
+	if (FServerVersion < MIN_SERVER_VER_AUTO_CANCEL_PARENT) and (Order.AutoCancelParent) then
+
+    err_str := 'AutoCancelParent parameter';
+
+	if (FServerVersion < MIN_SERVER_VER_ADVANCED_ORDER_REJECT) and (Order.AdvancedErrorOverride <> '') then
+
+    err_str := 'advanced error override attribute';
+
+	if (FServerVersion < MIN_SERVER_VER_MANUAL_ORDER_TIME) and (Order.manualOrderTime <> 0.0) then
+
+    err_str := 'manual order time attribute';
+
+	if (FServerVersion < MIN_SERVER_VER_PEGBEST_PEGMID_OFFSETS) then
+
+    begin
+
+      if (order.minTradeQty <> UNSET_INTEGER) or
+          (order.minCompeteSize <> UNSET_INTEGER) or
+          (order.competeAgainstBestOffset <> UNSET_DOUBLE) or
+          (order.midOffsetAtWhole <> UNSET_DOUBLE) or
+          (order.midOffsetAtHalf <> UNSET_DOUBLE) then
+        err_str := 'It does not support PEG BEST / PEG MID order parameters: minTradeQty, minCompeteSize, competeAgainstBestOffset, midOffsetAtWhole and midOffsetAtHalf';
+    end;
+
+
+
   if Length(err_str) > 0 then
     begin
       DoErrorEvent(NO_VALID_ID, UPDATE_TWS, ' Orders with ' + err_str + ' parameter not supported.');
@@ -5922,7 +6006,7 @@ end;
 
 procedure TIABSocket.DoPlaceOrModifyOrder(Order: TIABOrder; Id: Integer; Verify: Boolean);
 var i: Integer; Lower, Upper: Double; stv: string;
-    VERSION: Integer;
+    VERSION: Integer; SendMidOffsets: Boolean;
 begin
   if FServerVersion < MIN_SERVER_VER_NOT_HELD then
     VERSION := 27
@@ -6205,13 +6289,11 @@ begin
 
 	if FServerVersion >= MIN_SERVER_VER_ORDER_SOLICITED then  //  73
 		AddToOut(Order.Solicited);
-
   if FServerVersion >= MIN_SERVER_VER_RANDOMIZE_SIZE_AND_PRICE then  //  76
     begin
       AddToOut(Order.RandomizeSize);
       AddToOut(Order.RandomizePrice);
     end;
-
 	if (FServerVersion >= MIN_SERVER_VER_PEGGED_TO_BENCHMARK) then  //  102
     begin
       if (Order.OrderType = otPegBench) then
@@ -6223,10 +6305,8 @@ begin
     			AddToOut(Order.ReferenceExchangeId);
         end;
 
-
       // Order Conditions not implemented.
       AddToOut(0);
-
   		//AddToOut(Order.conditions.size());
       //if (order.conditions.size() > 0) {
 	  	//	for (ibapi::shared_ptr<OrderCondition> item : order.conditions) {
@@ -6236,15 +6316,14 @@ begin
       //ENCODE_FIELD(order.conditionsIgnoreRth);
   		//	ENCODE_FIELD(order.conditionsCancelOrder);
 	  	//}
-
-  		AddToOut(Order.AdjustedOrderType);
+  		AddToOut(OrderTypeString[Order.AdjustedOrderType]);
 	  	AddToOut(Order.TriggerPrice);
   		AddToOut(Order.LmtPriceOffset);
 	  	AddToOut(Order.AdjustedStopPrice);
   		AddToOut(Order.AdjustedStopLimitPrice);
 	  	AddToOut(Order.AdjustedTrailingAmount);
   		AddToOut(Order.AdjustableTrailingUnit);
-    end;  
+    end;
 	if FServerVersion >= MIN_SERVER_VER_EXT_OPERATOR then  //105
 		AddToOut(Order.ExtOperator);
 	if FServerVersion >= MIN_SERVER_VER_SOFT_DOLLAR_TIER then //106
@@ -6269,14 +6348,6 @@ begin
 
 
 
-	if (FServerVersion >= MIN_SERVER_VER_DECISION_MAKER) then // 138
-
-    begin
-
-      AddToOut(order.mifid2DecisionMaker);
-      AddToOut(Order.mifid2DecisionAlgo);
-    end;
-
   if (FServerVersion >= MIN_SERVER_VER_DECISION_MAKER) then
 
     begin
@@ -6289,23 +6360,56 @@ begin
       AddToOut(Order.mifid2ExecutionAlgo);
     end;
   if (FServerVersion >= MIN_SERVER_VER_AUTO_PRICE_FOR_HEDGE) then
-      AddToOut(Order.DontUseAutoPriceForHedge);
+    AddToOut(Order.DontUseAutoPriceForHedge);
   if (FServerVersion >= MIN_SERVER_VER_ORDER_CONTAINER) then
-      AddToOut(Order.IsOmsContainer);
+    AddToOut(Order.IsOmsContainer);
   if (FServerVersion >= MIN_SERVER_VER_D_PEG_ORDERS) then
-      AddToOut(Order.DiscretionaryUpToLimitPrice);
+    AddToOut(Order.DiscretionaryUpToLimitPrice);
   if (FServerVersion >= MIN_SERVER_VER_PRICE_MGMT_ALGO) then
-     AddToOutNullValueDef(Order.UsePriceMgmtAlgo);
-  if (FServerVersion >= MIN_SERVER_VER_PRICE_MGMT_ALGO) then
+    AddToOutNullValueDef(Order.UsePriceMgmtAlgo);
+  if (FServerVersion >= MIN_SERVER_VER_DURATION) then
 
-     AddToOutNullValueDef(Order.Duration);
+    AddToOutNullValueDef(Order.Duration);
   if (FServerVersion >= MIN_SERVER_VER_POST_TO_ATS) then
 
-     AddToOutNullValueDef(Order.PostToATS);
+    AddToOutNullValueDef(Order.PostToATS);
 
   if (FServerVersion >= MIN_SERVER_VER_AUTO_CANCEL_PARENT) then
 
-     AddToOut(Order.AutoCancelparent);
+    AddToOut(Order.AutoCancelparent);
+
+
+  if (FServerVersion >= MIN_SERVER_VER_ADVANCED_ORDER_REJECT) then
+
+    AddToOut(Order.AdvancedErrorOverride);
+  if (FServerVersion >= MIN_SERVER_VER_MANUAL_ORDER_TIME) then
+    begin
+      if (Order.manualOrderTime = 0.0) then
+        AddToOut('')
+      else
+        AddToOut(FormatDateTime('yyyymmdd hh":"nn":"ss', Order.manualOrderTime));
+    end;
+  if (FServerVersion >= MIN_SERVER_VER_PEGBEST_PEGMID_OFFSETS) then
+    begin
+      if (Uppercase(Order.Exchange) = 'IBKRATS') then
+        AddToOutNullValueDef(Order.MinTradeQty);
+      SendMidOffsets := false;
+      if (Order.OrderType = otPegBest) then
+        begin
+          AddToOutNullValueDef(Order.minCompeteSize);
+          AddToOutNullValueDef(Order.competeAgainstBestOffset);
+          //if (Order.CompeteAgainstBestOffset = COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID) then //Infinity
+          if IsInfinite(Order.CompeteAgainstBestOffset) then
+            SendMidOffsets := true;
+        end
+      else if (Order.OrderType = otPegMidPt) then
+        SendMidOffsets := true;
+      if (SendMidOffsets) then
+        begin
+          AddToOutNullValueDef(Order.midOffsetAtWhole);
+          AddToOutNullValueDef(Order.midOffsetAtHalf);
+        end;
+    end;
 
 
 
@@ -6407,7 +6511,10 @@ begin
     if FConnecting then Initialize
     else DecodeSuccess := DecodeData;
   except on EIABSocket do
-    DoErrorEvent(NO_VALID_ID, FAIL_STREAM_READ);
+    begin
+      DoErrorEvent(NO_VALID_ID, FAIL_STREAM_READ);
+      Connected := false;
+    end;
   end;
   if DecodeSuccess and Assigned(FOnEndOfStreamRead) then FOnEndOfStreamRead(Self);
 end;
@@ -6434,7 +6541,8 @@ end;
 {$ENDIF}
 
 procedure TIABSocket.SendToSocket(Id: Integer);
-var SockStream: TMemoryStream; plw: PLongword; netlen: Longword;
+type pu_long = ^u_long;
+var SockStream: TMemoryStream; pul: pu_long; netlen: u_long;
 begin
   if FSocket.Active then
     begin
@@ -6444,11 +6552,11 @@ begin
 {$ENDIF}
           if FClientv100plus then
             begin
-              plw := FOutStream.Memory;
-              if plw^ = 0 then
+              pul := FOutStream.Memory;
+              if pul^ = 0 then
                 begin
-                  netlen := htonl(Integer(FOutStream.Position) - HEADER_LEN);
-                  plw^ := netlen;
+                  netlen := htonl(u_long(FOutStream.Position) - HEADER_LEN);
+                  pul^ := netlen;
                 end;
             end;
 
@@ -6484,13 +6592,15 @@ begin  // to demote this API to a lower version. In case newest TWS API is not r
   case FClientMaxVerOverride of
     972: Result := 106;
     973: Result := 129;
+    976: Result := 151;
+    1010: Result := 164;
   else
     Result := MAX_CLIENT_VER;
   end;
 end;
 
 procedure TIABSocket.SetConnected(State: Boolean);
-var SockError: Boolean; verstr: AnsiString; size, netlen: Longword;
+var SockError: Boolean; verstr: AnsiString; size, netlen: u_long;
 begin
   if csDesigning in ComponentState then
     begin
@@ -6503,13 +6613,13 @@ begin
     begin
       DoErrorEvent(NO_VALID_ID, ALREADY_CONNECTED);
       FSocketThread.Terminate;
-      FSocket.Close;
+      FSocket.Disconnect;
       FSocketThread.WaitFor;
       FSocketThread.Free;
       FSocketThread := nil;
       Exit;
     end;
-  if FSocket.Active then FSocket.Close;
+  if FSocket.Active then FSocket.Disconnect;
   FOutStream.Position := 0;
   FInStream.Position := 0;
   if State then
@@ -6525,7 +6635,7 @@ begin
 {$IFNDEF LINUX}
       if FMutex = 0 then FMutex := CreateMutex(nil,LongBool(0),pChar(MUTEX_NAME));  // D2009 - no change req'd
 {$ENDIF}
-      FSocket.Open;
+      FSocket.Connect;
       FSocket.Select(nil,nil,@SockError,0);
       if SockError then
         begin
@@ -6546,12 +6656,9 @@ begin
               FOutStream.Write(API_SIGN[0],HEADER_LEN);
               if FClientMaxVerOverride > 0 then
                 verstr := AnsiString(Format('v%d..%d', [MIN_CLIENT_VER, GetPriorVerMaxVerNo]))
-		          else //if MIN_CLIENT_VER < MAX_CLIENT_VER then
+		          else
                 verstr := AnsiString(Format('v%d..%d', [MIN_CLIENT_VER, MAX_CLIENT_VER]));
-             // else
-              //  verstr := Format('v%d', [MIN_CLIENT_VER]);
-
-              if Length(FConnectionOptions) > 0 then   //connectionOptions is a field reserved for future extensions. For now, API clients should specify an empty string when connecting to TWS.
+              if Length(FConnectionOptions) > 0 then
                 verstr := verstr + AnsiString(FConnectionOptions);
               size := Length(verstr);
               netlen := htonl(size);
@@ -6559,7 +6666,7 @@ begin
               if size > 0 then FOutStream.Write(verstr[1], size);
             end
           else
-            AddToOut(CLIENT_VERSION);
+            AddToOut(CLIENT_VERSION);   // no longer supported
           SendToSocket(NO_VALID_ID);
         end;
     end;
@@ -6749,7 +6856,6 @@ begin
       DoErrorEvent(NO_VALID_ID, UPDATE_TWS, ' Orders with security definiton option requests not supported.');
       Exit;
     end;
-
   AddToOut(REQ_SEC_DEF_OPT_PARAMS);
 // MISSING the VERSION control.
   AddToOut(DataId);
@@ -6759,7 +6865,6 @@ begin
   AddToOut(UnderlyingConId);
   SendToSocket(NO_VALID_ID);
 end;
-
 procedure TIABSocket.RequestSoftDollarTiers(DataId: Integer);
 begin
   if not FSocket.Active then
@@ -6772,14 +6877,13 @@ begin
       DoErrorEvent(NO_VALID_ID, UPDATE_TWS, ' SoftDollarTiers requests not supported.');
       Exit;
     end;
-
 	AddToOut(REQ_SOFT_DOLLAR_TIERS);
-// MISSING the VERSION control.
   AddToOut(DataId);
   SendToSocket(NO_VALID_ID);
 end;
 
-procedure TIABSocket.RequestWSHorizonEventsData(DataID, ConID: Integer);
+//procedure TIABSocket.RequestWSHorizonEventsData(DataID, ConID: Integer);
+procedure TIABSocket.RequestWSHorizonEventsData(DataID: Integer; WSHRequestSpecs: TIABWSHorizonEventData);
 begin
 	if not FSocket.Active then
 		begin
@@ -6792,9 +6896,40 @@ begin
 		  Exit;
 	  end;
 
+  if (FServerVersion < MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS) then
+    begin
+      if ((WSHRequestSpecs.filter <> '') or WSHRequestSpecs.fillWatchlist or WSHRequestSpecs.fillPortfolio or WSHRequestSpecs.fillCompetitors) then
+        begin
+          DoErrorEvent(NO_VALID_ID, UPDATE_TWS, '  It does not support WSHorizon event data filters.');
+	        Exit;
+        end;
+    end;
+  if (FServerVersion < MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS_DATE) then
+    begin
+      if ((WSHRequestSpecs.filter <> '') or (WSHRequestSpecs.endDate <> '') or (WSHRequestSpecs.totalLimit <> UNSET_INTEGER)) then
+        begin
+          DoErrorEvent(NO_VALID_ID, UPDATE_TWS, '  It does not support WSHorizon event data date filters.');
+        Exit;
+        end;
+    end;
   AddToOut(REQ_WSH_EVENT_DATA);
   AddToOut(DataId);
-  AddToOut(ConId);
+  AddToOut(WSHRequestSpecs.ConId);
+
+  if (FServerVersion >= MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS) then
+    begin
+      AddToOut(WSHRequestSpecs.Filter);
+      AddToOut(WSHRequestSpecs.FillWatchList);
+      AddToOut(WSHRequestSpecs.FillPortfolio);
+      AddToOut(WSHRequestSpecs.FillCompetitors);
+    end;
+  if (FServerVersion >= MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS_DATE) then
+    begin
+      AddToOut(WSHRequestSpecs.StartDate);
+      AddToOut(WSHRequestSpecs.EndDate);
+      AddToOut(WSHRequestSpecs.TotalLimit);
+    end;
+
   SendToSocket(NO_VALID_ID);
 end;
 
@@ -7139,22 +7274,37 @@ end;
 
 procedure TIABSocket.CancelPnLSingle(DataId: Integer);
 begin
-    if not FSocket.Active then
-  		begin
-        DoErrorEvent(DataId, NOT_CONNECTED);
-        Exit;
-      end;
-
-    if (FServerVersion < MIN_SERVER_VER_PNL) then
-    	begin
-        DoErrorEvent(NO_VALID_ID, UPDATE_TWS, ' It does not support PnL requests.');
-        Exit;
-      end;
-    AddToOut(CANCEL_PNL_SINGLE);
-    AddToOut(DataId);
-    SendToSocket(NO_VALID_ID);
+  if not FSocket.Active then
+		begin
+      DoErrorEvent(DataId, NOT_CONNECTED);
+      Exit;
+    end;
+  if (FServerVersion < MIN_SERVER_VER_PNL) then
+  	begin
+      DoErrorEvent(NO_VALID_ID, UPDATE_TWS, ' It does not support PnL requests.');
+      Exit;
+    end;
+  AddToOut(CANCEL_PNL_SINGLE);
+  AddToOut(DataId);
+  SendToSocket(NO_VALID_ID);
 end;
 
+procedure TIABSocket.RequestUserInfo(DataId: Integer);
+begin
+  if not FSocket.Active then
+		begin
+      DoErrorEvent(DataId, NOT_CONNECTED);
+      Exit;
+    end;
+  if (FServerVersion < MIN_SERVER_VER_USER_INFO) then
+  	begin
+      DoErrorEvent(NO_VALID_ID, UPDATE_TWS, ' It does not support user info requests.');
+      Exit;
+    end;
+  AddToOut(REQ_USER_INFO);
+  AddToOut(DataId);
+  SendToSocket(NO_VALID_ID);
+end;
 
 
 { TIABOrder }
@@ -7416,7 +7566,6 @@ begin
   FRefFuturesConId := UNSET_INTEGER;
   FParentPermId := UNSET_LONG;
   FUsePriceMgmtAlgo := IAB_PRICE_MGNT_ALGO_DEFAULT;
-
 	FDuration := UNSET_INTEGER;
   FPostToAts := UNSET_INTEGER;
   FReferenceContractId := UNSET_INTEGER;
@@ -7427,6 +7576,12 @@ begin
   FAdjustedStopLimitPrice := UNSET_DOUBLE;
   FAdjustableTrailingUnit := UNSET_INTEGER;
   FLmtPriceOffset := UNSET_DOUBLE;
+
+  FMinTradeQty := UNSET_INTEGER;
+  FMinCompeteSize := UNSET_INTEGER;
+  FCompeteAgainstBestOffset := UNSET_DOUBLE;
+  FMidOffsetAtWhole := UNSET_DOUBLE;
+  FMidOffsetAtHalf := UNSET_DOUBLE;
 end;
 
 procedure TIABOrder.DeleteComboLeg(Index: Integer);
@@ -8574,7 +8729,6 @@ begin
     repeat
       if FIABSocket.FInStream.Position + ReadBlockSize >= FIABSocket.FInStream.Size then
         FIABSocket.FInStream.SetSize((((FIABSocket.FInStream.Position + ReadBlockSize) div 8192) + 1) * 8192);
-
       p := Pointer(LongWord(FIABSocket.FInStream.Position) + NativeUInt(FIABSocket.FInStream.Memory));
       SizeRead := FIABSocket.FSocket.ReceiveBuf(p^,ReadBlockSize);   // blocks and waits here
       FIABSocket.FInStream.Position := FIABSocket.FInStream.Position + SizeRead;
@@ -8600,477 +8754,10 @@ end;
 
 
 
-
-{  TIABTCPClient  }
-
-{ *************************************************************************** }
-{                                                                             }
-{   This is a subset of the Sockets.pas file from D6 onwards.  It has been    }
-{   stripped of all uneeded components except for the client socket parts.    }
-{                                                                             }
-{      Due to the ever changing landscape in XE versions and the socket       }
-{      code versions, we have decided to include our own simplified version   }
-{      that should span all 32/64 bit and the various char sizes over the     }
-{      XE builds.                                                             }
-{                                                                             }
-{ *************************************************************************** }
-{                                                                             }
-{ Delphi and Kylix Cross-Platform Visual Component Library                    }
-{ Internet Application Runtime                                                }
-{                                                                             }
-{ Copyright (C) 2000, 2001 Borland Software Corporation                       }
-{                                                                             }
-{ Licensees holding a valid Borland No-Nonsense License for this Software may }
-{ use this file in accordance with such license, which appears in the file    }
-{ license.txt that came with this Software.                                   }
-{                                                                             }
-{ *************************************************************************** }
-
-constructor TIABTCPClient.Create(AOwner: TComponent);
-begin
-  inherited Create(AOwner);
-  FSocket := INVALID_SOCKET;
-  RPR;
-end;
-
-destructor TIABTCPClient.Destroy;
-begin
-  Close;
-  inherited Destroy;
-end;
-
-procedure TIABTCPClient.Open;
-var
-  addr: TSockAddr;
-begin
-  if not FActive then
-    begin
-      FSocket := ErrorCheck(socket(PF_INET, SOCK_STREAM, IPPROTO_IP));
-      FActive := FSocket <> INVALID_SOCKET;
-      if FActive then
-        begin
-          FBytesReceived := 0;
-          FBytesSent := 0;
-          DoCreateHandle;
-        end;
-    end;
-
-  if FActive and not FConnected then
-    begin
-      addr := GetSocketAddr(FRemoteHost, FRemotePort);
-      {$IF CompilerVersion >= 24.0}  // XE3
-      FConnected := ErrorCheck(WinAPI.WinSock.connect(FSocket, addr, sizeof(addr))) = 0;
-      {$ELSE}
-      FConnected := ErrorCheck(WinSock.connect(FSocket, addr, sizeof(addr))) = 0;
-      {$IFEND}
-      if FConnected then
-        DoConnect;
-    end;
-end;
-
-procedure TIABTCPClient.Close;
-begin
-  if FConnected then
-    begin
-      ErrorCheck(shutdown(FSocket, SD_BOTH));
-      FConnected := False;
-      DoDisconnect;
-    end;
-
-  if FActive then
-    begin
-      ErrorCheck(closesocket(FSocket));
-      FSocket := INVALID_SOCKET;
-      FActive := False;
-      DoDestroyHandle;
-    end;
-end;
-
-function TIABTCPClient.PeekBuf(var Buf; BufSize: Integer): Integer;
-begin
-  Result := ErrorCheck(recv(FSocket, buf, bufsize, MSG_PEEK));
-end;
-
-function TIABTCPClient.ReceiveBuf(var Buf; BufSize: Integer; Flags: Integer): Integer;
-begin
-  Result := ErrorCheck(recv(FSocket, Buf, BufSize, Flags));
-  if Result <> SOCKET_ERROR then
-    DoReceive(pAnsiChar(@Buf), Result);
-end;
-
-function TIABTCPClient.Select(ReadReady, WriteReady, ExceptFlag: PBoolean; TimeOut: Integer): Boolean;
-var
-  ReadFds: TFDset;
-  ReadFdsptr: PFDset;
-  WriteFds: TFDset;
-  WriteFdsptr: PFDset;
-  ExceptFds: TFDset;
-  ExceptFdsptr: PFDset;
-  tv: timeval;
-  Timeptr: PTimeval;
-begin
-  Result := False;
-  if not FActive then
-    Exit;
-
-  if Assigned(ReadReady) then
-    begin
-      ReadFdsptr := @ReadFds;
-      FD_ZERO(ReadFds);
-      FD_SET(FSocket, ReadFds);
-    end
-  else
-    ReadFdsptr := nil;
-  if Assigned(WriteReady) then
-    begin
-      WriteFdsptr := @WriteFds;
-      FD_ZERO(WriteFds);
-      FD_SET(FSocket, WriteFds);
-    end
-  else
-    WriteFdsptr := nil;
-  if Assigned(ExceptFlag) then
-    begin
-      ExceptFdsptr := @ExceptFds;
-      FD_ZERO(ExceptFds);
-      FD_SET(FSocket, ExceptFds);
-    end
-  else
-    ExceptFdsptr := nil;
-  if TimeOut >= 0 then
-    begin
-      tv.tv_sec := TimeOut div 1000;
-      tv.tv_usec :=  1000 * (TimeOut mod 1000);
-      Timeptr := @tv;
-    end
-  else
-    Timeptr := nil;
-  try
-    {$IF CompilerVersion >= 24.0}  // XE3
-    Result := ErrorCheck(WinAPI.WinSock.select(FSocket + 1, ReadFdsptr, WriteFdsptr, ExceptFdsptr, Timeptr)) > 0;
-    {$ELSE}
-    Result := ErrorCheck(WinSock.select(FSocket + 1, ReadFdsptr, WriteFdsptr, ExceptFdsptr, Timeptr)) > 0;
-    {$IFEND}
-  except
-    Result := False;
-  end;
-  if Assigned(ReadReady) then
-    ReadReady^ := FD_ISSET(FSocket, ReadFds);
-  if Assigned(WriteReady) then
-    WriteReady^ := FD_ISSET(FSocket, WriteFds);
-  if Assigned(ExceptFlag) then
-    ExceptFlag^ := FD_ISSET(FSocket, ExceptFds);
-end;
-
-function TIABTCPClient.SendBuf(var Buf; BufSize: Integer; Flags: Integer): Integer;
-begin
-  DoSend(pAnsiChar(@Buf), BufSize);
-  Result := ErrorCheck(send(FSocket, Buf, BufSize, Flags));
-  if Result <> SOCKET_ERROR then
-    inc(FBytesSent, Result);
-end;
-
-function TIABTCPClient.SendStream(AStream: TStream): Integer;
-var
-  BufLen: Integer;
-  Buffer: array[0..511] of Byte;
-begin
-  Result := 0;
-  if Assigned(AStream) then
-    begin
-      repeat
-        BufLen := AStream.Read(Buffer, SizeOf(Buffer));
-      until (BufLen = 0) or (SendBuf(Buffer, BufLen) = SOCKET_ERROR);
-    end;
-end;
-
-function TIABTCPClient.WaitForData(TimeOut: Integer): Boolean;
-var
-  ReadReady, ExceptFlag: Boolean;
-  c: Char;
-begin
-  Result := False;
-  // Select also returns True when connection is broken.
-  if Select(@ReadReady, nil, @ExceptFlag, TimeOut) then
-    Result := ReadReady and not ExceptFlag and (PeekBuf(c, sizeof(c)) = 1);
-end;
-
-procedure TIABTCPClient.DoHandleError;
-var
-  SocketError: Integer;
-begin
-  SocketError := WSAGetLastError;
-  if Assigned(FOnError) then
-    OnError(Self, SocketError);
-end;
-
-procedure TIABTCPClient.DoCreateHandle;
-begin
-  if FActive and Assigned(FOnCreateHandle) then
-    OnCreateHandle(self);
-end;
-
-procedure TIABTCPClient.DoDestroyHandle;
-begin
-  if Assigned(FOnDestroyHandle) then
-    OnDestroyHandle(self);
-end;
-
-procedure TIABTCPClient.DoReceive(Buf: pAnsiChar; var DataLen: Integer);
-begin
-  if Assigned(FOnReceive) then
-    OnReceive(Self, Buf, DataLen);
-  inc(FBytesReceived, DataLen);
-end;
-
-procedure TIABTCPClient.DoSend(Buf: pAnsiChar; var DataLen: Integer);
-begin
-  if Assigned(FOnSend) then
-    OnSend(Self, Buf, DataLen);
-end;
-
-function TIABTCPClient.ErrorCheck(rc: Integer): Integer;
-begin
-  Result := rc;
-  if rc = SOCKET_ERROR then
-    DoHandleError;
-end;
-
-procedure TIABTCPClient.Loaded;
-begin
-  inherited Loaded;
-  if FActive and not (csDesigning in ComponentState) then
-    begin
-      FActive := False;
-      Open;
-    end;
-end;
-
-procedure TIABTCPClient.SetBlockMode(Value: TSocketBlockMode);
-var Blocking: u_long;
-begin
-  if Value <> FBlockMode then
-    begin
-      Blocking := 0;
-      if FBlockMode = bmNonBlocking then
-        Blocking := 1;
-      if (SOCKET_ERROR = ErrorCheck(ioctlsocket(FSocket, FIONBIO, Blocking))) and FActive then
-        Close;
-      FBlockMode := Value;
-    end;
-end;
-
-procedure TIABTCPClient.SetBytesReceived(Value: Cardinal);
-begin
-  FBytesReceived := Value;
-end;
-
-procedure TIABTCPClient.SetBytesSent(Value: Cardinal);
-begin
-  FBytesSent := Value
-end;
-
-procedure TIABTCPClient.SetActive(Value: Boolean);
-begin
-  if Value <> FActive then
-    begin
-      if not (csLoading in ComponentState) and not (csDesigning in ComponentState) then
-        if Value then
-          Open
-        else
-          Close
-      else
-        FActive := Value;
-  end;
-end;
-
-function TIABTCPClient.GetSocketAddr(h: string; p: string): TSockAddr;
-var Host: AnsiString;
-begin
-  Host := AnsiString(LookupHostAddr(h));
-  Result.sin_family := AF_INET;
-  Result.sin_addr.s_addr := inet_addr(pAnsiChar(Host));
-  Result.sin_port := htons(LookupPort(p));
-end;
-
-function TIABTCPClient.LookupHostName(const ipaddr: string): string;
-var
-  h: PHostEnt;
-  addr: TSockAddr;
-  ipAddress: AnsiString;
-  ResultAnsi: AnsiString;
-begin
-  Result := '';
-  ipAddress := AnsiString(ipaddr);
-  addr.sin_addr.s_addr := inet_addr(pAnsiChar(ipAddress));
-  if addr.sin_addr.s_addr <> u_long(INADDR_NONE) then
-    begin
-      h := gethostbyaddr(@addr.sin_addr.s_addr, sizeof(addr), AF_INET);
-      if h <> nil then
-        begin
-          ResultAnsi := h^.h_name;
-          Result := string(ResultAnsi);
-        end;
-    end;
-end;
-
-function TIABTCPClient.LookupHostAddr(const hn: string): string;
-var
-  h: PHostEnt;
-  HostName: AnsiString;
-begin
-  Result := '';
-  if hn <> '' then
-    begin
-      HostName := AnsiString(hn);
-      if HostName[1] in ['0'..'9'] then
-        begin
-          if inet_addr(pAnsiChar(HostName)) <> u_long(INADDR_NONE) then
-            Result := hn;
-        end
-      else
-        begin
-          h := gethostbyname(pAnsiChar(HostName));
-          if h <> nil then
-            with h^ do
-            Result := format('%d.%d.%d.%d', [ord(h_addr^[0]), ord(h_addr^[1]),
-          		  ord(h_addr^[2]), ord(h_addr^[3])]);
-        end;
-    end
-  else
-    Result := '0.0.0.0';
-end;
-
-function TIABTCPClient.LookupPort(const sn: string; pn: pAnsiChar): word;
-var
-  se: PServent;
-  ServName: AnsiString;
-begin
-  Result := 0;
-  if sn <> '' then
-    begin
-      ServName := AnsiString(sn);
-      se := getservbyname(pAnsiChar(ServName), pn);
-      if se <> nil then
-        Result := ntohs(se^.s_port)
-      else
-        Result := StrToInt(sn);
-    end;
-end;
-
-function TIABTCPClient.ReceiveFrom(var buf; bufsize: Integer; ToAddr: TSockAddr; var len: Integer; flags: Integer): Integer;
-begin
-  {$IF CompilerVersion >= 24.0}  // XE3
-  Result := ErrorCheck(WinAPI.WinSock.recvfrom(FSocket, buf, bufsize, flags, ToAddr, len));
-  {$ELSE}
-  Result := ErrorCheck(WinSock.recvfrom(FSocket, buf, bufsize, flags, ToAddr, len));
-  {$IFEND}
-  if Result <> SOCKET_ERROR then
-    DoReceive(pAnsiChar(@Buf), Result);
-end;
-
-function TIABTCPClient.SendTo(var buf; bufsize: Integer; ToAddr: TSockAddr; flags: Integer): Integer;
-begin
-  DoSend(pAnsiChar(@Buf), BufSize);
-  {$IF CompilerVersion >= 24.0}  // XE3
-  Result := ErrorCheck(WinAPI.WinSock.sendto(FSocket, buf, bufsize, flags, ToAddr, sizeof(ToAddr)));
-  {$ELSE}
-  Result := ErrorCheck(WinSock.sendto(FSocket, buf, bufsize, flags, ToAddr, sizeof(ToAddr)));
-  {$IFEND}
-  if Result <> SOCKET_ERROR then
-    SetBytesSent(BytesSent + Cardinal(Result));
-end;
-
-procedure TIABTCPClient.SetLocalHost(Value : string);
-begin
-  if Value <> FLocalHost then
-    begin
-      if not (csLoading in ComponentState) and not (csDesigning in ComponentState) then
-        Close;
-      FLocalHost := Value;
-    end;
-end;
-
-procedure TIABTCPClient.SetLocalPort(Value: string);
-begin
-  if Value <> FLocalPort then
-    begin
-      if not (csLoading in ComponentState) and not (csDesigning in ComponentState) then
-        Close;
-      FLocalPort := Value;
-    end;
-end;
-
-procedure TIABTCPClient.SetRemoteHost(Value : string);
-begin
-  if Value <> FRemoteHost then
-    begin
-      if not (csLoading in ComponentState) and not (csDesigning in ComponentState) then
-        Close;
-      FRemoteHost := Value;
-    end;
-end;
-
-procedure TIABTCPClient.SetRemotePort(Value: string);
-begin
-  if Value <> FRemotePort then
-    begin
-      if not (csLoading in ComponentState) and not (csDesigning in ComponentState) then
-        Close;
-      FRemotePort := Value;
-    end;
-end;
-
-function TIABTCPClient.Connect: Boolean;
-begin
-  Open;
-  Result := FConnected;
-end;
-
-procedure TIABTCPClient.Disconnect;
-begin
-  Close;
-end;
-
-procedure TIABTCPClient.DoConnect;
-begin
-  if Assigned(FOnConnect) then
-    OnConnect(self);
-end;
-
-procedure TIABTCPClient.DoDisconnect;
-begin
-  if Assigned(FOnDisconnect) then
-    OnDisconnect(self);
-end;
-
-var
-  WSAData: TWSAData;
-
-procedure Startup;
-var
-  ErrorCode: Integer;
-begin
-  ErrorCode := WSAStartup($0101, WSAData);
-  if ErrorCode <> 0 then
-    raise EIABSocketError.Create('WSAStartup');
-end;
-
-procedure Cleanup;
-var
-  ErrorCode: Integer;
-begin
-  ErrorCode := WSACleanup;
-  if ErrorCode <> 0 then
-    raise EIABSocketError.Create('WSACleanup');
-end;
-
 initialization
-  Startup;
   IsMultiThread := true;
 
 finalization
-  Cleanup;
 
 end.
 

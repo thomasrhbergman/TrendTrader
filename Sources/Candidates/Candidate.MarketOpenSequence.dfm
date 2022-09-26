@@ -11,6 +11,7 @@ object frmCandidateMarketOpenSequence: TfrmCandidateMarketOpenSequence
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  OldCreateOrder = True
   Position = poMainFormCenter
   PixelsPerInch = 96
   TextHeight = 13
@@ -134,7 +135,7 @@ object frmCandidateMarketOpenSequence: TfrmCandidateMarketOpenSequence
     end
   end
   object fbqScan: TFDQuery
-    Connection = DMod.FBConnectionStock
+    Connection = DMod.ConnectionStock
     SQL.Strings = (
       'select * '
       'from SCAN_MARKET'

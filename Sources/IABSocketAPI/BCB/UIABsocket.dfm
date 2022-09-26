@@ -4,7 +4,7 @@ object FIABSocket: TFIABSocket
   HorzScrollBar.Visible = False
   VertScrollBar.Visible = False
   BorderIcons = [biSystemMenu, biMinimize]
-  Caption = 'TWS API 10.11.01 - Do not trade on a live account!'
+  Caption = 'TWS API 10.18.01 - Do not trade on a live account!'
   ClientHeight = 701
   ClientWidth = 461
   Color = clBtnFace
@@ -15,7 +15,7 @@ object FIABSocket: TFIABSocket
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
-  
+  PixelsPerInch = 96
   TextHeight = 13
   object Splitter1: TSplitter
     Left = 0
@@ -179,6 +179,7 @@ object FIABSocket: TFIABSocket
         Top = 18
         Width = 87
         Height = 125
+        Hint = 'Order type selection'
         Anchors = [akLeft, akTop, akRight]
         ItemHeight = 13
         TabOrder = 0
@@ -307,7 +308,7 @@ object FIABSocket: TFIABSocket
         Top = 35
         Width = 65
         Height = 19
-        Hint = 'Modify order'
+        Hint = 'Modify existing / last order'
         Anchors = [akTop, akRight]
         Caption = 'Modify'
         TabOrder = 4
@@ -353,7 +354,9 @@ object FIABSocket: TFIABSocket
         Top = 150
         Width = 89
         Height = 21
+        Hint = 'Security / instrument type'
         Anchors = [akLeft, akTop, akRight]
+        DropDownCount = 20
         TabOrder = 1
       end
     end
@@ -471,6 +474,7 @@ object FIABSocket: TFIABSocket
         Top = 91
         Width = 75
         Height = 21
+        Hint = 'List values from the account portfolio'
         Caption = 'Acct / PF'
         TabOrder = 3
         OnClick = ButtonAcctPortfolioClick
@@ -480,6 +484,7 @@ object FIABSocket: TFIABSocket
         Top = 18
         Width = 75
         Height = 21
+        Hint = 'Connect / disconnect'
         Caption = 'Connect'
         TabOrder = 0
         OnClick = ButtonConnectionClick
@@ -490,6 +495,7 @@ object FIABSocket: TFIABSocket
         Top = 26
         Width = 50
         Height = 19
+        Hint = 'Show contract data for instrument shown in Order'
         Anchors = [akTop, akRight]
         Caption = 'Contract'
         TabOrder = 8
@@ -500,6 +506,7 @@ object FIABSocket: TFIABSocket
         Top = 139
         Width = 42
         Height = 21
+        Hint = 'Cancels the time and sales display'
         Anchors = [akTop, akRight]
         Caption = 'Cx TS'
         TabOrder = 12
@@ -510,6 +517,7 @@ object FIABSocket: TFIABSocket
         Top = 42
         Width = 75
         Height = 21
+        Hint = 'Get latest executions'
         Caption = 'Executions'
         TabOrder = 1
         OnClick = ButtonExecutionsClick
@@ -519,6 +527,7 @@ object FIABSocket: TFIABSocket
         Top = 115
         Width = 46
         Height = 21
+        Hint = 'Starts a trade history display'
         Anchors = [akTop, akRight]
         Caption = 'History'
         TabOrder = 9
@@ -529,6 +538,7 @@ object FIABSocket: TFIABSocket
         Top = 115
         Width = 75
         Height = 21
+        Hint = 'Start Level2 / depth display'
         Caption = 'L2 / Depth'
         TabOrder = 4
         OnClick = ButtonLevel2DepthClick
@@ -538,6 +548,7 @@ object FIABSocket: TFIABSocket
         Top = 139
         Width = 75
         Height = 21
+        Hint = 'Retrieve any bulletins from the server'
         Caption = 'Bulletins'
         TabOrder = 5
         OnClick = ButtonNewsBulletinsClick
@@ -547,6 +558,7 @@ object FIABSocket: TFIABSocket
         Top = 66
         Width = 75
         Height = 21
+        Hint = 'List any open orders'
         Caption = 'OpenOrders'
         TabOrder = 2
         OnClick = ButtonOpenOrdersClick
@@ -556,6 +568,7 @@ object FIABSocket: TFIABSocket
         Top = 115
         Width = 57
         Height = 21
+        Hint = 'Real time'
         Anchors = [akTop, akRight]
         Caption = 'RealTime'
         TabOrder = 10
@@ -566,6 +579,7 @@ object FIABSocket: TFIABSocket
         Top = 163
         Width = 75
         Height = 21
+        Hint = 'Start a scan operation'
         Caption = 'Scanner'
         TabOrder = 6
         OnClick = ButtonScannerClick
@@ -575,6 +589,7 @@ object FIABSocket: TFIABSocket
         Top = 26
         Width = 40
         Height = 19
+        Hint = 'Start Bid/Ask size, last data for instrument shown in Order'
         Anchors = [akTop, akRight]
         Caption = 'Data'
         TabOrder = 7
@@ -585,6 +600,7 @@ object FIABSocket: TFIABSocket
         Top = 139
         Width = 60
         Height = 21
+        Hint = 'Time and sales display'
         Anchors = [akTop, akRight]
         Caption = 'TimeSale'
         TabOrder = 11
@@ -606,6 +622,7 @@ object FIABSocket: TFIABSocket
         Top = 163
         Width = 33
         Height = 21
+        Hint = 'Adjust the level of data on the TWS logs (need 5 for API debug)'
         Style = csDropDownList
         Anchors = [akTop, akRight]
         ItemIndex = 1
@@ -624,6 +641,7 @@ object FIABSocket: TFIABSocket
         Top = 187
         Width = 75
         Height = 21
+        Hint = 'Serach IAB for all contracts with the name / code'
         Caption = 'Inst. search'
         TabOrder = 15
         OnClick = ButtonSearchClick
@@ -633,6 +651,7 @@ object FIABSocket: TFIABSocket
         Top = 187
         Width = 75
         Height = 21
+        Hint = 'WallStreet Horizon event details (needs subscription)'
         Caption = 'WS horizon'
         TabOrder = 16
         OnClick = ButtonWSHorizonClick

@@ -17,6 +17,7 @@
 
          IABSocketAPI.pas
    	 IABSocketAPI_const.pas
+	 IABSocketAPI_tcpclient.pas
          IABSocketAPI.dcr
 
 

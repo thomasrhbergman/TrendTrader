@@ -2,11 +2,12 @@ unit UCombo;
 
 interface
 
-{$IF CompilerVersion < 24.0}  // XE3
-uses Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+uses
+{$IF CompilerVersion < 24.0}  // 24 = XE3
+Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ExtCtrls, Shellapi, IABSocketAPI, Menus, ComCtrls, UTextForm;
 {$ELSE}
-uses Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.UITypes, Vcl.Graphics,
+Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.UITypes, Vcl.Graphics,
      Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls;
 {$IFEND}
 

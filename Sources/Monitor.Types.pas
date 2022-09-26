@@ -59,6 +59,15 @@ implementation
 
 procedure TTreeData.Clear;
 begin
+  if Assigned(OrderGroupSetDoc) then
+    FreeAndNil(OrderGroupSetDoc);
+  if Assigned(OrderGroupDoc) then
+    FreeAndNil(OrderGroupDoc);
+  if Assigned(OrderDoc) then
+    FreeAndNil(OrderDoc);
+  if Assigned(ConditionDoc) then
+    FreeAndNil(ConditionDoc);
+
   Exit;
   if Assigned(TradeChart) then
     FreeAndNil(TradeChart);

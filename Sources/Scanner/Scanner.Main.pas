@@ -750,10 +750,10 @@ var
   PrecSettings: TPrecautionarySettingTypes;
 begin
   if aData^.IsCriteria and
-    (FAutoTradeInfo.Active and (not aData^.IsLocked or FAutoTradeInfo.AllowSendDuplicateOrder)) and
+    (FAutoTradeInfo.Active and (not aData^.IsLocked {or FAutoTradeInfo.AllowSendDuplicateOrder})) and
     (FAutoTradeInfo.OrderAmount > 0) and
     (FAutoTradeInfo.TotalOrderAmount > 0) and
-    (FAutoTradeInfo.OrderGroupId > 0) and
+    {(FAutoTradeInfo.OrderGroupId > 0) and}
     (CreatedOrdersCount < FAutoTradeInfo.MaxNumberOrder) then
   begin
     Info := 'Id=' + aData^.Id.ToString +

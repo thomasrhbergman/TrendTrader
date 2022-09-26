@@ -32,7 +32,8 @@ uses
   System.Notification, Entity.OrderStatus, IABFunctions.Helpers, DockForm.MonitorFilter, MonitorTree.Helper, MonitorTree.Document,
 
   IdGlobal, IdBaseComponent, IdComponent, IdCustomTCPServer, IdCustomHTTPServer, IdHTTPServer, IdContext,
-  FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet, ListForm;
+  FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet, ListForm,
+  Candidate.Main, Candidate.Types;
 {$ENDREGION}
 
 type
@@ -426,8 +427,8 @@ type
       COL_NODE_ID    = 1;
       COL_CALCTYPE   = 2;
       COL_CALCFACTOR = 3;
-      COL_VALUE      = 4;
-      COL_LAST_CLOSE = 5;
+      COL_STATUS     = 4;
+      COL_LAST_PRICE = 5;
   private
     FArrayHiddenNodes: TNodeArray;
     FColumns: TDictionary<Integer, THeaderColInfo>;
@@ -502,6 +503,9 @@ type
     procedure UpdatePriceForTB(const PriceItem: TPriceItem);
     procedure OnDocumentQueueNotifyEvent(Sender: TObject; const Item: PVirtualNode; Action: TCollectionNotification);
 
+    procedure ConditionChanged(Sender: TAutoTradeInfo);
+    procedure FindAndCheckConditions(aContractId: integer);
+
     //IABClient events
     procedure OnAccountValue(Sender: TObject; Index: Integer);
     procedure OnConnectionState(Sender: TObject; State: TIABConnection);                                                            //implementation IConnectionState
@@ -565,7 +569,8 @@ type
     procedure SubscribeChildNNFeed(aNode: PVirtualNode);
     procedure UnsubscribeChildNNFeed(aNode: PVirtualNode);
 
-    function CreateTemplateStructure(const aOrderGroupId: Integer; aInstrumentData: PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
+    function CreateTemplateStructure(const aOrderGroupId: Integer; aInstrumentData: Scanner.Types.PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
+    function CreateOrders(const aAutoTrade: TAutoTradeInfo; aInstrumentData: Candidate.Types.PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
     function GetCONIDforNN(ASymbol, AType, AExchange, ACurrency: string): Integer;
     function GetConnectedIB: Boolean;
     function UpdateChildAlgos(Node: PVirtualNode; WithUpdateCondition: Boolean = True): Boolean;
@@ -762,6 +767,7 @@ begin
   if Assigned(FStorageOrders) then
     FreeAndNil(FStorageOrders);
   TMonitorLists.DestroyLists;
+  vstMonitor.Clear;
   FreeAndNil(FConditionQueue);
   FreeAndNil(FQualifierList);
   DeleteCriticalSection(FCriticalSection);
@@ -1592,7 +1598,58 @@ begin
     end;
 end;
 
-function TfrmMonitor.CreateTemplateStructure(const aOrderGroupId: Integer; aInstrumentData: PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
+function TfrmMonitor.CreateOrders(const aAutoTrade: TAutoTradeInfo;
+  aInstrumentData: Candidate.Types.PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
+var
+  AfterLoadProc: TAfterLoadEachDocumentProc;
+  AfterLoadTreeProc: TAfterLoadTreeProc;
+  ContractId: Integer;
+  Price: Currency;
+begin
+  ContractId := aInstrumentData.Id;
+  TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddText, 'CreateOrders', 'Begin Create a structure from a order template');
+  TPublishers.LogPublisher.Write([ltLogWriter], ddEnterMethod, 'CreateOrders');
+
+  Price := GetLastPrice(ContractId);
+  TPublishers.LogPublisher.Write([ltLogWriter], ddText, Self, 'CreateOrders', 'Price[ttLast]=' + FloatToStr(Price));
+  if (Price = 0) then
+    TIABMarket.RequestMarketData(ContractId);  //Allows to get the latest price if it is not yet available
+
+  vstMonitor.BeginUpdate;
+  try
+    Result := TTreeDocument.LoadOrderTemplateRelationTree(aAutoTrade.OrderTemplate.RecordId, -1, vstMonitor, aAutoTrade.Qualifier.OwnerNode, nil, nil);
+    if Assigned(Result) then
+    begin
+      TTreeFactory.FillDocuments(Result, aInstrumentData^, 0, aAutoTradesCommon, AfterLoadProc, AfterLoadTreeProc);
+      aInstrumentData^.IsLocked := True;
+    end;
+
+    {Result := TTreeDocument.LoadRelationTree(aOrderGroupId, -1, vstMonitor, GetCurrentOrderGroupSet, nil, nil);
+    if Assigned(Result) and Assigned(FOrderGroupSet.OwnerNode) then
+    begin
+      AfterLoadProc := DoAfterLoadEachDocumentProc(ContractId, Price);
+      AfterLoadTreeProc := DoAfterLoadTreeProc(Result);
+      TTreeFactory.FillDocuments(Result, aInstrumentData^, 0, aAutoTradesCommon, AfterLoadProc, AfterLoadTreeProc);
+      aInstrumentData^.IsLocked := True;
+      ResultData := Result^.GetData;
+      if (ResultData.DocType = ntOrderGroupSet) then
+      begin
+        arr := TTreeDocument.GetNodesList(Result, False);
+        for var Node in arr do
+          vstMonitor.MoveTo(Node, FOrderGroupSet.OwnerNode.LastChild, amInsertAfter, False);
+        vstMonitor.DeleteNode(Result);
+      end;
+    end;}
+    ActivateAllOrders(aAutoTrade.OwnerNode);
+  finally
+    vstMonitor.FullExpand(nil);
+    vstMonitor.EndUpdate;
+    TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddText, 'CreateTemplateStructure', 'End Create a structure from a template');
+    TPublishers.LogPublisher.Write([ltLogWriter], ddExitMethod, 'CreateTemplateStructure');
+  end;
+end;
+
+function TfrmMonitor.CreateTemplateStructure(const aOrderGroupId: Integer; aInstrumentData: Scanner.Types.PInstrumentData; const aAutoTradesCommon: TAutoTradesCommon): PVirtualNode;
 var
   AfterLoadProc: TAfterLoadEachDocumentProc;
   AfterLoadTreeProc: TAfterLoadTreeProc;
@@ -2013,13 +2070,13 @@ begin
           // no qualifier in the tree
           if Node.ChildCount = 0 then
           begin
-            if CurData.AutoTrade.Qualifier.IsCondition then
+            //if CurData.AutoTrade.Qualifier.IsCondition then
 
           end;
         end;
 
         if (vstMonitor.GetNodeLevel(Node) <> 0) and
-           CurData.Enabled and
+           //CurData.Enabled and
            Assigned(CurData.ConditionDoc) and
            CurData.ConditionDoc.Active then
         begin
@@ -2031,7 +2088,7 @@ begin
                 frmEditCondition.Caption := 'Condition [' + ParentData.OrderDoc.InstrumentName + '] ' + Format('%f', [ParentData.OrderDoc.LastPrice]);
             end;
 
-          if (CurData.ConditionDoc.CondType in [ctRealtimeValue, ctRealtimeAndTimeGap]) and
+          if (CurData.ConditionDoc.CondType in [ctRealtimeValue]) and
              (TimeOf(CurData.ConditionDoc.Duration) > 0) then
             if (Now > CurData.ConditionDoc.InitTime + TimeOf(CurData.ConditionDoc.Duration)) then
             begin
@@ -2048,7 +2105,7 @@ begin
                   end).Start;
             end;
 
-          if (CurData.ConditionDoc.CondType in [ctRealtimeAndTimeGap, ctTimeGap]) then
+          if (CurData.ConditionDoc.CondType in [ctTimeGap]) then
           begin
             ok := False;
 
@@ -2103,7 +2160,7 @@ begin
   end;
 end;
 
-// * Om alla conditions ar sanna och minst en ar trigger sa lagg order
+// * If all conditions are true and at least one is a trigger, then add order
 procedure TfrmMonitor.TestOrder(aNode: PVirtualNode);
 var
   Data: PTreeData;
@@ -2589,6 +2646,70 @@ end;
 
 procedure TfrmMonitor.UpdateCondition(const aNode: PVirtualNode);
 var
+  Data, OrderData: PTreeData;
+  Doc: TConditionDoc;
+  ParentNode: PVirtualNode;
+  PriceList: TPriceList;
+  Value1, Value2: Currency;
+begin
+  if Assigned(aNode) then
+  begin
+    Data := aNode^.GetData;
+    if Assigned(Data) and Assigned(Data.ConditionDoc) and (Data.ConditionDoc.Active) then
+    begin
+      Doc := Data.ConditionDoc;
+      Doc.IsCondition := false;
+      if Doc.CondType = ctRealtimeValue  then
+      begin
+        PriceList := TMonitorLists.PriceCache.GetPriceList(Doc.Instrument.SokidInfo.ContractId);
+        if not Assigned(PriceList) then Exit;
+        Value1 := PriceList.LastPrice[Doc.TickType1];
+        // percent
+        if Doc.RealTimeType = 0 then
+        begin
+          Value2 := PriceList.LastPrice[Doc.TickType2];
+          Doc.IsCondition := Doc.InequalityRt.IsCondition(Doc.TypeOperation.Calc(Value1, Value2), Doc.CondLimit);
+        end
+        // value
+        else if Doc.RealTimeType = 1 then
+          Doc.IsCondition := Doc.InequalityRt.IsCondition(Value1, Doc.CondLimit)
+        // MOAP
+        else if Doc.RealTimeType = 2 then
+        begin
+          // get condition owner order
+          ParentNode := GetParentNode(aNode, ntOrder);
+          if not Assigned(ParentNode) then Exit;
+          // get mother order
+          ParentNode := GetParentNode(ParentNode, ntOrder);
+          if Assigned(ParentNode) then
+          begin
+            OrderData := ParentNode^.GetData;
+            if Assigned(OrderData.OrderDoc) then
+            begin
+              Value2 := OrderData.OrderDoc.AvgPrice; // MOAP
+              Doc.IsCondition := Doc.InequalityRt.IsCondition(Doc.TypeOperation.Calc(Value1, Value2), Doc.CondLimit);
+            end;
+          end;
+        end;
+      end
+      else if Doc.CondType = ctTimeGap then
+      begin
+        Doc.IsCondition :=
+           (CompareDate(Date, Doc.StartDate) >= 0) and
+           (CompareDate(Date, Doc.EndDate) <= 0) and
+           (CompareTime(Time, Doc.StartTime) >= 0) and
+           (CompareTime(Time, Doc.EndTime) <= 0);
+      end
+      else if Doc.CondType = ctGradient then
+      begin
+
+      end;;
+    end;
+  end;
+end;
+
+{procedure TfrmMonitor.UpdateCondition(const aNode: PVirtualNode);
+var
   Data          : PTreeData;
   Item          : TConditionDoc.TGradientPrice;
   CompiledValue : TCompiledValue;
@@ -2678,6 +2799,7 @@ begin
       end;
   end;
 end;
+}
 
 function TfrmMonitor.UpdateChildAlgos(Node: PVirtualNode; WithUpdateCondition: Boolean = True): Boolean;
 var
@@ -2843,6 +2965,7 @@ begin
     if (TickType = ttMarkPrice) then
       TickType := ttLast;
     TMonitorLists.PriceCache.AddPrice(Id, TickType, Value, TimeStamp);
+    FindAndCheckConditions(Id);
   end;
 end;
 
@@ -2864,7 +2987,9 @@ begin
       CurrNode := aNode.FirstChild;
       while Assigned(CurrNode) do
       begin
-        if ExistsChildConditions(CurrNode) then
+        {if ExistsChildConditions(CurrNode) then
+          Exit(True);  }
+        if TTreeDocument.GetDocType(vstMonitor, CurrNode) = ntCondition then
           Exit(True);
         CurrNode := CurrNode.NextSibling;
       end;
@@ -2956,7 +3081,7 @@ begin
     COL_ITEMS:
       if Assigned(Data1^.FactorDoc) and Assigned(Data2^.FactorDoc) then
         Result := CompareText(Data1^.FactorDoc.InstrumentName, Data2^.FactorDoc.InstrumentName);
-    COL_VALUE:
+    COL_STATUS:
       if Assigned(Data1^.FactorDoc) and Assigned(Data2^.FactorDoc) then
         Result := CompareValue(
           GetLastPrice(Data1^.FactorDoc.ContractId) / GetLastPrice(Data1^.FactorDoc.ContractId, ttClose),
@@ -2974,7 +3099,7 @@ begin
   if Assigned(vstMonitor.FocusedNode) then
   begin
     Data := vstMonitor.FocusedNode^.GetData;
-    if (vstMonitor.FocusedColumn = COL_VALUE) and Assigned(Data.OrderDoc) and
+    if (vstMonitor.FocusedColumn = COL_STATUS) and Assigned(Data.OrderDoc) and
        (Data.OrderDoc.OrderStatus in [osSleeping, osPreSubmit, osSubmitted, osPendSubmit]) then
     begin
       if (Data.OrderDoc is TOrderNNDoc) then
@@ -3043,7 +3168,7 @@ procedure TfrmMonitor.AddInstrumentFromScanner(aTargetNode: PVirtualNode; aSourc
 var
   i: Integer;
   Node: PVirtualNode;
-  Data: PInstrumentData;
+  Data: Scanner.Types.PInstrumentData;
   AutoTradeInfo: TAutoTradeInfo;
   AutoTrade: IAutoTrade;
   Quantity: Integer;
@@ -3378,7 +3503,7 @@ begin
             else if (Node.CheckState = csCheckedNormal) then
               TargetCanvas.Font.Style := [fsItalic];
           end
-          else if (Column = COL_LAST_CLOSE) then
+          else if (Column = COL_LAST_PRICE) then
           begin
             if (StrToFloatDef(vstMonitor.Text[Node, Column], 0) >= 0) then
               TargetCanvas.Font.Color := clGreen
@@ -3395,7 +3520,7 @@ begin
       ntAlgos:
         ;
       ntFactor:
-        if (Column = COL_LAST_CLOSE) then
+        if (Column = COL_LAST_PRICE) then
         begin
           if (StrToFloatDef(vstMonitor.Text[Node, Column], 0) >= 0) then
             TargetCanvas.Font.Color := clGreen
@@ -3496,6 +3621,13 @@ begin
         COL_ITEMS:
           CellText := NodeData^.AutoTrade.Name;
       end;
+    ntQualifier:
+      case Column of
+        COL_ITEMS:
+          CellText := NodeData^.Qualifier.Name;
+        COL_STATUS:
+          CellText := NodeData^.Qualifier.StatusText;
+      end;
     ntOrderGroupSet:
       case Column of
         COL_ITEMS:
@@ -3526,7 +3658,7 @@ begin
               CellText := CellText + '[AUTO]';
             CellText := CellText + NodeData^.OrderGroupDoc.Name;
           end;
-        COL_VALUE:
+        COL_STATUS:
           begin
             if IsChildOrderActive(Node) then
               CellText := 'Active ' + NodeData^.OrderGroupDoc.ToValueString
@@ -3548,21 +3680,22 @@ begin
         end;
         COL_ITEMS:
           begin
-            CellText := GetRightPadString(NodeData^.OrderDoc.InstrumentName, 25).Substring(0, 24);
+            {CellText := GetRightPadString(NodeData^.OrderDoc.InstrumentName, 25).Substring(0, 24);
             if (NodeData^.OrderDoc.BrokerType = TBrokerType.brIB) and
               (TOrderIBDoc(NodeData^.OrderDoc).SecurityType in [stOption, stFuture]) then
               CellText := GetRightPadString(TOrderIBDoc(NodeData^.OrderDoc).LocalSymbol, 20);
             CellText := CellText + ' ' + GetRightPadString(NodeData^.OrderDoc.OrderType.ToString, 12) + GetRightPadString(NodeData^.OrderDoc.OrderAction.ToString, 4);
             if (NodeData^.OrderDoc.BrokerType = TBrokerType.brIB) and (TOrderIBDoc(NodeData^.OrderDoc).Expiry > 0) then
-              CellText := CellText + FormatDateTime(' YYYYMMDD', TOrderIBDoc(NodeData^.OrderDoc).Expiry);
+              CellText := CellText + FormatDateTime(' YYYYMMDD', TOrderIBDoc(NodeData^.OrderDoc).Expiry); }
+            TMonitorTree.OnGetText(Sender, Node, Column, TextType, CellText);
           end;
         COL_CALCTYPE:
           CellText := '';
-        COL_LAST_CLOSE:
+        COL_LAST_PRICE:
           CellText := GetLastClose(NodeData^.OrderDoc.Id);
         COL_CALCFACTOR:
           CellText := Format('%f / %f', [GetLastPrice(NodeData^.OrderDoc.Id), GetLastPrice(NodeData^.OrderDoc.Id, ttClose)]);
-        COL_VALUE:
+        COL_STATUS:
           CellText := Format('%d / %d, %s, Avg: %f', [Trunc(NodeData^.OrderDoc.Filled), NodeData^.OrderDoc.Quantity, NodeData^.OrderDoc.OrderStatusText, NodeData^.OrderDoc.AvgPrice]);
       else
         case ColInfo.TickType of
@@ -3599,7 +3732,7 @@ begin
             CellText := NodeData^.ConditionDoc.Description + ' / ' + NodeData^.ConditionDoc.CondType.ToString + IfThen(NodeData^.ConditionDoc.Bypass, ' [BYPASS]');
         COL_CALCTYPE:
           CellText := NodeData^.ConditionDoc.ToString;
-        COL_VALUE:
+        COL_STATUS:
           CellText := NodeData^.ConditionDoc.ToValueString;
       end;
     ntAlgos:
@@ -3610,7 +3743,7 @@ begin
           CellText := '';
         COL_CALCFACTOR:
           CellText := Format('%.5f', [NodeData^.ReValue]);
-        COL_VALUE:
+        COL_STATUS:
           CellText := Format('%2.f', [NodeData^.AlgosDoc.TickValue[ttLast]]);
       end;
     ntFactor:
@@ -3628,11 +3761,11 @@ begin
           end;
         COL_CALCTYPE:
           CellText := '';
-        COL_LAST_CLOSE:
+        COL_LAST_PRICE:
           CellText := GetLastClose(NodeData^.FactorDoc.ContractId);
         COL_CALCFACTOR:
           CellText := Format('%.5f', [NodeData^.ReValue]);
-        COL_VALUE:
+        COL_STATUS:
           CellText := NodeData^.FactorDoc.ToValueString;
       else
         case ColInfo.TickType of
@@ -3667,8 +3800,8 @@ end;
 
 procedure TfrmMonitor.vstMonitorInitNode(Sender: TBaseVirtualTree; Parentnode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
 begin
-  if TTreeDocument.GetDocType(vstMonitor, Node) = ntOrder then
-    Node.CheckType := ctCheckBox;
+  {if TTreeDocument.GetDocType(vstMonitor, Node) = ntOrder then
+    Node.CheckType := ctCheckBox;}
 end;
 
 procedure TfrmMonitor.vstMonitorKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -3709,7 +3842,7 @@ procedure TfrmMonitor.vstMonitorGetHint(Sender: TBaseVirtualTree; Node: PVirtual
       if Assigned(Data) and Assigned(Data^.OrderDoc) then
       begin
         Result := Data^.OrderDoc.Quantity.ToString + ',' + Data^.OrderDoc.Description;
-        if not Data^.OrderDoc.IsRepetitive then
+        if Data^.OrderDoc.IsRepetitive then
           Result := Result + sLineBreak + C_REPETITIVE_HINT;
         if (Data^.OrderDoc.OrderIBId > 0) and (Data^.OrderDoc.OrderStatus in [osPendSubmit, osSubmitted, osPreSubmit]) then
           Result := Result + sLineBreak + C_CANCELLED_HINT;
@@ -4881,6 +5014,7 @@ end;
 
 procedure TfrmMonitor.OnPortfolioUpdate(Sender: TObject; Index: Integer);
 begin
+  Exit;
   if Assigned(frmDockFormPosition) then
     frmDockFormPosition.UpdatePortfolio(Index);
 end;
@@ -4965,7 +5099,7 @@ var
   AfterLoadProc: TAfterLoadEachDocumentProc;
   AfterLoadTreeProc: TAfterLoadTreeProc;
   Data: PTreeData;
-  InstrumentData: TInstrumentData;
+  InstrumentData: Scanner.Types.TInstrumentData;
   Node: PVirtualNode;
 begin
   if Assigned(aNode) and (aFillPrice > 0) and (aQuantity > 0) then
@@ -5032,6 +5166,36 @@ begin
   end;
 end;
 
+procedure TfrmMonitor.FindAndCheckConditions(aContractId: integer);
+var arrConditions: TNodeArray;
+    ConditionData: PTreeData;
+    LNode: PVirtualNode;
+begin
+  LNode := vstMonitor.RootNode.FirstChild;
+  while Assigned(LNode) do
+  begin
+    arrConditions := TTreeDocument.GetNodesListByType(vstMonitor, LNode, ntCondition);
+    for var Node in arrConditions do
+      if Assigned(Node) then
+      begin
+        ConditionData := Node^.GetData;
+        if Assigned(ConditionData^.ConditionDoc) and
+           (ConditionData^.Enabled) and
+           (ConditionData^.ConditionDoc.Instrument.SokidInfo.ContractId = aContractId) then
+        begin
+          UpdateCondition(Node);
+          TestOrder(GetParentNode(Node, ntOrder));
+          //SetChildsEnabled(Node, True);
+          //OrderDoc := TOrderIBDoc(OrderData^.OrderDoc);
+          //OrderData.OrderDoc.Quantity := aQuantity;
+          //TTreeFactory.FillOrderPrice(OrderDoc, aFillPrice);
+          //TradeTest(Node, aFillPrice, aQuantity);
+        end;
+      end;
+    LNode := LNode.NextSibling;
+  end;
+end;
+
 procedure TfrmMonitor.FillDataForChildNodes(const aNode: PVirtualNode; const aFillPrice: Double; const aQuantity: Integer);
 var
   OrderData: PTreeData;
@@ -5065,6 +5229,7 @@ procedure TfrmMonitor.ShowNotification(const Order: TIABOrder; const Status: TIA
 resourcestring
   rsNotification = '%s [%d] Quantity: %f %s: %f';
 begin
+  //Exit;
   if Status in [osCancelled, osFilled, osError, osPartlyFilled] then
   begin
     TThread.Synchronize(nil,
@@ -5093,6 +5258,7 @@ procedure TfrmMonitor.ShowNotification(const aMessage, aTitle: string);
 var
   Notification: TNotification;
 begin
+  //Exit;
   TThread.Synchronize(nil,
     procedure
     begin
@@ -5774,6 +5940,21 @@ begin
       if Length(OrdersList) > 0 then
         TPublishers.OrderStatePublisher.OnOpenOrderNN(OrdersList);
     end;
+  end;
+end;
+
+procedure TfrmMonitor.ConditionChanged(Sender: TAutoTradeInfo);
+var
+  Node: PVirtualNode;
+begin
+  if not Assigned(Sender.OwnerNode) then
+    Exit;
+  if Sender.Qualifier.IsCondition then
+  begin
+    if Assigned(Sender.Qualifier.OwnerNode) then
+      Exit;
+    Node := TTreeDocument.CreateQualifier(Sender.OwnerNode, vstMonitor, Sender.Qualifier);
+    Sender.AutoTradesInstance := TfrmCandidateMain.Execute(Sender);
   end;
 end;
 
@@ -6468,7 +6649,7 @@ begin
     if Assigned(Data) and
        Assigned(Data^.OrderDoc) and
        (Data^.OrderDoc.OrderStatus = osSleeping) and
-      (CurrNode.CheckState = csCheckedNormal) then
+       (CurrNode.CheckState = csCheckedNormal) then
     begin
       TPublishers.LogPublisher.Write([ltLogWriter], ddText, 'ActivateAllOrders', Data^.OrderDoc.Description);
       if (not ExistsChildConditions(CurrNode)) then
@@ -6508,11 +6689,17 @@ var
   LAutoTrade: TAutoTradeInfo;
 begin
   vstMonitor.Clear;
+  for LAutoTrade in AutoTradeCollection do
+    if Assigned(LAutoTrade.AutoTradesInstance) then
+      LAutoTrade.AutoTradesInstance.CloseAutoTrade(true);
+    //AutoTradesControllerPublisher.DeleteAutoTrade(LAutoTrade.InstanceNum, True);
+
   AutoTradeCollection.LoadActiveAutotrades;
   for LAutoTrade in AutoTradeCollection do
   begin
     Node := TTreeDocument.CreateAutoTrade(nil, vstMonitor, LAutoTrade);
     Node.CheckState := csCheckedNormal;
+    LAutoTrade.OnConditionChanged := ConditionChanged;
   end;
   {Node := vstMonitor.GetFirst;
   while Assigned(Node) do

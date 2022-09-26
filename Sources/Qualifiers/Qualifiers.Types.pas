@@ -10,7 +10,7 @@ uses
   System.DateUtils, XmlFiles, Data.DB, DaModule, InstrumentList, System.Math, System.Threading,
   Publishers.Interfaces, Generics.Helper, Common.Types, Bleeper, DaModule.Utils, ArrayHelper,
   Global.Types, Publishers, Vcl.Forms, IABFunctions.Helpers, IABFunctions.MarketData, Vcl.ExtCtrls,
-  FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet;
+  FireDAC.Comp.Client, FireDAC.Stan.Param, FireDAC.Comp.DataSet, StrUtils;
 {$ENDREGION}
 
 type
@@ -64,6 +64,8 @@ type
   end;
   *)
 
+  TOnConditionChanged = procedure of object;
+
   PQualifier = ^TQualifier;
   TQualifier = class(TBaseClass, IUpdateFeeds)
   private const
@@ -77,7 +79,6 @@ type
     FEnabled: Boolean;
     FInequalityCompare: TInequalityType;
     FInequalityValue: TInequalityType;
-    FIsCondition: Boolean;
     FOwnerNode: PVirtualNode;
 
     FStartupDate: TDateTime;
@@ -91,13 +92,20 @@ type
     FFromTime: TTIme;
     FToTime: TTime;
     FIsCompare: Boolean;
+    FIsCompareCondition: Boolean;
     FIsValue: Boolean;
+    FIsValueCondition: Boolean;
     FIsTime: Boolean;
+    FIsTimeCondition: Boolean;
+
+    FOnConditionChanged: TOnConditionChanged;
     procedure OnConditionTime(Sender: TObject);
     //implementation ICustomInterface
     function GetInstance: TObject;
     //implementation IUpdateFeeds
     procedure OnPriceChange(Sender: TObject; Id: Integer; TickType: TIABTickType; Value: Currency; TimeStamp: TDateTime);
+    function GetIsCondition: boolean;
+    function GetStatusText: string;
   public
     Instrument1: TQualifierInstrument;
     Instrument2: TQualifierInstrument;
@@ -126,7 +134,7 @@ type
     property Enabled            : Boolean              read FEnabled            write FEnabled;
     property InequalityCompare  : TInequalityType      read FInequalityCompare  write FInequalityCompare;
     property InequalityValue    : TInequalityType      read FInequalityValue    write FInequalityValue;
-    property IsCondition        : Boolean              read FIsCondition        write FIsCondition;
+    property IsCondition        : Boolean              read GetIsCondition;
     property OwnerNode          : PVirtualNode         read FOwnerNode          write FOwnerNode;
     property StartupDate        : TDateTime            read FStartupDate        write FStartupDate;
     property TypeCondition      : TTypeCondition       read FTypeCondition      write FTypeCondition;
@@ -138,8 +146,14 @@ type
     property FromTime           : TTIme                read FFromTime           write FFromTime;
     property ToTime             : TTime                read FToTime             write FToTime;
     property IsCompare          : Boolean              read FIsCompare          write FIsCompare;
+    property IsCompareCondition : Boolean              read FIsCompareCondition write FIsCompareCondition;
     property IsValue            : Boolean              read FIsValue            write FIsValue;
+    property IsValueCondition   : Boolean              read FIsValueCondition   write FIsValueCondition;
     property IsTime             : Boolean              read FIsTime             write FIsTime;
+    property IsTimeCondition    : Boolean              read FIsTimeCondition    write FIsTimeCondition;
+
+    property StatusText         : String               read GetStatusText;
+    property OnConditionChanged : TOnConditionChanged  read FOnConditionChanged write FOnConditionChanged;
   end;
 
   TQualifierList = class(TList<TQualifier>)
@@ -188,7 +202,6 @@ begin
   Self.InequalityCompare  := aQualifierItem.InequalityCompare;
   Self.InequalityValue    := aQualifierItem.InequalityValue;
   Self.Enabled            := aQualifierItem.Enabled;
-  Self.IsCondition        := aQualifierItem.IsCondition;
   Self.StartupDate        := aQualifierItem.StartupDate;
   Self.OwnerNode          := aQualifierItem.OwnerNode;
   Self.CreateTime         := aQualifierItem.CreateTime;
@@ -218,7 +231,6 @@ begin
   Self.CreateTime         := 0;
   Self.Enabled            := True;
   Self.Bypass             := False;
-  Self.IsCondition        := False;
   Self.TypeCondition      := Low(TTypeCondition);
   Self.InequalityCompare  := Low(TInequalityType);
   Self.InequalityValue    := Low(TInequalityType);
@@ -232,11 +244,15 @@ begin
   Self.IsCompare          := false;
   Self.IsValue            := false;
   Self.IsTime             := false;
+  Self.IsCompareCondition := false;
+  Self.IsValueCondition   := false;
+  Self.IsTimeCondition    := false;
 end;
 
 constructor TQualifier.Create;
 begin
   inherited;
+  ManualFree := true;
   Clear;
 end;
 
@@ -262,7 +278,6 @@ begin
         Self.TypeCondition    := TTypeCondition(Query.FieldByName('TYPE_CONDITION').AsInteger);
         Self.Enabled          := Query.FieldByName('ENABLED').AsBoolean;
         Self.Bypass           := Query.FieldByName('BYPASS').AsBoolean;
-        Self.IsCondition      := False;
         Self.StartupDate      := Query.FieldByName('STARTUP_DATE').AsDateTime;
         Self.CreateTime       := Now;
         Self.ComparisonValue  := Query.FieldByName('COMPARISON_VALUE').AsFloat;
@@ -314,6 +329,23 @@ resourcestring
 var
   Query: TFDQuery;
   IsExists: Boolean;
+
+  procedure CheckInstrumentInDB(AConID: Integer);
+  var Q: TFDQuery;
+  begin
+    Q := TFDQuery.Create(nil);
+    try
+      Q.Connection := DMod.ConnectionStock;
+      Q.SQL.Text := 'SELECT * FROM SOKID_IB WHERE CONID = :CONID';
+      Q.ParamByName('CONID').Value := AConID;
+      Q.Open;
+      if Q.RecordCount = 0 then
+        raise Exception.Create('Instrument with ID = '+ AConID.ToString + ' was not found');
+    finally
+      Q.Free;
+    end;
+  end;
+
 begin
   Query := TFDQuery.Create(nil);
   try
@@ -365,15 +397,24 @@ begin
     Query.ParamByName('XML_PARAMS').AsString      := Self.ToXml;
 
     if (Self.Instrument1.SokidInfo.ContractId > 0) then
+    begin
+      CheckInstrumentInDB(Self.Instrument1.SokidInfo.ContractId);
       Query.ParamByName('INSTRUMENT1').AsInteger := Self.Instrument1.SokidInfo.ContractId
+    end
     else
       Query.ParamByName('INSTRUMENT1').Clear;
     if (Self.Instrument2.SokidInfo.ContractId > 0) then
+    begin
+      CheckInstrumentInDB(Self.Instrument2.SokidInfo.ContractId);
       Query.ParamByName('INSTRUMENT2').AsInteger := Self.Instrument2.SokidInfo.ContractId
+    end
     else
       Query.ParamByName('INSTRUMENT2').Clear;
     if (Self.Instrument.SokidInfo.ContractId > 0) then
+    begin
+      CheckInstrumentInDB(Self.Instrument.SokidInfo.ContractId);
       Query.ParamByName('INSTRUMENT').AsInteger := Self.Instrument.SokidInfo.ContractId
+    end
     else
       Query.ParamByName('INSTRUMENT').Clear;
 
@@ -396,6 +437,16 @@ begin
   Result := Self;
 end;
 
+function TQualifier.GetIsCondition: boolean;
+begin
+  Result :=
+    ((IsCompare and IsCompareCondition) or not IsCompare)
+    and
+    ((IsValue and IsValueCondition) or not IsValue)
+    and
+    ((IsTime and IsTimeCondition) or not IsTime);
+end;
+
 class function TQualifier.GetListCaption: string;
 begin
   Result := 'Qualifiers list';
@@ -406,69 +457,85 @@ begin
   Result := 'SELECT ID, NAME FROM QUALIFIERS ORDER BY LOWER(NAME)';
 end;
 
+function TQualifier.GetStatusText: string;
+var
+  L: TStringList;
+begin
+  L := TStringList.Create;
+  try
+    if IsCompare then
+      L.Add(Format('Compare %s %s %s', [Instrument1.SokidInfo.Name, InequalityCompare.ToString, Instrument2.SokidInfo.Name]));
+    if IsValue then
+      L.Add(Format('Value %s %s %f', [Instrument.SokidInfo.Name, InequalityValue.ToString, ComparisonValue]));
+    if IsTime then
+      L.Add(Format('Time %s - %s', [FormatDateTime('hh:nn', FromTime), FormatDateTime('hh:nn', ToTime)]));
+    Result := ReplaceText(Trim(L.Text), sLineBreak, '; ');
+  finally
+    FreeAndNil(L);
+  end;
+end;
+
 procedure TQualifier.Initialize;
 begin
-  if (Self.TypeCondition = tcRealtime) then
+//  if Assigned(FTimer) then
+//    FreeAndNil(FTimer);
+
+  if IsCompare then
   begin
-    if Assigned(FTimer) then
-      FreeAndNil(FTimer);
-
-    {if Self.Bypass then
-      OnPriceChange(Self, -1, ttNotSet, 1, Now) //bypass execute
-    else}
+    if (Self.Instrument1.SokidInfo.ContractId > 0) then
     begin
-      if (Self.Instrument1.SokidInfo.ContractId > 0) then
-      begin
-        TIABMarket.RequestMarketData(Self.Instrument1.SokidInfo.ContractId);
-        Self.Instrument1.PriceValue1 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument1.SokidInfo.ContractId, Self.Instrument1.TickType1);
-        if (Self.Instrument1.TickType2 < ttNotSet) then
-          Self.Instrument1.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument1.SokidInfo.ContractId, Self.Instrument1.TickType2);
-        Self.Instrument1.TotalValue := 0;
-        TPublishers.FeedPublisher.Subscribe(Self);
-      end;
-
-      if (Self.Instrument2.SokidInfo.ContractId > 0) then
-      begin
-        TIABMarket.RequestMarketData(Self.Instrument2.SokidInfo.ContractId);
-        Self.Instrument2.PriceValue1 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument2.SokidInfo.ContractId, Self.Instrument2.TickType1);
-        if (Self.Instrument2.TickType2 < ttNotSet) then
-          Self.Instrument2.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument2.SokidInfo.ContractId, Self.Instrument2.TickType2);
-        Self.Instrument2.TotalValue := 0;
-        TPublishers.FeedPublisher.Subscribe(Self);
-      end;
-
-      if (Self.Instrument.SokidInfo.ContractId > 0) then
-      begin
-        TIABMarket.RequestMarketData(Self.Instrument.SokidInfo.ContractId);
-        Self.Instrument.PriceValue1 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument.SokidInfo.ContractId, Self.Instrument.TickType1);
-        if (Self.Instrument2.TickType2 < ttNotSet) then
-          Self.Instrument.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument.SokidInfo.ContractId, Self.Instrument.TickType2);
-        Self.Instrument.TotalValue := 0;
-        TPublishers.FeedPublisher.Subscribe(Self);
-      end;
+      TIABMarket.RequestMarketData(Self.Instrument1.SokidInfo.ContractId);
+      Self.Instrument1.PriceValue1 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument1.SokidInfo.ContractId, Self.Instrument1.TickType1);
+      if (Self.Instrument1.TickType2 < ttNotSet) then
+        Self.Instrument1.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument1.SokidInfo.ContractId, Self.Instrument1.TickType2);
+      Self.Instrument1.TotalValue := 0;
+      TPublishers.FeedPublisher.Subscribe(Self);
     end;
 
-    TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddText, 'TQualifier.Initialize',
-                               'Instrument1 - ' + THtmlLib.GetBoldText(Self.Instrument1.SokidInfo.Symbol) + ' (' + Self.Instrument1.SokidInfo.ContractId.ToString + ')<br>' +
-                               'TickType1='     + Self.Instrument1.TickType1.ToString +
-                               ', Value1='      + Self.Instrument1.PriceValue1.ToString +
-                               ', TickType2='   + Self.Instrument1.TickType2.ToString +
-                               ', Value2='      + Self.Instrument1.PriceValue2.ToString + '<br>' +
-                               'Instrument2 - ' + THtmlLib.GetBoldText(Self.Instrument2.SokidInfo.Symbol) + ' (' + Self.Instrument2.SokidInfo.ContractId.ToString + ')<br>' +
-                               'TickType1='     + Self.Instrument2.TickType1.ToString +
-                               ', Value1='      + Self.Instrument2.PriceValue1.ToString +
-                               ', TickType2='   + Self.Instrument2.TickType2.ToString +
-                               ', Value2='      + Self.Instrument2.PriceValue2.ToString + '<br>' +
-                               'Bypass='        + BoolToStr(Self.Bypass, True));
-  end
-  else
-  if (Self.TypeCondition in [tcEveryDay, tcSpecificDate]) then
+    if (Self.Instrument2.SokidInfo.ContractId > 0) then
+    begin
+      TIABMarket.RequestMarketData(Self.Instrument2.SokidInfo.ContractId);
+      Self.Instrument2.PriceValue1 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument2.SokidInfo.ContractId, Self.Instrument2.TickType1);
+      if (Self.Instrument2.TickType2 < ttNotSet) then
+        Self.Instrument2.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument2.SokidInfo.ContractId, Self.Instrument2.TickType2);
+      Self.Instrument2.TotalValue := 0;
+      TPublishers.FeedPublisher.Subscribe(Self);
+    end;
+  end;
+
+  if IsValue then
+  begin
+    if (Self.Instrument.SokidInfo.ContractId > 0) then
+    begin
+      TIABMarket.RequestMarketData(Self.Instrument.SokidInfo.ContractId);
+      Self.Instrument.PriceValue1 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument.SokidInfo.ContractId, Self.Instrument.TickType1);
+      if (Self.Instrument2.TickType2 < ttNotSet) then
+        Self.Instrument.PriceValue2 := TPriceCache.PriceCache.GetLastPrice(Self.Instrument.SokidInfo.ContractId, Self.Instrument.TickType2);
+      Self.Instrument.TotalValue := 0;
+      TPublishers.FeedPublisher.Subscribe(Self);
+    end;
+  end;
+
+  if IsTime then
   begin
     if not Assigned(FTimer) then
       FTimer := TTimer.Create(nil);
     FTimer.OnTimer := Self.OnConditionTime;
     FTimer.Enabled := True;
   end;
+
+  TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddText, 'TQualifier.Initialize',
+                             'Instrument1 - ' + THtmlLib.GetBoldText(Self.Instrument1.SokidInfo.Symbol) + ' (' + Self.Instrument1.SokidInfo.ContractId.ToString + ')<br>' +
+                             'TickType1='     + Self.Instrument1.TickType1.ToString +
+                             ', Value1='      + Self.Instrument1.PriceValue1.ToString +
+                             ', TickType2='   + Self.Instrument1.TickType2.ToString +
+                             ', Value2='      + Self.Instrument1.PriceValue2.ToString + '<br>' +
+                             'Instrument2 - ' + THtmlLib.GetBoldText(Self.Instrument2.SokidInfo.Symbol) + ' (' + Self.Instrument2.SokidInfo.ContractId.ToString + ')<br>' +
+                             'TickType1='     + Self.Instrument2.TickType1.ToString +
+                             ', Value1='      + Self.Instrument2.PriceValue1.ToString +
+                             ', TickType2='   + Self.Instrument2.TickType2.ToString +
+                             ', Value2='      + Self.Instrument2.PriceValue2.ToString + '<br>' +
+                             'Bypass='        + BoolToStr(Self.Bypass, True));
 end;
 
 procedure TQualifier.Deinitialize;
@@ -486,36 +553,35 @@ begin
 end;
 
 procedure TQualifier.OnPriceChange(Sender: TObject; Id: Integer; TickType: TIABTickType; Value: Currency; TimeStamp: TDateTime);
-var
-  IsCondition: Boolean;
+var lOldIsCondition: boolean;
 begin
+  lOldIsCondition := IsCondition;
   if (Self.Enabled) and
      (Value > 0) and
-     ((Instrument1.SokidInfo.ContractId = Id) or (Instrument2.SokidInfo.ContractId = Id) or Self.Bypass) and
+     ((Instrument1.SokidInfo.ContractId = Id) or (Instrument2.SokidInfo.ContractId = Id) or (Instrument.SokidInfo.ContractId = Id)) and
      (Self.TypeCondition = tcRealtime)  then
   begin
-    IsCondition := False;
-    if Self.Bypass then
-      IsCondition := True
-    else
+
+    if IsCompare then
     begin
+      IsCompareCondition := false;
       //Instrument1
       if (Instrument1.SokidInfo.ContractId = Id) and (Value > 0) then
       begin
         if (Instrument1.TickType1 = TickType) then
         begin
           Instrument1.PriceValue1 := Value;
-          if (Instrument1.TickType2 = ttNotSet) then
+          {if (Instrument1.TickType2 = ttNotSet) then
             Instrument1.TotalValue := Value
           else if (Instrument1.PriceValue2 > 0) then
-            Instrument1.TotalValue := Instrument1.TypeOperation.Calc(Value, Instrument1.PriceValue2);
+            Instrument1.TotalValue := Instrument1.TypeOperation.Calc(Value, Instrument1.PriceValue2); }
         end;
-        if (Self.Instrument1.TickType2 = TickType) then
+        {if (Self.Instrument1.TickType2 = TickType) then
         begin
           Instrument1.PriceValue2 := Value;
           if (Instrument1.PriceValue1 > 0) then
              Instrument1.TotalValue := Instrument1.TypeOperation.Calc(Instrument1.PriceValue1, Value);
-        end;
+        end; }
       end;
 
       //Instrument2
@@ -524,50 +590,58 @@ begin
         if (Instrument2.TickType1 = TickType) then
         begin
           Instrument2.PriceValue1 := Value;
-          if (Instrument2.TickType2 = ttNotSet) then
+          {if (Instrument2.TickType2 = ttNotSet) then
             Instrument2.TotalValue := Value
           else if (Instrument2.PriceValue2 > 0) then
-            Instrument2.TotalValue := Instrument2.TypeOperation.Calc(Value, Instrument2.PriceValue2);
+            Instrument2.TotalValue := Instrument2.TypeOperation.Calc(Value, Instrument2.PriceValue2); }
         end;
-        if (Instrument2.TickType2 = TickType) then
+        {if (Instrument2.TickType2 = TickType) then
         begin
           Instrument2.PriceValue2 := Value;
           if (Instrument2.PriceValue1 > 0) then
             Instrument2.TotalValue := Instrument2.TypeOperation.Calc(Instrument2.PriceValue1, Value);
-        end;
+        end; }
       end;
 
+      if (Instrument1.TotalValue <> 0) or (Instrument2.TotalValue <> 0) then
+      begin
+        //State := tsWorking;
+        if (PerTime = 0) then
+          PerTime := TimeOf(Now);
+      end;
+
+      if (Instrument1.PriceValue1 <> 0) and (Instrument2.PriceValue1 <> 0) then
+        IsCompareCondition := FInequalityCompare.IsCondition(Instrument1.PriceValue1, Instrument2.PriceValue1);
+    end;
+
+    if IsValue then
+    begin
+      IsValueCondition := false;
       //Instrument
       if (Instrument.SokidInfo.ContractId = Id) and (Value > 0) then
       begin
         if (Instrument.TickType1 = TickType) then
         begin
           Instrument.PriceValue1 := Value;
-          if (Instrument.TickType2 = ttNotSet) then
+          {if (Instrument.TickType2 = ttNotSet) then
             Instrument.TotalValue := Value
           else if (Instrument.PriceValue2 > 0) then
-            Instrument.TotalValue := Instrument.TypeOperation.Calc(Value, Instrument.PriceValue2);
+            Instrument.TotalValue := Instrument.TypeOperation.Calc(Value, Instrument.PriceValue2); }
         end;
-        if (Instrument.TickType2 = TickType) then
+        {if (Instrument.TickType2 = TickType) then
         begin
           Instrument.PriceValue2 := Value;
           if (Instrument.PriceValue1 > 0) then
             Instrument.TotalValue := Instrument.TypeOperation.Calc(Instrument.PriceValue1, Value);
-        end;
+        end;}
       end;
-      QualifiersControllerPublisher.UpdateState(Self);
+
+      if (Instrument.PriceValue1 <> 0)  then
+        IsValueCondition := FInequalityValue.IsCondition(Instrument.PriceValue1, ComparisonValue);
+
     end;
 
-    if (Instrument1.TotalValue <> 0) or (Instrument2.TotalValue <> 0) then
-    begin
-      //State := tsWorking;
-      if (PerTime = 0) then
-        PerTime := TimeOf(Now);
-    end;
-
-    // TODO rework for multiple conditions
-    if (Instrument1.TotalValue <> 0) and (Instrument2.TotalValue <> 0) then
-      IsCondition := FInequalityCompare.IsCondition(Instrument1.TotalValue, Instrument2.TotalValue);
+    QualifiersControllerPublisher.UpdateState(Self);
 
     if IsCondition then
     begin
@@ -585,7 +659,6 @@ begin
                                  'Bypass='        + BoolToStr(FBypass, True));
 
       //State := tsWorking;
-      FIsCondition     := True;
       FEnabled         := False;
 
       {if not Assigned(FQualifier.AutoTradesInstance) then
@@ -605,14 +678,26 @@ begin
       TIABMarket.CancelMarketData(Instrument.SokidInfo.ContractId);
     end;
   end;
+  if lOldIsCondition <> IsCondition then
+    if Assigned(OnConditionChanged) then
+      OnConditionChanged;
 end;
 
 procedure TQualifier.OnConditionTime(Sender: TObject);
 var
-  IsCondition: Boolean;
-  TimeStamp: TDateTime;
+//  IsCondition: Boolean;
+//  TimeStamp: TDateTime;
+   lOldIsCondition: boolean;
 begin
-  if (Self.Enabled) and (Self.TypeCondition in [tcEveryDay, tcSpecificDate]) then
+  lOldIsCondition := IsCondition;
+
+  if IsTime then
+    IsTimeCondition := (TimeOf(Now) >= TimeOf(FromTime)) and (TimeOf(Now) <= TimeOf(ToTime));
+
+  if lOldIsCondition <> IsCondition then
+    if Assigned(OnConditionChanged) then
+      OnConditionChanged;
+  (*if (Self.Enabled) and (Self.TypeCondition in [tcEveryDay, tcSpecificDate]) then
   begin
     TimeStamp := Now;
     if Self.Bypass then
@@ -640,7 +725,6 @@ begin
                                      'Bypass=' + BoolToStr(FBypass, True));
 
       //State            := tsWorking;
-      FIsCondition     := True;
       FEnabled         := False;
 
       {if not Assigned(FQualifier.AutoTradesInstance) then
@@ -657,6 +741,7 @@ begin
       TIABMarket.CancelMarketData(Instrument2.SokidInfo.ContractId);
     end;
   end;
+  *)
 end;
 
 procedure TQualifier.FromXml(const aXmlText: string);

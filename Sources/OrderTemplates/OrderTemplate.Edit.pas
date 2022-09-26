@@ -92,6 +92,7 @@ type
     procedure aDeleteSelectedNodeUpdate(Sender: TObject);
     procedure aEditUpdate(Sender: TObject);
     procedure vstTreeDblClick(Sender: TObject);
+    procedure vstTreeFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
   private
     FOrderTemplate: TOrderTemplate;
     function CheckData: Boolean;
@@ -161,6 +162,16 @@ procedure TfrmOrderTemplateEdit.vstTreeDrawText(Sender: TBaseVirtualTree;
 begin
   inherited;
   TMonitorTree.OnDrawText(Sender, TargetCanvas, Node, Column, Text, CellRect, DefaultDraw);
+end;
+
+procedure TfrmOrderTemplateEdit.vstTreeFreeNode(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var
+  Data: PTreeData;
+begin
+  Data := Node^.GetData;
+  if Assigned(Data) then
+    Data^.Clear;
 end;
 
 procedure TfrmOrderTemplateEdit.vstTreeGetHint(Sender: TBaseVirtualTree;

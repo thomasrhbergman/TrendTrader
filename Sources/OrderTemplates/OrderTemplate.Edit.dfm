@@ -143,6 +143,7 @@ object frmOrderTemplateEdit: TfrmOrderTemplateEdit
       OnBeforeCellPaint = vstTreeBeforeCellPaint
       OnDblClick = vstTreeDblClick
       OnDrawText = vstTreeDrawText
+      OnFreeNode = vstTreeFreeNode
       OnGetText = vstTreeGetText
       OnGetImageIndex = vstTreeGetImageIndex
       OnGetHint = vstTreeGetHint

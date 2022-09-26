@@ -12,6 +12,10 @@
 *.zip
 *.dsk
 *.mes
+*.dcu
+*.exe
+*.~*
+
 /.svn/
 /__history/
 /__recovery/

@@ -1,3 +1,65 @@
+API 10.18 - September 2022.
+************************
+
+  No changes in code base from 10.17.
+
+  API now enforces use of timezones on historical and data and requests with time stamps.
+
+
+API 10.17 - August 2022.
+************************
+
+  No changes in code base from 10.16.
+
+
+API 10.16 - August 2022.
+************************
+
+  Added Winsock2 and IPv6 support, through new file IAB_SocketAPI_tcpclient.pas
+
+
+  TIABSocket
+    
+    added 
+
+   	property OnHistoricalSession
+    	property OnUserInfo
+
+  TIABOrder
+    
+    added  
+  	property AdvancedErrorOverride
+  	property ManualOrderTime
+  	property MinTradeQty
+  	property MinCompeteSize
+  	property CompeteAgainstBestOffset
+  	property MidOffsetAtWhole
+  	property MidOffsetAtHalf
+
+
+  TIABWSHorizonEventData = record
+    ConID: Integer;
+    Filter: string;
+    FillWatchList: Boolean;
+    FillPortfolio: Boolean;
+    FillCompetitors: Boolean;
+    StartDate: string;
+    EndDate: string;
+    TotalLimit: Integer;
+
+
+************************
+
+
+API 10.11_3 - January 2022.
+
+  Bug fix in FOnNewsArticle event.
+
+API 10.11_2 - December 2021.
+
+  Bug fix in FOnDepthMarketDataDescripItem event.
+
+
 API 10.11 - November 2021.
 ************************
 

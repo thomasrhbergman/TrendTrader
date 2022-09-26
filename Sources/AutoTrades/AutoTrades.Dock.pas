@@ -62,7 +62,8 @@ end;
 
 procedure TfrmAutoTradesDock.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-  CanClose := (pcTrades.PageCount = 0) or FCanClose;
+  //CanClose := (pcTrades.PageCount = 0) or FCanClose;
+  CanClose := true;
 end;
 
 end.

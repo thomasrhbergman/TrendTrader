@@ -352,7 +352,7 @@ type
     function IsEquals(ACandidate: TCandidate): Boolean;
     function ToList: string;
     function ToValueString: string;
-    procedure AssignFrom(aCandidate: TCandidate);
+    procedure AssignFrom(const aCandidate: TCandidate);
     procedure Clear;
     constructor Create; override;
   end;
@@ -1465,7 +1465,7 @@ end;
 
 { TCandidate }
 
-procedure TCandidate.AssignFrom(aCandidate: TCandidate);
+procedure TCandidate.AssignFrom(const aCandidate: TCandidate);
 begin
   Self.Clear;
   Self.RecordId                := aCandidate.RecordId;

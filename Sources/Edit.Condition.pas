@@ -50,7 +50,7 @@ type
     cbTickType1: TComboBox;
     lblDivisionTickTypeCaption2: TLabel;
     cbTickType2: TComboBox;
-    Label1: TLabel;
+    lblSecondParam: TLabel;
     lblComparisonRt: TLabel;
     cbInequalityRt: TComboBox;
     lblConditionLimit: TLabel;
@@ -87,6 +87,7 @@ type
     procedure pnlTopDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure pnlTopDragOver(Sender, Source: TObject; X, Y: Integer;
       State: TDragState; var Accept: Boolean);
+    procedure rbPercentClick(Sender: TObject);
   private const
     C_IDENTITY_NAME = 'EditCondition';
   private
@@ -128,6 +129,8 @@ type
     procedure SetXmlParams(const Value: string);
     function GetGradientValue: Currency;
     procedure SetGradientValue(const Value: Currency);
+    function GetRealTimeType: integer;
+    procedure SetRealTimeType(const Value: integer);
 
     property Modyfied                 : Boolean        read FModyfied                   write FModyfied;
   public
@@ -154,6 +157,7 @@ type
     property TickType2         : TIABTickType            read GetTickType2         write SetTickType2;
     property XmlParams         : string                  read GetXmlParams         write SetXmlParams;
     property GradientValue     : Currency                read GetGradientValue     write SetGradientValue;
+    property RealTimeType      : integer                 read GetRealTimeType      write SetRealTimeType;
     property ValueArray[Index: TConditionType]: Double   read GetValueArrayItem    write SetValueArrayItem;
   end;
 
@@ -360,6 +364,26 @@ procedure TfrmEditCondition.pnlTopDragOver(Sender, Source: TObject; X,
 begin
   inherited;
   Accept := Assigned(Source) and (Source is TVirtualStringTree);
+end;
+
+procedure TfrmEditCondition.rbPercentClick(Sender: TObject);
+begin
+  inherited;
+  if rbMOAP.Checked then
+  begin
+    lblSecondParam.Caption := '/ MOAP';
+    cbTickType2.Visible := false;
+  end
+  else if rbValue.Checked then
+  begin
+    lblSecondParam.Caption := ' ';
+    cbTickType2.Visible := false;
+  end
+  else
+  begin
+    lblSecondParam.Caption := '/ ';
+    cbTickType2.Visible := true;
+  end;
 end;
 
 procedure TfrmEditCondition.aRefreshPriceExecute(Sender: TObject);
@@ -586,9 +610,28 @@ begin
   cbPriority.ItemIndex := Integer(Value);
 end;
 
+procedure TfrmEditCondition.SetRealTimeType(const Value: integer);
+begin
+  case Value of
+   0: rbPercent.Checked := true;
+   1: rbValue.Checked := true;
+   2: rbMOAP.Checked := true;
+  end;
+end;
+
 function TfrmEditCondition.GetPriority: TConditionDoc.TPriority;
 begin
   Result := TConditionDoc.TPriority(cbPriority.ItemIndex);
+end;
+
+function TfrmEditCondition.GetRealTimeType: integer;
+begin
+  if rbValue.Checked then
+    Result := 1
+  else if rbMOAP.Checked then
+    Result := 2
+  else
+    Result := 0;
 end;
 
 procedure TfrmEditCondition.aAddFactorExecute(Sender: TObject);
@@ -755,6 +798,7 @@ begin
     for var CondType := System.Low(TConditionType) to System.High(TConditionType)  do
       Self.ValueArray[CondType] := aDocument.ValueArray[CondType];
     Self.GradientValue     := aDocument.GradientValue;
+    Self.RealTimeType      := aDocument.RealTimeType;
     SetSokidInfo(aDocument.Instrument.SokidInfo);
   end;
 end;
@@ -778,6 +822,7 @@ begin
     aDocument.XmlParams         := Self.XmlParams;
     aDocument.Instrument.AssignFrom(Self.Instrument);
     aDocument.GradientValue     := Self.GradientValue;
+    aDocument.RealTimeType      := Self.RealTimeType;
   end;
 end;
 

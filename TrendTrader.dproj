@@ -1605,6 +1605,7 @@
         <DCCReference Include="Sources\IABSocketAPI\IABFunctions.RequestsQueue.pas"/>
         <DCCReference Include="Sources\IABSocketAPI\API_all_platform\IABSocketAPI.pas"/>
         <DCCReference Include="Sources\IABSocketAPI\API_all_platform\IABSocketAPI_const.pas"/>
+        <DCCReference Include="Sources\IABSocketAPI\API_all_platform\IABSocketAPI_tcpclient.pas"/>
         <DCCReference Include="Sources\IBInstrumentParser.pas"/>
         <DCCReference Include="Sources\InformationDialog.pas">
             <Form>TInformation</Form>
@@ -1741,6 +1742,9 @@
         </DCCReference>
         <DCCReference Include="Sources\IABSocketAPI\BCB\UTextForm.pas">
             <Form>FTextForm</Form>
+        </DCCReference>
+        <DCCReference Include="Sources\IABSocketAPI\BCB\UHostport.pas">
+            <Form>FHostport</Form>
         </DCCReference>
         <DCCReference Include="Sources\Utils.pas"/>
         <DCCReference Include="Sources\Utils.LocalInformation.pas"/>

@@ -23,12 +23,28 @@ type
     function ToColor: TColor;
   end;
 
+  TAutoTradeInfo = class;
+
+  TOnConditionChanged = procedure(ASender: TAutoTradeInfo) of object;
+
+  IAutoTrade = interface(ICustomInterface)
+    ['{DAE179CA-C4F7-47C2-BB57-92488AF6B3F5}']
+    function GetAutoTradeInfo: TAutoTradeInfo;
+    function GetTradesState: TTradesState;
+    procedure SetAutoTradeInfo(const aAutoTradeInfo: TAutoTradeInfo);
+    procedure CloseAutoTrade(const aSilenceMode: Boolean = False);
+    procedure SetTradesState(const aValue: TTradesState);
+  end;
+
   TAutoTradeInfo = class(TBaseClass)
   private
     FOrderGroupId: Integer;
+    FOnConditionChanged: TOnConditionChanged;
     function GetOrderGroupId: Integer;
     procedure SetOrderGroupId(const Value: Integer);
+    procedure ConditionChanged;
   public
+    [weak] AutoTradesInstance: IAutoTrade;
     InstanceNum: Integer;
     QualifierInstance: Integer;
     ColumnsInfo: string;
@@ -71,15 +87,7 @@ type
     procedure Clear;
     procedure FromList(aValue: string);
     property OrderGroupId: Integer read GetOrderGroupId write SetOrderGroupId;
-  end;
-
-  IAutoTrade = interface(ICustomInterface)
-    ['{DAE179CA-C4F7-47C2-BB57-92488AF6B3F5}']
-    function GetAutoTradeInfo: TAutoTradeInfo;
-    function GetTradesState: TTradesState;
-    procedure SetAutoTradeInfo(const aAutoTradeInfo: TAutoTradeInfo);
-    procedure CloseAutoTrade(const aSilenceMode: Boolean = False);
-    procedure SetTradesState(const aValue: TTradesState);
+    property OnConditionChanged: TOnConditionChanged read FOnConditionChanged write FOnConditionChanged;
   end;
 
   IAutoTradesController = interface(ICustomInterface)
@@ -193,12 +201,21 @@ begin
   OrderTemplate.Clear;
 end;
 
+procedure TAutoTradeInfo.ConditionChanged;
+begin
+  if Assigned(FOnConditionChanged) then
+    FOnConditionChanged(Self);
+end;
+
 constructor TAutoTradeInfo.Create;
 begin
   Qualifier := TQualifier.Create;
+  Qualifier.ManualFree := true;
+  Qualifier.OnConditionChanged := ConditionChanged;
   Candidate := TCandidate.Create;
   Quantity := TQuantity.Create;
   OrderTemplate := TOrderTemplate.Create;
+
   Clear;
 end;
 

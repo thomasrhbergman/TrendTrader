@@ -316,10 +316,16 @@ type
     property XMLFile                 : TXMLFile                read FXMLFile                 write FXMLFile;
   end;
 
-  TBaseClass = class(TInterfacedObject)
+  TBaseClass = class(TObject)
   private
     FRecordId: Integer;
     FName: String;
+    FManualFree: Boolean;
+    FRefCount: integer;
+  protected
+    function _AddRef: Integer; stdcall;
+    function _Release: Integer; stdcall;
+    function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
   public
     constructor Create; virtual;
     procedure FromDB(aID: Integer); virtual;
@@ -330,6 +336,7 @@ type
 
     property RecordId: Integer read FRecordId write FRecordId;
     property Name: String read FName write FName;
+    property ManualFree: Boolean read FManualFree write FManualFree;
   end;
 
   TCustomBaseClass = class of TBaseClass;
@@ -914,6 +921,7 @@ end;
 
 constructor TBaseClass.Create;
 begin
+  FManualFree := false;
 end;
 
 class procedure TBaseClass.DeleteFromDB(aID: Integer);
@@ -934,8 +942,32 @@ begin
   Result := '';
 end;
 
+function TBaseClass.QueryInterface(const IID: TGUID; out Obj): HResult;
+begin
+  if GetInterface(IID, Obj) then
+    Result := 0
+  else
+    Result := E_NOINTERFACE;
+end;
+
 procedure TBaseClass.SaveToDB;
 begin
+end;
+
+function TBaseClass._AddRef: Integer;
+begin
+  if ManualFree then
+    Result := -1
+  else
+    Result := InterlockedIncrement(FRefCount);;
+end;
+
+function TBaseClass._Release: Integer;
+begin
+  if ManualFree then
+    Result := -1
+  else
+    Result := InterlockedDecrement(FRefCount);;
 end;
 
 initialization

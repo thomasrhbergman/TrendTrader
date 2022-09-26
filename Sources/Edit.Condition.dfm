@@ -15,6 +15,7 @@ object frmEditCondition: TfrmEditCondition
   OldCreateOrder = True
   Position = poMainFormCenter
   ShowHint = True
+  OnClick = rbPercentClick
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
@@ -30,7 +31,6 @@ object frmEditCondition: TfrmEditCondition
     TabOrder = 0
     OnDragDrop = pnlTopDragDrop
     OnDragOver = pnlTopDragOver
-    ExplicitWidth = 791
     DesignSize = (
       608
       103)
@@ -147,8 +147,6 @@ object frmEditCondition: TfrmEditCondition
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitTop = 444
-    ExplicitWidth = 791
     DesignSize = (
       608
       40)
@@ -168,7 +166,6 @@ object frmEditCondition: TfrmEditCondition
       Images = DMImage.vil32
       ParentFont = False
       TabOrder = 0
-      ExplicitLeft = 690
     end
     object btnCancel: TBitBtn
       Left = 406
@@ -187,7 +184,6 @@ object frmEditCondition: TfrmEditCondition
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
-      ExplicitLeft = 589
     end
   end
   object pcMain: TPageControl
@@ -195,10 +191,9 @@ object frmEditCondition: TfrmEditCondition
     Top = 103
     Width = 608
     Height = 141
-    ActivePage = tabGradient
+    ActivePage = tabRealTime
     Align = alClient
     TabOrder = 2
-    ExplicitHeight = 143
     object tabRealTime: TTabSheet
       Caption = 'Real Time'
       ImageIndex = 2
@@ -233,7 +228,7 @@ object frmEditCondition: TfrmEditCondition
         Font.Style = []
         ParentFont = False
       end
-      object Label1: TLabel
+      object lblSecondParam: TLabel
         Left = 232
         Top = 34
         Width = 51
@@ -269,11 +264,12 @@ object frmEditCondition: TfrmEditCondition
         TabOrder = 0
         object rbPercent: TRadioButton
           Left = 12
-          Top = 12
+          Top = 10
           Width = 37
           Height = 17
           Caption = '%'
           TabOrder = 0
+          OnClick = rbPercentClick
         end
         object rbValue: TRadioButton
           Left = 12
@@ -282,6 +278,7 @@ object frmEditCondition: TfrmEditCondition
           Height = 17
           Caption = 'Value'
           TabOrder = 1
+          OnClick = rbPercentClick
         end
         object rbMOAP: TRadioButton
           Left = 12
@@ -290,6 +287,7 @@ object frmEditCondition: TfrmEditCondition
           Height = 17
           Caption = 'MOAP'
           TabOrder = 2
+          OnClick = rbPercentClick
         end
       end
       object cbTickType1: TComboBox

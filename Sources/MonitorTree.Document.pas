@@ -27,7 +27,7 @@ type
     class function CreateOrder(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree; const aBrokerType: TBrokerType): PVirtualNode; inline;
     class function CreateOrderGroup(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
     class function CreateOrderGroupSet(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
-    class function CreateQualifier(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode; inline;
+    class function CreateQualifier(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree; const aQualifier: TQualifier = nil): PVirtualNode; inline;
     //class function GetAutoTradeItems(aNode: PVirtualNode): TAutoTradesArray; inline;
     class function GetDocStatus(const aData: PTreeData): string; inline;
     class function GetDocType(const aTree: TBaseVirtualTree; const aNode: PVirtualNode): TDocType; inline;
@@ -51,18 +51,18 @@ type
   end;
 
 const
-  ICON_QUALIFIER           = 0;
+  ICON_QUALIFIER           = 20;
   ICON_QUALIFIER_CONDITION = 1;
   ICON_AUTOTRADE           = 2;
   ICON_ORDERGROUP_SET      = 3;
   ICON_ORDERGROUP          = 4;
-  ICON_ORDER_BUY           = 5;
-  ICON_ORDER_SELL          = 6;
-  ICON_ORDER_BUY_FILLED    = 7;
-  ICON_ORDER_SELL_FILLED   = 8;
-  ICON_COND_TRUE           = 9;
-  ICON_COND_FALSE          = 10;
-  ICON_COND_DISABLED       = 11;
+  ICON_ORDER_BUY           = 21;
+  ICON_ORDER_SELL          = 22;
+  ICON_ORDER_BUY_FILLED    = 21;
+  ICON_ORDER_SELL_FILLED   = 22;
+  ICON_COND_TRUE           = 23;
+  ICON_COND_FALSE          = 23;
+  ICON_COND_DISABLED       = 23;
   ICON_ALGOS               = 12;
   ICON_FACTOR              = 13;
 
@@ -288,7 +288,7 @@ begin
   SetIcon(Result, aTree);
 end;
 
-class function TTreeDocument.CreateQualifier(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree): PVirtualNode;
+class function TTreeDocument.CreateQualifier(const aParentNode: PVirtualNode; const aTree: TBaseVirtualTree; const aQualifier: TQualifier = nil): PVirtualNode;
 var
   Data: PTreeData;
   ParentNode: PVirtualNode;
@@ -304,10 +304,14 @@ begin
   Data^.ReValue      := 1.0;
   Data^.CreationType := ctUser;
   Data^.RelationId   := -1;
-
-  Data^.Qualifier           := TQualifier.Create;
-  Data^.Qualifier.Name      := 'Qualifier';
-  Data^.Qualifier.Enabled   := True;
+  if not Assigned(aQualifier) then
+  begin
+    Data^.Qualifier           := TQualifier.Create;
+    Data^.Qualifier.Name      := 'Qualifier';
+    Data^.Qualifier.Enabled   := True;
+  end
+  else
+    Data^.Qualifier := aQualifier;
   Data^.Qualifier.OwnerNode := Result;
   Data^.RecordId := -1;
   SetIcon(Result, aTree);

@@ -13,8 +13,8 @@ uses
 type
   TCustomPublisher =  class(TList<TObject>)
   public
-    procedure Subscribe(aItem: TObject); virtual;
-    procedure Unsubscribe(aItem: TObject); virtual;
+    procedure Subscribe(const aItem: TObject); virtual;
+    procedure Unsubscribe(const aItem: TObject); virtual;
   end;
 
   TFeedPublisher = class(TCustomPublisher)
@@ -124,13 +124,13 @@ implementation
 
 { TCustomPublisher }
 
-procedure TCustomPublisher.Subscribe(aItem: TObject);
+procedure TCustomPublisher.Subscribe(const aItem: TObject);
 begin
   if (Self.IndexOf(aItem) < 0) then
     Self.Add(aItem);
 end;
 
-procedure TCustomPublisher.Unsubscribe(aItem: TObject);
+procedure TCustomPublisher.Unsubscribe(const aItem: TObject);
 begin
   if (Self.IndexOf(aItem) >= 0) then
     Self.Remove(aItem);

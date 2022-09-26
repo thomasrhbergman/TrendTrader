@@ -306,7 +306,10 @@ begin
 end;
 
 destructor TFactorList.Destroy;
+var Item: TInstrumentItem;
 begin
+  for Item in Values do
+    Item.Free;
   FDocumentQueue.Clear;
   FreeAndNil(FDocumentQueue);
   inherited;

@@ -129,6 +129,7 @@ uses
   IABFunctions.RequestsQueue in 'Sources\IABSocketAPI\IABFunctions.RequestsQueue.pas',
   IABSocketAPI in 'Sources\IABSocketAPI\API_all_platform\IABSocketAPI.pas',
   IABSocketAPI_const in 'Sources\IABSocketAPI\API_all_platform\IABSocketAPI_const.pas',
+  IABSocketAPI_tcpclient in 'Sources\IABSocketAPI\API_all_platform\IABSocketAPI_tcpclient.pas',
   IBInstrumentParser in 'Sources\IBInstrumentParser.pas',
   InformationDialog in 'Sources\InformationDialog.pas' {TInformation},
   InstrumentList in 'Sources\InstrumentList.pas',
@@ -189,6 +190,7 @@ uses
   UIABsocket in 'Sources\IABSocketAPI\BCB\UIABsocket.pas' {FIABSocket},
   UScanForm in 'Sources\IABSocketAPI\BCB\UScanForm.pas' {FScanForm},
   UTextForm in 'Sources\IABSocketAPI\BCB\UTextForm.pas' {FTextForm},
+  UHostport in 'Sources\IABSocketAPI\BCB\UHostport.pas' {FHostport},
   Utils in 'Sources\Utils.pas',
   Utils.LocalInformation in 'Sources\Utils.LocalInformation.pas',
   Utils.VerInfo in 'Sources\Utils.VerInfo.pas',
@@ -225,7 +227,7 @@ uses
 
 begin
 {$IFDEF DEBUG}
-  ReportMemoryLeaksOnShutdown := DebugHook <> 0;
+  //ReportMemoryLeaksOnShutdown := DebugHook <> 0;
 {$ENDIF}
   try
     DeleteFile('CrntStreamIn.txt');

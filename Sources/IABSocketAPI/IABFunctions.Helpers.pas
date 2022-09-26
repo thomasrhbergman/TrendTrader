@@ -63,7 +63,7 @@ type
     OrderTypeString: array [TIABOrderType] of string = ('NO CHANGE', 'MKT', 'LMT', 'STP', 'STP LMT', 'PASSSIVE RELATIVE (PASV REL)',
       'VWAP', 'MARKET ON CLOSE (MOC)', 'LIMIT ON CLOSE (LMT)', 'TRAILING STOP (TRAIL)', 'LIMIT ON OPEN (LMT)', 'MARKET ON OPEN (MKT)',
       'ONE CANCEL OTHER', 'BLOCK (LMT)', 'PEGGED TO MARKET (PEG MKT)', 'PEGGED TO STOCK (PEG STK)', 'PEGGED TO MIDPOINT (PEGMID)',
-      'PEGGED TO BENCHMARK (PEG BENCH)', 'PEGGED TO PRIMARY (REL)', 'VOLATILITY (VOL)', 'TRAILING STOP LIMIT (TRAIL LIMIT)', 'SCALE',
+      'PEGGED TO BENCHMARK (PEG BENCH)', 'PEGGED TO PRIMARY (REL)', 'PEGGED TO BEST (PEG BEST)', 'VOLATILITY (VOL)', 'TRAILING STOP LIMIT (TRAIL LIMIT)', 'SCALE',
       'MARKET IF TOUCHED (MIT)', 'LIMIT IF TOUCHED (LIT)', 'MARKET TO LIMIT (MTL)', 'AUCTION (MTL)', 'AUCTION RELATIVE (REL)',
       'AUCTION LIMIT (LMT)', 'AUCTION PEGGED TO STOCK (PEG STK)', 'SWEEP TO FILL (LMT)', 'DISCRETIONARY (LMT)', 'BOX TOP (BOX TOP)',
       'MARKET WITH PROTECTION (MKT PRT)', 'STOP WITH PROTECTION (STP PRT)', 'COMBO LIMIT (LMT)', 'COMBO MARKET (MARKET)',
@@ -88,6 +88,7 @@ type
       'STK',                                                 //'PEGGED TO MIDPOINT (PEGMID)'
       'STK, OPT',                                            //'PEGGED TO BENCHMARK (PEG BENCH)'
       'CFD, STK, OPT, FUT',                                  //'PEGGED TO PRIMARY (REL)'
+      'CFD, STK, OPT, FUT',                                  //'PEGGED TO BEST (PEG BEST)'
       'FOP, OPT',                                            //'VOLATILITY (VOL)'
       'BOND, CFD, CASH, FUT, FOP, OPT, STK, WAR',            //'TRAILING STOP LIMIT (TRAIL LIMIT)'
       '',                                                    //'SCALE'

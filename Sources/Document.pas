@@ -463,6 +463,7 @@ type
     FUpProc: Integer;
     FValueArray: TValueArray;
     FGradientValue: Double;
+    FRealTimeType: Integer;
     function GetMinMaxValueArrayItem(Index: TMinMaxValue): Double;
     function GetValueArrayItem(Index: TConditionType): Double;
     procedure AddConditionHistory;
@@ -481,6 +482,7 @@ type
     procedure FromDB(const aRecordId: Integer); override;
     procedure SaveToDB; override;
     procedure SetLengthPriceArray(aLength: Integer);
+    function GetRealTimeTypeAsString: string;
     constructor Create;
     destructor Destroy; override;
 
@@ -526,6 +528,7 @@ type
     property MinMaxValueArray[Index: TMinMaxValue]: Double     read GetMinMaxValueArrayItem write SetMinMaxValueArrayItem;
     property TickValue[Index: TIABTickType]       : Double     read GetValueItem            write SetValueItem;
     property GradientValue          : Double                   read FGradientValue          write FGradientValue;
+    property RealTimeType           : Integer                  read FRealTimeType           write FRealTimeType;
   end;
 
   TAlgosDoc = class(TCustomDocument)
@@ -1806,7 +1809,8 @@ begin
       Self.UpProc            := Query.FieldByName('UP_PROC').AsInteger;
       Self.XmlParams         := Query.FieldByName('XML_PARAMS').AsString;
       Self.IsCondition       := Self.Bypass;
-      Self.GradientValue     := Self.GradientValue;
+      Self.GradientValue     := Query.FieldByName('GRADIENT_VALUE').AsFloat;
+      Self.RealTimeType      := Query.FieldByName('REALTIME_TYPE').AsInteger;
       if (Self.EndDate < Today) then
         Self.EndDate := Today;
       if (Self.StartDate < Today) then
@@ -1880,6 +1884,15 @@ end;
 function TConditionDoc.GetMinMaxValueArrayItem(Index: TMinMaxValue): Double;
 begin
   Result := FMinMaxValueArray[Index];
+end;
+
+function TConditionDoc.GetRealTimeTypeAsString: string;
+begin
+  case RealTimeType of
+    0: Result := ' %';
+    1: Result := ' Value';
+    2: Result := ' MOAP';
+  end;
 end;
 
 procedure TConditionDoc.SetMinMaxValueArrayItem(Index: TMinMaxValue; const Value: Double);
@@ -1962,6 +1975,7 @@ resourcestring
                       'DIVISION_VALUE      = :DivisionValue, '     +
                       'INSTRUMENT          = :Instrument, '        +
                       'GRADIENT_VALUE      = :GradientValue, '     +
+                      'REALTIME_TYPE       = :RealTimeType, '      +
                       'XML_PARAMS          = :XmlParams '          +
                       ' WHERE ID = :RecordId';
 
@@ -1969,7 +1983,7 @@ resourcestring
                       '(NAME,COND_TYPE,DESCRIPTION,DURATION,COND_ACTIVE,IS_BREAKUP, ' +
                       'COND_VALUE,GRADIENT,WIDTH,MONITORING,UP_PROC,START_DATE,END_DATE,START_TIME,END_TIME,PRIORITY,' +
                       'KIND_CREATION,TRAIL_BUY,TRAIL_SELL,IS_BYPASS,TICK_TYPE1,TICK_TYPE2,TYPE_OPERATION,COND_VALUE_RELATIVE,' +
-                      'INEQUALITY_RT, INEQUALITY_GR,INEQUALITY_COL,DIVISION_VALUE,XML_PARAMS,INSTRUMENT,GRADIENT_VALUE,ID)'  +
+                      'INEQUALITY_RT, INEQUALITY_GR,INEQUALITY_COL,DIVISION_VALUE,XML_PARAMS,INSTRUMENT,GRADIENT_VALUE,REALTIME_TYPE,ID)'  +
                       ' VALUES (:Name, '              +
                       '         :CondType, '          +
                       '         :Description, '       +
@@ -2001,6 +2015,7 @@ resourcestring
                       '         :XmlParams, '         +
                       '         :Instrument, '        +
                       '         :GradientValue, '     +
+                      '         :RealTimeType, '      +
                       '         :RecordId)';
 var
   IsExists: Boolean;
@@ -2072,6 +2087,7 @@ begin
     else
       Query.ParamByName('Instrument').Clear;
     Query.ParamByName('GradientValue').AsFloat     := Self.GradientValue;
+    Query.ParamByName('RealTimeType').AsInteger    := Self.RealTimeType;
     try
       Query.Prepare;
       Query.ExecSQL;

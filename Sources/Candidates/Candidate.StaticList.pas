@@ -402,7 +402,7 @@ begin
   begin
     FRecordID := DMod.GetNextValue('GEN_STATIC_LISTS_ID');
     DMod.ExecuteSQL('INSERT INTO STATICLISTS (ID, NAME, WEIGHT, VISIBLE) VALUES (' +
-                    FRecordID.ToString + ', ' + QuotedStr(edtName.Text) + ', ' + QuotedStr(SimpleRoundTo(edtWeight.ValueFloat, -C_DECIMALS).ToString) + ', 1' +
+                    FRecordID.ToString + ', ' + QuotedStr(edtName.Text) + ', ' + QuotedStr(SimpleRoundTo(edtWeight.ValueFloat, -C_DECIMALS).ToString) + ', TRUE' +
                     ')');
   end;
   SaveDetailList(FRecordID);

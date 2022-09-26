@@ -12,6 +12,7 @@ object frmCandidateStaticList: TfrmCandidateStaticList
   Font.Name = 'Tahoma'
   Font.Style = []
   KeyPreview = True
+  OldCreateOrder = True
   Position = poMainFormCenter
   ShowHint = True
   OnCreate = FormCreate

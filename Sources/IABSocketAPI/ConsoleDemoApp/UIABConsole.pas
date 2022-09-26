@@ -7,7 +7,7 @@ uses
 
 type
   TIABConsole = class(TObject)
-    BidSize, AskSize, Volume, LastSize: Integer;
+    BidSize, AskSize, Volume, LastSize: BigDecimal;
     BidPrice, AskPrice, LastPrice: Double;
     PriceSizedata: Boolean;
     IABSocket: TIABSocket;
@@ -15,7 +15,7 @@ type
     destructor Destroy; override;
     procedure ConnectionState(Sender: TObject; State: TIABConnection);
     procedure Error(Sender: TObject; TempId, ErrorCode: Integer; ErrorMsg: string);
-    procedure TickSize(Sender: TObject; DataId: Integer; TickType: TIABTickType; Size: Integer);
+    procedure TickSize(Sender: TObject; DataId: Integer; TickType: TIABTickType; Size: BigDecimal);
     procedure TickPrice(Sender: TObject; DataId: Integer; TickType: TIABTickType; Price: Double; TickAttrib: TIABTickAttrib);
     procedure EndOfStreamRead(Sender: TObject);
   end;
@@ -64,10 +64,10 @@ begin
 
   IABSocket.ClientID := 1234;
 
-  IABSocket.DefOrder.Symbol := 'ES';
-  IABSocket.DefOrder.Exchange := 'GLOBEX';
-  IABSocket.DefOrder.Expiry := GetIndexFutureExpiry;
-  IABSocket.DefOrder.SecurityType := stFuture;
+  IABSocket.DefOrder.Symbol := 'AAPL';
+  IABSocket.DefOrder.Exchange := 'SMART';
+  //IABSocket.DefOrder.Expiry := GetIndexFutureExpiry;
+  IABSocket.DefOrder.SecurityType := stStock;
   IABSocket.DefOrder.Currency := 'USD';
 end;
 
@@ -97,7 +97,7 @@ begin
 end;
 
 procedure TIABConsole.TickSize(Sender: TObject; DataId: Integer;
-  TickType: TIABTickType; Size: Integer);
+  TickType: TIABTickType; Size: BigDecimal);
 begin
   if TickType = ttBidSize then BidSize := Size;
   if TickType = ttAskSize then AskSize := Size;
@@ -118,7 +118,7 @@ procedure TIABConsole.EndOfStreamRead(Sender: TObject);
 var s: string;
 begin
   if not PriceSizedata then Exit;
-  s := Format('  BID %.2f/%d  ASK %.2f/%d  LAST %.2f/%d  VOL %d',[BidPrice, BidSize, AskPrice, AskSize, LastPrice, LastSize, Volume]);
+  s := Format('  BID %g/%g  ASK %g/%g  LAST %g/%g  VOL %g',[BidPrice, BidSize, AskPrice, AskSize, LastPrice, LastSize, Volume]);
   WriteLn(s);
   PriceSizedata := false;
 end;

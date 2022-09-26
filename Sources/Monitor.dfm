@@ -43,6 +43,7 @@ object frmMonitor: TfrmMonitor
       Align = alLeft
       Caption = 'Connect'
       TabOrder = 0
+      Visible = False
       object btnLoginOld: TBitBtn
         Left = 7
         Top = 15
@@ -571,7 +572,7 @@ object frmMonitor: TfrmMonitor
               Color = clWindow
               Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coResizable, coShowDropMark, coVisible, coSmartResize, coAllowFocus, coUseCaptionAlignment]
               Position = 4
-              Text = 'Value'
+              Text = 'Status'
               Width = 218
             end
             item
@@ -579,7 +580,7 @@ object frmMonitor: TfrmMonitor
               CaptionAlignment = taCenter
               Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus, coUseCaptionAlignment]
               Position = 5
-              Text = '% Last/Close'
+              Text = 'Last Price'
               Width = 521
             end>
         end

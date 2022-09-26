@@ -32,6 +32,7 @@ inherited frmListForm: TfrmListForm
     TreeOptions.SelectionOptions = [toExtendedFocus, toAlwaysSelectNode]
     OnAfterCellPaint = vstListAfterCellPaint
     OnDblClick = vstListDblClick
+    OnFreeNode = vstListFreeNode
     OnGetText = vstListGetText
     Touch.InteractiveGestures = [igPan, igPressAndTap]
     Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
@@ -39,7 +40,7 @@ inherited frmListForm: TfrmListForm
       item
         Position = 0
         Text = 'Name'
-        Width = 230
+        Width = 234
       end
       item
         CaptionAlignment = taCenter

@@ -80,7 +80,7 @@ type
     destructor Destroy; override;
     function PopItem(out AItem: TIABRequest): TWaitResult;
     function PushItem(aCommand: TIABCommand; aContractId: Integer; aOrder: TIABOrder = nil; aPriority: TQueuePriority = qpNormal): TWaitResult; overload;
-    function PushItem(aIABRequest: TIABRequest): TWaitResult; overload;
+    function PushItem(aIABRequest: TIABRequest; aSkipOrderCreate: boolean = false): TWaitResult; overload;
     property Count: Integer read GetCount;
   end;
 
@@ -129,8 +129,15 @@ begin
 end;
 
 destructor TIABRequestsQueue.Destroy;
+var lRequest: TIABRequest;
 begin
   DoShutDown;
+  for lRequest in FList do
+  begin
+    lRequest.Clear;
+    if Assigned(lRequest.Order) then
+      sleep(1);
+  end;
   FreeAndNil(FList);
   FreeAndNil(FQueueLock);
   FreeAndNil(FQueueNotEmpty);
@@ -194,7 +201,7 @@ begin
   System.TMonitor.Pulse(FQueueNotFull);
 end;
 
-function TIABRequestsQueue.PushItem(aIABRequest: TIABRequest): TWaitResult;
+function TIABRequestsQueue.PushItem(aIABRequest: TIABRequest; aSkipOrderCreate: boolean): TWaitResult;
 var
   Order: TIABOrder;
 begin
@@ -207,7 +214,7 @@ begin
     if FShutDown or Application.Terminated then
       Exit;
     aIABRequest.TimeStamp := Now;
-    if Assigned(aIABRequest.Order) then
+    if Assigned(aIABRequest.Order) and not aSkipOrderCreate then
     begin
       Order := TIABOrder.Create;
       Order.Assign(aIABRequest.Order);
@@ -223,7 +230,7 @@ end;
 
 function TIABRequestsQueue.PushItem(aCommand: TIABCommand; aContractId: Integer; aOrder: TIABOrder; aPriority: TQueuePriority): TWaitResult;
 begin
-  Result := PushItem(TIABRequest.Create(aCommand, aContractId, aOrder, aPriority));
+  Result := PushItem(TIABRequest.Create(aCommand, aContractId, aOrder, aPriority), true);
 end;
 
 { TIABRequests }

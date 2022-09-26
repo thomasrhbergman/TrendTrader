@@ -2,11 +2,12 @@ unit UDepth;
 
 interface
 
+uses
 {$IF CompilerVersion < 24.0}  // XE3
-uses Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ExtCtrls, Shellapi, Menus, ComCtrls, UTextForm, Grids,
 {$ELSE}
-uses Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.UITypes, Vcl.Graphics,
+Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.UITypes, Vcl.Graphics,
      Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls, UTextForm, ShellAPI, Vcl.Grids,
 {$IFEND}
 IABSocketAPI, IABSocketAPI_const
@@ -71,7 +72,13 @@ begin
   EditRows.Enabled := false;
   DataId := DataId + 1;
   FIABSocket.IABSocket1.SmartDepthMarketData := false;
-  if EditExpiry.Text = 'EXPIRY' then EditExpiry.Text := '';
+  if EditExpiry.Text = 'EXPIRY' then
+    begin
+      if TIABSecurityType(ComboSecType.ItemIndex) = stFuture then
+        EditExpiry.Text := GetIndexFutureExpiry
+      else
+        EditExpiry.Text := '';
+    end;
   if EditExpiry.Text = '' then
     FIABSocket.IABSocket1.GetMarketDepth(DataId,EditSymbol.Text,'',EditExch.Text,'',EditExpiry.Text,FIABSocket.EditCur.Text,TIABSecurityType(ComboSecType.ItemIndex),rtNone,0.0, Rows)
   else

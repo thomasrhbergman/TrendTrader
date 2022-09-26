@@ -5,11 +5,12 @@ unit UIABsocket;
 
 interface
 
-{$IF CompilerVersion < 24.0}  // XE3
-uses Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+uses
+{$IF CompilerVersion < 24.0}  // 24 = XE3
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ExtCtrls, Shellapi, Menus, ComCtrls, UTextForm,
 {$ELSE}
-uses Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.UITypes, Vcl.Graphics,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.UITypes, Vcl.Graphics,
      Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls, UTextForm, ShellAPI,
 {$IFEND}
 IABSocketAPI, IABSocketAPI_const
@@ -19,7 +20,7 @@ IABSocketAPI, IABSocketAPI_const
 ;
 
 const
-  UM_DOIT = WM_USER + 1;
+  UM_DOIT = WM_USER + 1;  // this gives an example below, of using messages to sidestep any nested API command loops errors.
 
 type
   TFIABSocket = class(TForm)
@@ -116,7 +117,6 @@ type
     procedure IABSocket1ScannerParam(Sender: TObject; Parameters: String);
     procedure IABSocket1ScannerData(Sender: TObject; Scan: TIABScan);
     procedure ButtonModifyOrderClick(Sender: TObject);
-    procedure Button14Click(Sender: TObject);
     procedure ButtonSnapClick(Sender: TObject);
     procedure ButtonTWStimeClick(Sender: TObject);
     procedure IABSocket1CurrentTime(Sender: TObject; DateTime: TDateTime);
@@ -130,14 +130,6 @@ type
     procedure IABSocket1TickOptionComputation(Sender: TObject;
       DataId: Integer; TickType: TIABTickType; ImpliedVol, Delta, OptPrice,
       pvDividend, Gamma, Vega, Theta, undPrice: Double);
-    procedure IABSocket1HistoricalTickData(Sender: TObject; DataID: Integer; TickData: TIABTickData);
-    procedure ButtonCxTSClick(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
-    procedure IABSocket1SymbolSample(Sender: TObject; DataID, Item, Count: Integer; SymbolDerivative: TIABSymbolDerivativeSpecItem);
-    procedure ButtonSearchClick(Sender: TObject);
-    procedure IABSocket1WsHorizonMeta(Sender: TObject; DataID: Integer; DataStr: string);
-    procedure ButtonWSHorizonClick(Sender: TObject);
-
 
     {$IFDEF USE_BIGDECIMAL}
     procedure IABSocket1TickSize(Sender: TObject; DataId: Integer; TickType: TIABTickType; Size: BigDecimal);
@@ -148,6 +140,15 @@ type
     procedure IABSocket1MarketDepth(Sender: TObject; DataId, Index, Operation, Side: Integer; Size, Price: Double);
     procedure IABSocket1MarketLevel2(Sender: TObject; DataId, Index, Operation, Side: Integer; Size, Price: Double; MMId: string; SmartDepth: Boolean);
     {$ENDIF}
+
+    procedure IABSocket1HistoricalTickData(Sender: TObject; DataID: Integer; TickData: TIABTickData);
+    procedure ButtonCxTSClick(Sender: TObject);
+    procedure IABSocket1SymbolSample(Sender: TObject; DataID, Item, Count: Integer; SymbolDerivative: TIABSymbolDerivativeSpecItem);
+    procedure ButtonSearchClick(Sender: TObject);
+    procedure IABSocket1WsHorizonMeta(Sender: TObject; DataID: Integer; DataStr: string);
+    procedure ButtonWSHorizonClick(Sender: TObject);
+    procedure IABSocket1NewsProvider(Sender: TObject; Item, Count: Integer; ProviderCode, ProviderName: string);
+    procedure IABSocket1DepthMarketDataDescripItem(Sender: TObject; Item, Count: Integer; DepthMarketDataDescrip: TIABDepthMarketDataDescripItem);
 
    private
     RealtimeBars: Integer;
@@ -161,14 +162,7 @@ type
 
   function GetIndexFutureExpiry: string;
   function ExpiryDateToContractName(YearMonth: string): string;
-  const Futures: array [1..12] of Char = ('F','G','H','J','K','M','N','Q','U','V','X','Z');
-  const OrderTypeText: array [otMarket..otRelMktCombo] of string = (
-      'Market','Limit','Stop','StopLimit','PassiveRel','VWAP','MarketClose','LimitClose','Trail',
-      'LimitOpen','MarketOpen','OneCancelOther','ISEBlock',
-      'PegMarket','PegStock','PegMidPt','PegBench','PegPrimary','Volatility','TrailLimit','Scale',
-      'MarketTouch','LimitTouch','MarketToLimit','Auction','AuctionRel','AuctionLimit','AuctionPegStk','SweepFill',
-      'Discretionary','BoxTop','MarketwProtect','StopwProtect',
-      'ComboLimit','ComboMarket','ComboLimitLeg','RelLimitCombo','RelMktCombo');
+
 
 
 
@@ -179,19 +173,27 @@ var
 
 implementation
 
-uses UDepth, UCombo, UXcution, UScanForm, UHistoricalData;
+uses UDepth, UCombo, UXcution, UScanForm, UHistoricalData, UHostport;
 
 {$R *.DFM}
 
 procedure TFIABSocket.ButtonConnectionClick(Sender: TObject);
-var port: string;
+//var port: string;
 begin
   if ButtonConnection.Tag = 0 then
     begin
-      port := InputBox('Set port #', 'Default ports: live account == 7496,  paper trading == 7497', IntToStr(IABSocket1.TWSPort));
-      IABSocket1.TWSPort := StrTointDef(port, 7496);
-    end;
-  IABSocket1.Connected := not Boolean(ButtonConnection.Tag);
+      FHostPort.Left := Left + 20;
+      FHostPort.Top := Top + 20;
+      FHostPort.ShowModal;
+      if FHostPort.ModalResult = mrOk then
+        begin
+          IABSocket1.TWSHostAddress := FHostPort.ComboBoxIPHost.Text;
+          IABSocket1.TWSPort := StrTointDef(FHostPort.ComboBoxPort.Text, 7497);
+          IABSocket1.Connected := true;
+        end;
+    end
+  else
+    IABSocket1.Connected := false;//not Boolean(ButtonConnection.Tag);
 end;
 
 function TFIABSocket.SetOrderPricing: Boolean;
@@ -216,7 +218,7 @@ begin
 {
   TIABOrderType = (otNoChange,otMarket,otLimit,otStop,otStopLimit,otPassiveRel,otVWAP,otMarketClose,otLimitClose,otTrail,
                     otLimitOpen,otMarketOpen,otOneCancelOther,otISEBlock,
-                  	otPegMarket,otPegStock,otPegMidPt,otPegBench,otPegPrimary,otVolatility,otTrailLimit,otScale,
+                  	otPegMarket,otPegStock,otPegMidPt,otPegBench,otPegPrimary,otPegBest,otVolatility,otTrailLimit,otScale,
                     otMarketTouch,otLimitTouch,otMarketToLimit,otAuction,otAuctionRel,otAuctionLimit,otAuctionPegStk, otSweepFill,
                     otDiscretionary,otBoxTop,otMarketwProtect,otStopwProtect,
                     otComboLimit,otComboMarket,otComboLimitLeg,otRelLimitCombo,otRelMktCombo,
@@ -294,7 +296,7 @@ begin
 
   IABSocket1.DefOrder.SecurityType := TIABSecurityType(ComboSecType.ItemIndex);
 
-  //  TIABSecurityType = (stStock,stOption,stFuture,stIndex,stFutOpt,stCash,stBag,stBond,stIOp,stCFD,stFund,stCmdty,stCrypto,stConFut,stFutConFut,stWar,stNews,stAll);
+  //    TIABSecurityType = (stStock,stOption,stFuture,stIndex,stFutOpt,stCash,stBag,stBond,stIOp,stCFD,stFund,stCmdty,stCrypto,stConFut,stFutConFut,stWar,stNews,stAll);
 
   case IABSocket1.DefOrder.SecurityType of
     stStock: begin
@@ -310,7 +312,7 @@ begin
         else
           IABSocket1.DefOrder.Exchange := EditExch.Text;
       end;
-      
+
     stOption: begin
         IABSocket1.DefOrder.Symbol := EditSym.Text;
         IABSocket1.DefOrder.Exchange := EditExch.Text;
@@ -355,7 +357,7 @@ begin
 
     else
       begin
-         {$IF CompilerVersion >= 24.0}  // XE3
+        {$IF CompilerVersion >= 24.0}  // XE3
         MessageDlgPos('Only the basic stStock, stOption, stFuture, stIndex, stCash and stCrypto Security types are utilized in this demo app.  This API does provide all 18+ security types for your coding pleasure.', mtInformation, [mbOK], 0, Left + 30, Top + 80, mbOK);
         {$ELSE}
         MessageDlgPos('Only the basic stStock, stOption, stFuture, stIndex, stCash and stCrypto Security types are utilized in this demo app.  This API does provide all 18+ security types for your coding pleasure.', mtInformation, [mbOK], 0, Left + 30, Top + 80);
@@ -442,6 +444,7 @@ begin
 end;
 
 {$IFDEF USE_BIGDECIMAL}
+
 procedure TFIABSocket.IABSocket1TickSize(Sender: TObject; DataId: Integer; TickType: TIABTickType; Size: BigDecimal);
 begin
   if TickType in [ttBidSize,ttDelayedBidSize] then Labelbidsize.caption := Size.ToPlainString;
@@ -449,7 +452,9 @@ begin
   if TickType in [ttLastSize,ttDelayedLastSize] then LabelSize.caption := Size.ToPlainString;
   if TickType in [ttVolume,ttDelayedVolume] then LabelVol.caption := Size.ToPlainString;
 end;
+
 {$ELSE}
+
 procedure TFIABSocket.IABSocket1TickSize(Sender: TObject; DataId: Integer; TickType: TIABTickType; Size: Double);
 begin
   if TickType in [ttBidSize,ttDelayedBidSize] then Labelbidsize.caption := FormatFloat('0.#',Size); // IntToStr(Size);
@@ -457,6 +462,7 @@ begin
   if TickType in [ttLastSize,ttDelayedLastSize] then LabelSize.caption := FormatFloat('0.#',Size); // IntToStr(Size);
   if TickType in [ttVolume,ttDelayedVolume] then LabelVol.caption := FormatFloat('0.#',Size); // IntToStr(Size);
 end;
+
 {$ENDIF}
 
 procedure TFIABSocket.ButtonOpenOrdersClick(Sender: TObject);
@@ -513,12 +519,12 @@ begin
   Application.OnHint := AppOnHint;
 
 
-  // NOT recommended.  Goes back to the 2016 and prior version of the API.  No longer wroks
-  //IABSocket1.v100plusAPICalls := false;
+  // NOT recommended below.  Goes back to the 2016 and prior version of the API.  No longer works
+  // IABSocket1.v100plusAPICalls := false;
 
   //  Used to go back an API version or two... in case the latest beta from IAB has bugs
   //  972, 973, etc.
-  //IABSocket1.ClientMaxVerOverride := 972;
+  //IABSocket1.ClientMaxVerOverride := 1010;
 end;
 
 procedure TFIABSocket.ButtonCancelOrderClick(Sender: TObject);
@@ -564,7 +570,7 @@ procedure TFIABSocket.IABSocket1ConnectionState(Sender: TObject; State: TIABConn
 begin
   case State of
     twsClosed: MemoError.Lines.Insert(0,'TWS connection closed');
-    twsConnecting: MemoError.Lines.Insert(0,'Connecting to TWS, ' + IABSocket1.TWSHostAddress + ':' + IntTostr(IABSocket1.TWSPort));
+    twsConnecting: MemoError.Lines.Insert(0,'Connecting to TWS, host ' + IABSocket1.TWSHostAddress + ', port ' + IntTostr(IABSocket1.TWSPort));
     twsReady: begin
                 MemoError.Lines.Insert(0,'TWS connection Ready... Server time: ' + IABSocket1.ConnectAtServerTime);
                 MemoError.Lines.Insert(0,'TWS API server version: ' + IntToStr(IABSocket1.ServerVersion));
@@ -696,7 +702,7 @@ begin
   Delete(YearMonth,1,4);
   i := StrToInt(YearMonth);
   if not i in [1..12] then Exit;
-  Result := Futures[i] + y;
+  Result := FutureMonthCode[i] + y;
 end;
 
 procedure TFIABSocket.IABSocket1NewsBulletin(Sender: TObject; MsgID: Integer; Bulletin, NewsSource: String);
@@ -704,6 +710,13 @@ var s: string;
 begin
   s := NewsSource + ': ' + Bulletin + ' (' + IntToStr(MsgID) + ')';
   Application.MessageBox(pChar(s),pChar('TWS Flash Bulletin'),MB_OK or MB_ICONINFORMATION);
+end;
+
+procedure TFIABSocket.IABSocket1NewsProvider(Sender: TObject; Item, Count: Integer; ProviderCode, ProviderName: string);
+var s: string;
+begin
+  s := IntToStr(Item) + ' ' + ProviderCode + ' ' + ProviderName;
+  MemoAcct.Lines.Insert(0, s);
 end;
 
 procedure TFIABSocket.IABSocket1ExchangeStatus(Sender: TObject; MsgID: Integer; Status: TIABExchangeStatus; Bulletin, NewsSource: String);
@@ -789,6 +802,7 @@ begin
                     //             DateTimeToIABDateTimeStr(Now), 1, IAB_TIME_UNIT_DAY, bs5Min,   - today, 5 min bars
                     //             DateTimeToIABDateTimeStr(Now), 1, IAB_TIME_UNIT_DAY, bs1Min,   - today, 1 min bars
                     //             DateTimeToIABDateTimeStr(Now), 2, IAB_TIME_UNIT_DAY, bs1Min,  -  several days, 1 min bars
+                    //  History dates now take a time zone, or UTC suffix.  see  DateTimeToIABDateTimeStr(Value: TDateTime; Timezone: string = '');
 end;
 
 procedure TFIABSocket.IABSocket1HistoricalData(Sender: TObject; DataId, Item, Count: Integer; HistoricalChartDataElement: TIABHistoricalChartData);
@@ -1005,38 +1019,10 @@ begin
   IABSocket1.ModifyOrder(Order.TempId,Order.ClientId,StrToInt(EditV.Text),otNoChange,StrToFloat(EditP.Text),0);
 end;
 
-
-procedure TFIABSocket.Button14Click(Sender: TObject);
-begin
-  IABsocket1.SetServerLogLevel(5);
-  //IABSocket1.GetOpenOrdersAccount;
-
-
-  IABSocket1.DefOrder.LocalSymbol 	      := 'GOOG  101105P00580000' ;
-  //IABSocket1.DefOrder.Symbol      		:= 'GOOG' ;
-  IABSocket1.DefOrder.Exchange    		:= 'SMART' ;
-
-  //IABSocket1.DefOrder.Expiry     		:= '20100820' ;
-  //IABSocket1.DefOrder.Right       		:= rtPut ;
-  //IABSocket1.DefOrder.Strike      		:= 325.0 ;
-
-  IABSocket1.DefOrder.SecurityType 	      := stOption;
-
-
-  IABSocket1.GetMarketData(100,IABSocket1.DefOrder);
-
-end;
-
-procedure TFIABSocket.Button1Click(Sender: TObject);
-begin
-  // Use GetExecutions instead - does the same job anyway.
-    IABSocket1.RequestCompletedOrders(true);
-end;
-
 procedure TFIABSocket.ButtonSearchClick(Sender: TObject);
 var Inst: string;
 begin
-  Inst := InputBox('Instrument search', 'Enter a symbol to search for', 'APPL');
+  Inst := InputBox('Instrument search', 'Enter a symbol to search for', 'AAPL');
   if Inst <> '' then
     IABSocket1.RequestMatchingSymbols(TDataId, Inst);
   inc(TDataId);
@@ -1063,6 +1049,21 @@ end;
 procedure TFIABSocket.IABSocket1CurrentTime(Sender: TObject; DateTime: TDateTime);
 begin
   MemoAcct.Lines.Insert(0, 'TWS time: ' + DateTimeToStr(DateTime));
+end;
+
+procedure TFIABSocket.IABSocket1DepthMarketDataDescripItem(Sender: TObject; Item, Count: Integer;
+  DepthMarketDataDescrip: TIABDepthMarketDataDescripItem);
+var s: string;
+begin
+  with DepthMarketDataDescrip do
+    begin
+      s := IntToStr(Item) + ' ' + Exchange + ' ' + SecurityTypeString[SecurityType] + ' ' + ListingExchange + ' ' + ServiceDataType + ' ';
+      if UNSET_INTEGER = AggGroup then
+        s := s + '0'
+      else
+        s := s + IntToStr(AggGroup);
+    end;
+  MemoAcct.Lines.Insert(0, s);
 end;
 
 procedure TFIABSocket.ButtonRealTimebarsClick(Sender: TObject);
@@ -1181,10 +1182,19 @@ begin
 //  The data stream from the TWS will have several price and tick events all in one chunk.
 //  Hence just save all the single event item to temp locations, then process the data in one chunk.
 //  NOTE  This event will still block the TWS thread...
-//        For best results - post yourself a message from here, and do your processiong in that event.
 
 {*
-    If your code logic is to generate new orders automatically based on bid/ask and price changes,
+  Do something like this:
+    * In each tick and price event, just capture the raw data and save it to a global var.
+    * Then in this EndOfStreamRead event, use the saved tick / price data and do all your updating of data in your
+      tracking and update any screen data.
+    * You can also do your trading logic update here, but only if its quick.  If its slow or accesses other data,
+      then see the next comment.
+*}
+
+
+{*
+    If your code logic is slow, or generates new orders automatically based on bid/ask and price changes,
       or automatically placing closing orders after a fill, then you CANNOT do those new orders here.
       Instead you must use this function to save the required actions to local variables, and post yourself
       a message.  In that message handler, make the new orders. The purpose here is to allow the data
@@ -1194,18 +1204,19 @@ begin
 
     if Time_to_make_a_new_order then
       begin
-        Save the intended changes to local var, or some flag to indicate an action is required;
+        Save the intended changes to local var, or some state flag to indicate an action is required;
         PostMessage(Handle, UM_DOIT, 0, 1);
         See the next function DoIt.
       end;
 *}
 end;
 
+
 {*
 procedure TFIABSocket.DoIt(var Msg: TMessage);
 begin
   if Msg.LParam = 1 then
-    Do new order per saved details
+    Do new order per saved details  ( create new orders / commands to the TWS )
 end;
 *}
 
@@ -1232,7 +1243,6 @@ begin
   LabelOptTick.Tag := LabelOptTick.Tag + 1;
   LabelOptTick.Caption := IntToStr(LabelOptTick.Tag);
 end;
-
 
 end.
 

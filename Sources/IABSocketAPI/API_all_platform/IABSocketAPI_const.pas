@@ -1,66 +1,6 @@
 unit IABSocketAPI_const;
 
-{
-    BigDecimals
-
- In version 10.10, the TWS API added a large decimal math capability.  This became necessary as some
-   instruments (namely bitcoins), are able to be traded down to 0.000000001 of a share.  This is beyond the
-   reliable range of using floats as decimals.  The TWS chose the Intel® Decimal Floating-Point Math Library,
-   but this is only available in C and is too complex to convert to pascal.
-
- Fortunately a BigDecimal style library is available in pascal, thanks to the work of Rudy Velthuis.  It is
-   available here:
-
-     https://github.com/rvelthuis/DelphiBigNumbers
-
- A backup copy is here:    https://www.hhssoftware.com/iabsocketapi/download/DelphiBigNumbers-master.zip
-
- This API can be compiled both with or without using the DelphiBigNumbers feature.  If you do not trade
-   bitcoins or small fractions of shares, then there is little need for BigDecimal support.
-
- If the DelphiBigNumbers library is not used, then the type BigDecimal in this API is a simple
-   redefinition of type Double.  The properties and fields involved are mostly the Size of ticks and
-   Filled and Quantity of orders, and share sizes.  In old API's, these were defined as a mix of integer
-   and double.  In this API forwards, they are either a double or BigDecimal.  Existing application code
-   from old API's will need some amending to compile.
-
-
-   *******************
-
- To include the DelphiBigNumbers library code into this API ( requires XE2 or higher ) :
-
-   1/  Download the DelphiBigDecimal zip file from the link above, and extract the contents to your favorite
-         extra code or third party add-on file location,
-
-   2/  Add the path of the "source" subfolder to your XE enviroment: menu, Tools, Options, Enviroment, Delphi options,
-         Library, add to both the library path and browse paths, for 32 and 64 bits,
-
-   3/  Add a USE_BIGDECIMAL define to the project: menu, Project, options, Delphi compiler, Conditional defines,
-         for 32 and 64 - all configs,
-
-   4/  Add the unit "Velthuis.BigDecimals" to the uses clause of your app anywhere that type BigDecimals are used.
-
-   5/  With the installed TIABSocket API components file (.dpk), Open, uninstall, add the USE_BIGDECIMAL define to the
-         components file, per step 3 above, compile, and reinstall.
-
-   6/  In your application modify / replace the 5 (if used - see below) affected event function / procedure headers
-         with the BigDecimal versions.  This can get messy: try to comment out the event declaration and code from
-         both the interface and implementation sections. Save the form, confirm delete unused references.  Now create
-         new the required event handlers and move your existing code into these.
-
-   7/  Adjust your application code to use BigDecimal routines for conversion and variables.
-
-
-  See the included pdf help files with the DelphiBigNumbers library.  This includes new routines for conversion of
-    BigDecimal to Integers and strings.
-
-  Using BigDecimals directly affects 5 Event procedures in TIABSocket API.  These are OnTickSize, OnTickPriceAndSize,
-    OnMarketDepth, OnMarketLevel2, OnHistogramData, OnProfitLossSingle.  Many other properties have changed too,
-    mostly volume, quantity and bid/ask sizes.
-
-}
-
-
+// use with IABSocketAPI v10.18 and later
 
 interface
 
@@ -174,11 +114,12 @@ const
   REQ_TICK_BY_TICK_DATA         = 97;
   CANCEL_TICK_BY_TICK_DATA      = 98;
   REQ_COMPLETED_ORDERS          = 99;
-
   REQ_WSH_META_DATA             = 100;
   CANCEL_WSH_META_DATA          = 101;
   REQ_WSH_EVENT_DATA            = 102;
   CANCEL_WSH_EVENT_DATA         = 103;
+
+  REQ_USER_INFO                 = 104;
 
 
   // incoming msg id's
@@ -271,10 +212,12 @@ const
   ORDER_BOUND                               = 100;
   COMPLETED_ORDER                           = 101;
   COMPLETED_ORDERS_END                      = 102;
-
   REPLACE_FA_END                            = 103;
   WSH_META_DATA                             = 104;
   WSH_EVENT_DATA                            = 105;
+
+  HISTORICAL_SCHEDULE                       = 106;
+  USER_INFO                                 = 107;
 
   HEADER_LEN = 4; // 4 bytes for msg length
   MAX_MSG_LEN = $00FFFFFF; // 16Mb
@@ -381,7 +324,6 @@ const
   MIN_SERVER_VER_MKT_DEPTH_PRIM_EXCHANGE    = 149;
   MIN_SERVER_VER_COMPLETED_ORDERS           = 150;
   MIN_SERVER_VER_PRICE_MGMT_ALGO            = 151;
-
   MIN_SERVER_VER_STOCK_TYPE                 = 152;
   MIN_SERVER_VER_ENCODE_MSG_ASCII7          = 153;
   MIN_SERVER_VER_SEND_ALL_FAMILY_CODES  		= 154;
@@ -396,16 +338,38 @@ const
   MIN_SERVER_VER_FRACTIONAL_SIZE_SUPPORT    = 163;
   MIN_SERVER_VER_SIZE_RULES                 = 164;
 
-  CLIENT_REPORTED_VERSION = MIN_SERVER_VER_SIZE_RULES;
+  MIN_SERVER_VER_HISTORICAL_SCHEDULE        = 165;
+  MIN_SERVER_VER_ADVANCED_ORDER_REJECT      = 166;
+  MIN_SERVER_VER_USER_INFO                  = 167;
+  MIN_SERVER_VER_CRYPTO_AGGREGATED_TRADES   = 168;
+  MIN_SERVER_VER_MANUAL_ORDER_TIME          = 169;
+  MIN_SERVER_VER_PEGBEST_PEGMID_OFFSETS     = 170;
+  MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS     = 171;
+  MIN_SERVER_VER_IPO_PRICES                 = 172;
+  MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS_DATE = 173;
+  MIN_SERVER_VER_INSTRUMENT_TIMEZONE         = 174;
 
-  //  client versioning #
-  MIN_SERVER_VERSION = 38;  // about April 2008
-  MIN_SERVER_VER_SUPPORTED = 38;
-  CLIENT_VERSION = 63;   // OLD pre 100 version.  See v100+  MIN_CLIENT_VER .. MAX_CLIENT_VER  below
+
+  //  This tells TWS how "new" your API client version is. see TIABSocket.SetConnected
+  //  Can be overriden backwards to sidestep any new API server version errors,
+  //    but WARNING: the code in this client API is not designed for this.  So any
+  //    new fields added / changes for the newest server API version, will be missing, and cause errors as well.
+  //  See TIABSocket.GetPriorVerMaxVerNo  ( set the ClientMaxVerOverride property )
+
+  CLIENT_REPORTED_VERSION = MIN_SERVER_VER_INSTRUMENT_TIMEZONE;
+
   // 100+ messaging
   // 100 = enhanced handshake, msg length prefixes
   MIN_CLIENT_VER = 100;
   MAX_CLIENT_VER = CLIENT_REPORTED_VERSION;
+
+
+  //  OLD system - no longer relevant (or supported in TWS).
+  //  client versioning #
+  //MIN_SERVER_VERSION = 38;  // about April 2008
+  MIN_SERVER_VER_SUPPORTED = 38;
+  CLIENT_VERSION = 63;   // OLD pre 100 version.  See v100+ above
+
 
 //  7 = 7.0
 //  8 = 7.01
@@ -447,6 +411,8 @@ const
 //  129 = 9.73.?
 //  151 = 9.76.01
 //  164 = 10.10.4
+//  173 = 10.16.1 and 10.17.1
+//  174 = 10.18.1
 
 
 
@@ -467,7 +433,7 @@ type
   TIABOrderState = (osPendSubmit,osPendCancel,osPreSubmit,osSubmitted,osCancelled,osFilled,{ add Roman }osPartlyFilled,osSleeping,osError,osNotConsidered);
   TIABOrderType = (otNoChange,otMarket,otLimit,otStop,otStopLimit,otPassiveRel,otVWAP,otMarketClose,otLimitClose,otTrail,
                     otLimitOpen,otMarketOpen,otOneCancelOther,otISEBlock,
-                  	otPegMarket,otPegStock,otPegMidPt,otPegBench,otPegPrimary,otVolatility,otTrailLimit,otScale,
+                  	otPegMarket,otPegStock,otPegMidPt,otPegBench,otPegPrimary,otPegBest,otVolatility,otTrailLimit,otScale,
                     otMarketTouch,otLimitTouch,otMarketToLimit,otAuction,otAuctionRel,otAuctionLimit,otAuctionPegStk, otSweepFill,
                     otDiscretionary,otBoxTop,otMarketwProtect,otStopwProtect,
                     otComboLimit,otComboMarket,otComboLimitLeg,otRelLimitCombo,otRelMktCombo,
@@ -499,7 +465,9 @@ type
   TIABLegOpenClose = (locSamePos,locOpenPos,locClosePos,locUnknownPos);
   TIABExchangeStatus = (esUnknown,esAvailable,esUnAvailable);
   TIABFADataType = (faGroups,faProfiles,faAliases);
-  TIABHistoricalDataType = (cdTrades,cdMidPoint,cdBid,cdAsk,cdBidAsk);
+  TIABHistoricalDataType = (cdTrades,cdMidPoint,cdBid,cdAsk,cdBidAsk, // RealTimeData accepts these 5 only. The remainder are for Historical requests.
+                          cdAdjustedLast,cdHistoricalVolatility,cdOptionImpVolatility,cdRebateRate,cdFeeRate,
+                          cdYeildBid,cdYeildAsk,cdYeildBidAsk,cdYeildLast,cdSchedule);
   TIABChartBarSize = (bs1sec,bs5sec,bs15sec,bs30sec,bs1min,bs2min,bs3min,bs5min,bs15min,bs30min,bs1Hour,bs1Day,bs1Week,bs1Month,bs3Month,bs1Year);
   TIABAuctionStrategy = (asUnset,asMatch,asImprovement,asTransparent);
   TIABOcaMethod = (ocaCancelWithBlock,ocaReduceWithBlock,ocaReduceNonBlock);
@@ -554,7 +522,6 @@ const
   FAIL_CONNECT_TWS_REDIRECT: TIABCodeMsgPair = (Code: 999; Msg: 'TWS is requesting a TCP redirect to: ');
 
 
-
 {$IFNDEF LINUX}
   MUTEX_NAME = 'TWSsocket';
 {$ENDIF}
@@ -566,11 +533,19 @@ const
   OrderTypeString: array [TIABOrderType] of string = (
             '','MKT','LMT','STP','STP LMT','PASSV REL','VWAP','MOC','LOC','TRAIL',
             'LMT','MKT','OCA','LMT',
-            'PEG MKT','PEG STK','PEG MID','PEG BENCH','REL','VOL','TRAIL LIMIT','SCALE',
+            'PEG MKT','PEG STK','PEG MID','PEG BENCH','REL','PEG BEST','VOL','TRAIL LIMIT','SCALE',
             'MIT','LIT','MTL','MTL','REL','LMT','PEG STK','LMT',
             'LMT','BOX TOP','MKT PRT','STP PRT',
             'LMT','MKT','LMT','REL + LMT','REL + MKT',
             '','UNKNOWN');
+
+  OrderTypeText: array [otMarket..otRelMktCombo] of string = (
+      'Market','Limit','Stop','StopLimit','PassiveRel','VWAP','MarketClose','LimitClose','Trail',
+      'LimitOpen','MarketOpen','OneCancelOther','ISEBlock',
+      'PegMarket','PegStock','PegMidPt','PegBench','PegPrimary','PegBest','Volatility','TrailLimit','Scale',
+      'MarketTouch','LimitTouch','MarketToLimit','Auction','AuctionRel','AuctionLimit','AuctionPegStk','SweepFill',
+      'Discretionary','BoxTop','MarketwProtect','StopwProtect',
+      'ComboLimit','ComboMarket','ComboLimitLeg','RelLimitCombo','RelMktCombo');
 
   SecurityTypeString: array [TIABSecurityType] of string = (
             'STK','OPT','FUT','IND','FOP','CASH','BAG','BOND','IOPT','CFD','FUND',
@@ -579,7 +554,10 @@ const
   ActionString: array [TIABAction] of string = ('','BUY','SELL','SSHORT','EXERCISE','LAPSE');
   RightString: array [TIABRight] of string = ('','PUT','CALL');
   OrderStateString: array [TIABOrderState] of string = ('PendingSubmit','PendingCancel','PreSubmitted','Submitted','Cancelled','Filled',{ add Roman }'PartlyFilled','Sleeping','Error','Not Considered');
-  HistoricalDataTypeString: array [TIABHistoricalDataType] of string = ('TRADES','MIDPOINT','BID','ASK','BID_ASK');
+  HistoricalDataTypeString: array [TIABHistoricalDataType] of string = (
+          'TRADES','MIDPOINT','BID','ASK','BID_ASK',
+          'AdjustedLast','HistoricalVolatility','OptionImpVolatility','RebateRate','FeeRate',
+          'YeildBid','YeildAsk','YeildBidAsk','YeildLast','Schedule');
   ChartBarSizeString: array [TIABChartBarSize] of string = ('1 secs','5 secs','15 secs','30 secs','1 min','2 mins','3 mins','5 mins','15 mins','30 mins',
                                                             '1 hour','1 day','1 week','1 month','3 months','1 year');
   ChartBarSizeInt: array [TIABChartBarSize] of Integer = (1, 5, 15, 30, 60, 120, 180, 300, 15 * 60, 30 * 60, 60 * 60, 60 * 60 * 24, 60 * 60 * 24 * 7, 60 * 60 * 24 * 30, 60 * 60 * 24 * 90, 60 * 60 * 24 * 200);
@@ -587,6 +565,8 @@ const
                                            {add Roman}105,233,236,256,258,293,295,595,411,456,232,292,294,318,375,460,576,577,578,588,614,619,623);
 
   TickDataTypeString: array [TIABTickDataType] of string = ('', 'Last', 'AllLast', 'BidAsk', 'MidPoint');
+
+  FutureMonthCode: array [1..12] of Char = ('F','G','H','J','K','M','N','Q','U','V','X','Z');
 
   OPERATION_INSERT = 0;
   OPERATION_UPDATE = 1;
@@ -615,7 +595,6 @@ const
   UNSET_DECIMAL = UNSET_DOUBLE;
   {$ENDIF}
 
-
   IAB_TIME_UNIT_YEAR = 4;
   IAB_TIME_UNIT_MONTH = 3;
   IAB_TIME_UNIT_WEEK = 2;
@@ -626,17 +605,23 @@ const
   TIABRule80AStr: array [TIABRule80A] of string = ('','I','A','W','J','U','M','K','Y','N');
   TIABHedgeTypeStr: array [TIABHedgeType] of string = ('', 'D', 'B', 'FX', 'P');
 
-
-
   IAB_PRICE_MGNT_ALGO_DONOTUSE = 0;
   IAB_PRICE_MGNT_ALGO_USE      = 1;
   IAB_PRICE_MGNT_ALGO_DEFAULT = UNSET_INTEGER;
 
+  _INFINITY = Infinity;
+  INFINITY_STR = 'Infinity';
+  COMPETE_AGAINST_BEST_OFFSET_UP_TO_MID = Infinity; // _INFINITY;
 
 type
   {$IFNDEF USE_BIGDECIMAL}
   BigDecimal = Double;
   {$ENDIF}
+
+  {$IF CompilerVersion < 23.0}  // 23 = XE2 (first 64bit version)
+  NativeUInt = LongWord;
+  NativeInt = Integer;
+  {$IFEND}
 
   TIABExecutionFilter = record
     ClientId: Integer;
@@ -829,6 +814,13 @@ type
   end;
   PTIABHistoricalChartData = ^TIABHistoricalChartData;
 
+  TIABHistoricalSession = record
+    StartDateTime: string;
+    EndDateTime: string;
+    RefDate: string;
+  end;
+  PTIABHistoricalSession = ^TIABHistoricalSession;
+
   TIABRealTimeData = record
     DateTime: TDateTime;
     Open, High, Low, Close: Double;
@@ -890,6 +882,7 @@ type
     ConId: Integer;
     Delta, Price: Double;
   end;
+  PTIABDeltaNeutralContract = ^TIABDeltaNeutralContract;
 
   TIABOrderQueryResult = record
     Status: string;
@@ -944,8 +937,6 @@ type
   end;
   PTIABTickAttrib = ^TIABTickAttrib;
 
-  PTIABDeltaNeutralContract = ^TIABDeltaNeutralContract;
-
   TIABContract = record
 	  ContractId: Integer;
 	  Symbol: string;
@@ -990,23 +981,81 @@ type
     // tdMidPoint
     MidPoint: Double;
   end;
+  PTIABTickData = ^TIABTickData;
 
-
-  procedure InitIABContract(var contract: TIABContract);
+  TIABWSHorizonEventData = record
+    ConID: Integer;
+    Filter: string;
+    FillWatchList: Boolean;
+    FillPortfolio: Boolean;
+    FillCompetitors: Boolean;
+    StartDate: string;
+    EndDate: string;
+    TotalLimit: Integer;
+  end;
+  PTIABWSHorizonEventData = ^TIABWSHorizonEventData;
 
 implementation
 
+{
+    BigDecimals
+
+ In version 10.10, the TWS API added a large decimal math capability.  This became necessary as some
+   instruments (namely bitcoins), are able to be traded down to 0.000000001 of a share.  This is beyond the
+   reliable range of using floats as decimals.  The TWS chose the Intel® Decimal Floating-Point Math Library,
+   but this is only available in C and is too complex to convert to pascal.
+
+ Fortunately a BigDecimal style library is available in pascal, thanks to the work of Rudy Velthuis.  It is
+   available here:
+
+     https://github.com/rvelthuis/DelphiBigNumbers
+
+ A backup copy is here:    https://www.hhssoftware.com/iabsocketapi/download/DelphiBigNumbers-master.zip
+
+ This IABSocketAPI can be compiled both with, or without using the DelphiBigNumbers feature.  If you do not
+   trade bitcoins or small fractions of shares, then there is little need for BigDecimal support.
+
+ If the DelphiBigNumbers library is not used, then the type BigDecimal in this API is a simple
+   redefinition of type Double.  The properties and fields involved are mostly the Size of ticks and
+   Filled and Quantity of orders, and share sizes.  In old API's, these were defined as a mix of integer
+   and double.  In this API forwards, they are either a type double or type BigDecimal.  Existing application
+   code from old API's will need some amending to compile.
 
 
-procedure InitIABContract(var Contract: TIABContract);
-begin
-  Contract.ContractId := 0;
-  Contract.Strike := 0.0;
-  Contract.IncludeExpired := false;
-  Contract.ComboLegList := nil;
-  Contract.DeltaNeutralContract.ConId := 0;
-  Contract.DeltaNeutralContract.Delta := 0.0;
-  Contract.DeltaNeutralContract.Price := 0.0;
-end;
+   *******************
+
+ To include the DelphiBigNumbers library code into this API ( requires XE2 or higher ) :
+
+   1/  Download the DelphiBigDecimal zip file from the link above, and extract the contents to your favorite
+         extra code or third party add-on file location,
+
+   2/  Add the path of the "source" subfolder to your XE enviroment: menu, Tools, Options, Enviroment, Delphi options,
+         Library, add to both the library path and browse paths, for 32 and 64 bits,
+
+   3/  Add a USE_BIGDECIMAL define to the project: menu, Project, options, Delphi compiler, Conditional defines,
+         for 32 and 64 - all configs,
+
+   4/  Add the unit "Velthuis.BigDecimals" to the uses clause of your app anywhere that type BigDecimals are used.
+
+   5/  With the installed TIABSocket API components file (.dpk), Open, uninstall, add the USE_BIGDECIMAL define to the
+         components file, per step 3 above, compile, and reinstall.
+
+   6/  In your application modify / replace the 5 (if used - see below) affected event function / procedure headers
+         with the BigDecimal versions.  This can get messy: try to comment out the event declaration and code from
+         both the interface and implementation sections. Save the form, confirm delete unused references.  Now create
+         new the required event handlers and move your existing code into these.
+
+   7/  Adjust your application code to use BigDecimal routines for conversion and variables.
+
+
+  See the included pdf help files with the DelphiBigNumbers library.  This includes new routines for conversion of
+    BigDecimal to Integers and strings.
+
+  Note from 6/: Using BigDecimals directly affects 5 Event procedures in TIABSocket API.  These are OnTickSize,
+    OnTickPriceAndSize, OnMarketDepth, OnMarketLevel2, OnHistogramData, OnProfitLossSingle.  Many other properties
+    have changed too, mostly volume, quantity and bid/ask sizes.
+
+}
+
 
 end.

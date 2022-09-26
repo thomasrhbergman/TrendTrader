@@ -16,7 +16,7 @@ object frmAutoTradesDock: TfrmAutoTradesDock
   Position = poDesigned
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
-  
+  PixelsPerInch = 96
   TextHeight = 13
   object pcTrades: TPageControl
     Left = 0
