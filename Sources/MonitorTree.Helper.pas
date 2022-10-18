@@ -321,13 +321,21 @@ begin
         case Column of
           COL_ITEMS:
             begin
-              CellText := Format('%s %s[%s] [%s] %s', [Data^.OrderDoc.InstrumentName,
+              CellText := Format('%s[%s][%s]', [Data^.OrderDoc.OrderAction.ToString,
+                                                Data^.OrderDoc.BrokerType.ToAbbrevName,
+                                                Data^.OrderDoc.OrderType.ToString]);
+              if (Data^.OrderDoc is TOrderIBDoc) and (TOrderIBDoc(Data^.OrderDoc).Scope = 1) then
+                CellText := CellText + '[FILL OR KILL]';
+              if Data^.OrderDoc.VisiblePart < 100 then
+                CellText := CellText + Format('[Visible %f]', [Data^.OrderDoc.VisiblePart]);
+               CellText := CellText + ' ' + Data^.OrderDoc.InstrumentName;
+              {CellText := Format('%s %s[%s] [%s] %s', [Data^.OrderDoc.InstrumentName,
                                                        Data^.OrderDoc.OrderAction.ToString,
                                                        Data^.OrderDoc.BrokerType.ToAbbrevName,
                                                        Data^.OrderDoc.OrderType.ToString,
                                                        Data^.OrderDoc.Description]);
               if (Data^.OrderDoc.ExtendedOptions.Subordination = suMotherOrder) then
-                CellText := CellText + C_MOTHER_ORDER;
+                CellText := CellText + C_MOTHER_ORDER;}
             end;
           COL_CALCTYPE:
             CellText := '';

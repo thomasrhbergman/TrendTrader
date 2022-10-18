@@ -736,6 +736,7 @@ begin
     frmDockFormComputeOrders.DragMode := dmAutomatic;
     frmDockFormComputeOrders.ManualDock(pgcMain, pgcMain, alClient);
   end;
+  {$ENDIF}
 
   if not Assigned(frmLogView) then
   begin
@@ -744,7 +745,6 @@ begin
     frmLogView.DragMode := dmAutomatic;
     frmLogView.ManualDock(pgcMain, pgcMain, alClient);
   end;
-  {$ENDIF}
 end;
 
 procedure TfrmMonitor.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -838,9 +838,9 @@ begin
   frmDockFormQualifiersController.Initialize;
   frmDockFormTemplateCreator.Initialize;
   frmDockFormTotalController.Initialize;
-  frmLogView.Initialize;
   frmMonitorFilter.Initialize;
   {$ENDIF}
+  frmLogView.Initialize;
 end;
 
 procedure TfrmMonitor.Deinitialize;
@@ -871,9 +871,9 @@ begin
   frmDockFormQualifiersController.Deinitialize;
   frmDockFormTemplateCreator.Deinitialize;
   frmDockFormTotalController.Deinitialize;
-  frmLogView.Deinitialize;
   frmMonitorFilter.Deinitialize;
   {$ENDIF}
+  frmLogView.Deinitialize;
 end;
 
 procedure TfrmMonitor.FormShow(Sender: TObject);
@@ -889,9 +889,9 @@ begin
   frmDockFormQualifiersController.Show;
   frmDockFormTemplateCreator.Show;
   frmDockFormTotalController.Show;
-  frmLogView.Show;
   frmMonitorFilter.Show;
   {$ENDIF}
+  frmLogView.Show;
 end;
 
 function TfrmMonitor.GetIABClient: TIABSocket;
@@ -1411,6 +1411,9 @@ begin
           if (Data^.DocType = ntCondition) then
           begin
             case Data^.ConditionDoc.CondType of
+              ctGradient: begin
+                TIABMarket.RequestMarketData(Data^.ConditionDoc.Instrument.SokidInfo.ContractId);
+              end;
               ctRealtimeValue, ctRealtimeAndTimeGap:
                 begin
                   CompiledValue := TTreeDocument.CalcCompiledValue(vstMonitor, Data^.ConditionDoc);
@@ -1620,6 +1623,8 @@ begin
     Result := TTreeDocument.LoadOrderTemplateRelationTree(aAutoTrade.OrderTemplate.RecordId, -1, vstMonitor, aAutoTrade.Qualifier.OwnerNode, nil, nil);
     if Assigned(Result) then
     begin
+      AfterLoadProc := DoAfterLoadEachDocumentProc(ContractId, Price);
+      AfterLoadTreeProc := DoAfterLoadTreeProc(Result);
       TTreeFactory.FillDocuments(Result, aInstrumentData^, 0, aAutoTradesCommon, AfterLoadProc, AfterLoadTreeProc);
       aInstrumentData^.IsLocked := True;
     end;
@@ -2204,8 +2209,8 @@ begin
         if Assigned(frmEditCondition) and frmEditCondition.Visible then
           Exit;
 
-        if Data.Enabled and Data.ConditionDoc.Active then
-        begin
+//        if {Data.Enabled and} Data.ConditionDoc.Active then
+//        begin
           case Data.ConditionDoc.Priority of
             cpNormal:
               begin
@@ -2220,7 +2225,7 @@ begin
             cpVeto:
               Veto := Veto and Data.ConditionDoc.IsCondition;
           end;
-        end;
+//        end;
       end;
       Node := Node.NextSibling;
     end;
@@ -2237,6 +2242,7 @@ begin
                                            [THtmlLib.GetColorTag('Order is bought', clBlue), BoolToStr(Veto, True), BoolToStr(Normal, True), BoolToStr(IsExistsNormal, True), BoolToStr(Priority, True), BoolToStr(IsExistsPriority, True)]
                                            ));
       OrderData.OrderDoc.Buy;
+      SetChildsEnabled(aNode, True);
     end
     else
       TPublishers.LogPublisher.Write([ltLogWriter], ddText, Self, 'TestOrder',
@@ -2651,11 +2657,47 @@ var
   ParentNode: PVirtualNode;
   PriceList: TPriceList;
   Value1, Value2: Currency;
+  CompiledValue: TCompiledValue;
+  Item: TConditionDoc.TGradientPrice;
+  GradientValue: Double;
+
+  function CalcGradientValue(ACondition: TConditionDoc): boolean;
+  var TimeStamp: TDateTime;
+      PriceList  : TPriceList;
+      arrPrices  : TArray<TPrice>;
+      I: integer;
+  begin
+    Result := false;
+    TimeStamp := IncSecond(Now, -1 * ACondition.Monitoring);
+    PriceList := TMonitorLists.PriceCache.GetPriceList(ACondition.Instrument.SokidInfo.ContractId);
+    if Assigned(PriceList) then
+    begin
+      arrPrices := PriceList.GetLastPrices(
+        function(const aPrice: TPrice): Boolean
+        begin
+          Result := (DateOf(aPrice.TimeStamp) = DateOf(Date)) and (aPrice.TickType = ttLast);
+        end);
+      for I := Length(arrPrices) - 1 downto 0 do
+        if arrPrices[I].TimeStamp <= TimeStamp then
+        begin
+          Result := true;
+          ACondition.Gradient := 100 * arrPrices[Length(arrPrices)-1].Value / arrPrices[I].Value;
+        end;
+    end;
+  end;
+
+  function CheckGradient(ACondition: TConditionDoc): Boolean;
+  begin
+    Result := ACondition.InequalityGr.IsCondition(ACondition.Gradient, ACondition.GradientValue);
+  end;
+
 begin
+  Value1 := 0;
+  Value2 := 0;
   if Assigned(aNode) then
   begin
     Data := aNode^.GetData;
-    if Assigned(Data) and Assigned(Data.ConditionDoc) and (Data.ConditionDoc.Active) then
+    if Assigned(Data) and Assigned(Data.ConditionDoc) and not Data^.ConditionDoc.IsCondition {and (Data.ConditionDoc.Active)} then
     begin
       Doc := Data.ConditionDoc;
       Doc.IsCondition := false;
@@ -2668,7 +2710,7 @@ begin
         if Doc.RealTimeType = 0 then
         begin
           Value2 := PriceList.LastPrice[Doc.TickType2];
-          Doc.IsCondition := Doc.InequalityRt.IsCondition(Doc.TypeOperation.Calc(Value1, Value2), Doc.CondLimit);
+          Doc.IsCondition := Doc.InequalityRt.IsCondition({Doc.TypeOperation}toDivide.Calc(Value1, Value2), Doc.CondLimit);
         end
         // value
         else if Doc.RealTimeType = 1 then
@@ -2684,13 +2726,16 @@ begin
           if Assigned(ParentNode) then
           begin
             OrderData := ParentNode^.GetData;
-            if Assigned(OrderData.OrderDoc) then
+            if Assigned(OrderData.OrderDoc) and (OrderData.OrderDoc.Filled > 0) then
             begin
               Value2 := OrderData.OrderDoc.AvgPrice; // MOAP
-              Doc.IsCondition := Doc.InequalityRt.IsCondition(Doc.TypeOperation.Calc(Value1, Value2), Doc.CondLimit);
+              Doc.IsCondition := Doc.InequalityRt.IsCondition({Doc.TypeOperation}toDivide.Calc(Value1, Value2), Doc.CondLimit);
+              //Doc.Enabled := false;
             end;
           end;
         end;
+        Doc.TickType1Value := Value1;
+        Doc.TickType2Value := Value2;
       end
       else if Doc.CondType = ctTimeGap then
       begin
@@ -2702,8 +2747,12 @@ begin
       end
       else if Doc.CondType = ctGradient then
       begin
-
-      end;;
+        PrepareConditionValues(aNode);
+        if CalcGradientValue(Data^.ConditionDoc) then
+          Data^.ConditionDoc.IsCondition := CheckGradient(Data^.ConditionDoc);
+      end;
+      if Data^.ConditionDoc.IsCondition then
+        vstMonitor.RepaintNode(aNode);
     end;
   end;
 end;
@@ -3603,9 +3652,9 @@ var
     ClosePrice: Double;
   begin
     ClosePrice := GetLastPrice(aConId, ttClose);
-    if (ClosePrice <> 0) then
-      ClosePrice := (GetLastPrice(aConId, ttLast) / ClosePrice - 1) * 100;
-    Result := Format('%0.2f', [ClosePrice]);
+//    if (ClosePrice <> 0) then
+//      ClosePrice := (GetLastPrice(aConId, ttLast) / ClosePrice - 1) * 100;
+    Result := Format('%g', [ClosePrice]);
   end;
 
 begin
@@ -3637,7 +3686,7 @@ begin
       case Column of
         COL_ITEMS:
           begin
-            case NodeData^.OrderGroupDoc.Kind of
+            {case NodeData^.OrderGroupDoc.Kind of
               okNormal:
                 CellText := '[NORM';
               okOneCancelAll:
@@ -3656,14 +3705,20 @@ begin
               CellText := CellText + ',ONCE]';
             if NodeData^.OrderGroupDoc.IsAutoOrder then
               CellText := CellText + '[AUTO]';
-            CellText := CellText + NodeData^.OrderGroupDoc.Name;
+            CellText := CellText + NodeData^.OrderGroupDoc.Name; }
+            case NodeData^.OrderGroupDoc.Kind of
+              okNormal:
+                CellText := '[NORMAL]';
+              okOneCancelAll:
+                CellText := '[OCA]';
+            end;
           end;
         COL_STATUS:
           begin
-            if IsChildOrderActive(Node) then
+            {if IsChildOrderActive(Node) then
               CellText := 'Active ' + NodeData^.OrderGroupDoc.ToValueString
             else
-              CellText := 'Sleeping ' + NodeData^.OrderGroupDoc.ToValueString;
+              CellText := 'Sleeping ' + NodeData^.OrderGroupDoc.ToValueString;}
           end;
       end;
     ntOrder:
@@ -3696,7 +3751,19 @@ begin
         COL_CALCFACTOR:
           CellText := Format('%f / %f', [GetLastPrice(NodeData^.OrderDoc.Id), GetLastPrice(NodeData^.OrderDoc.Id, ttClose)]);
         COL_STATUS:
-          CellText := Format('%d / %d, %s, Avg: %f', [Trunc(NodeData^.OrderDoc.Filled), NodeData^.OrderDoc.Quantity, NodeData^.OrderDoc.OrderStatusText, NodeData^.OrderDoc.AvgPrice]);
+          begin
+            CellText := NodeData^.OrderDoc.OrderStatusText + ', ';
+            if NodeData^.OrderDoc.OrderType = otLimit then
+              CellText := CellText + Format('LMT=%g, ', [NodeData^.OrderDoc.Limit]);
+            CellText := CellText + Format('Avg=%g, Num=%d/%d',
+                                          [NodeData^.OrderDoc.AvgPrice,
+                                           Trunc(NodeData^.OrderDoc.Filled),
+                                           NodeData^.OrderDoc.Quantity]);
+            if NodeData^.OrderDoc.TradeTime <> 0 then
+              CellText := CellText + ', Time='+ DateTimeToStr(NodeData^.OrderDoc.TradeTime);
+
+            //CellText := Format('%d / %d, %s, Avg: %f', [Trunc(NodeData^.OrderDoc.Filled), NodeData^.OrderDoc.Quantity, NodeData^.OrderDoc.OrderStatusText, NodeData^.OrderDoc.AvgPrice]);
+          end;
       else
         case ColInfo.TickType of
           ttExchange, ttMarket:
@@ -3726,10 +3793,45 @@ begin
     ntCondition:
       case Column of
         COL_ITEMS:
-          if (NodeData^.ConditionDoc.CondType in [ctRealtimeValue, ctRealtimeAndTimeGap]) then
-            CellText := NodeData^.ConditionDoc.Description + ' (' + FloatToStr(NodeData^.ConditionDoc.CondLimit) + ') / ' + NodeData^.ConditionDoc.CondType.ToString + IfThen(NodeData^.ConditionDoc.Bypass, ' [BYPASS]')
-          else
-            CellText := NodeData^.ConditionDoc.Description + ' / ' + NodeData^.ConditionDoc.CondType.ToString + IfThen(NodeData^.ConditionDoc.Bypass, ' [BYPASS]');
+          begin
+            {if (NodeData^.ConditionDoc.CondType in [ctRealtimeValue, ctRealtimeAndTimeGap]) then
+              CellText := NodeData^.ConditionDoc.Description + ' (' + FloatToStr(NodeData^.ConditionDoc.CondLimit) + ') / ' + NodeData^.ConditionDoc.CondType.ToString + IfThen(NodeData^.ConditionDoc.Bypass, ' [BYPASS]')
+            else
+              CellText := NodeData^.ConditionDoc.Description + ' / ' + NodeData^.ConditionDoc.CondType.ToString + IfThen(NodeData^.ConditionDoc.Bypass, ' [BYPASS]');}
+            case NodeData^.ConditionDoc.Priority of
+              cpNormal: CellText := '[NORMAL] ';
+              cpPriority: CellText := '[PRIORITY] ';
+              cpVeto: CellText := '[VETO] ';
+            end;
+            if NodeData^.ConditionDoc.CondType = ctRealtimeValue then
+            begin
+              case NodeData^.ConditionDoc.RealTimeType of
+                0 : CellText := CellText + Format('Realtime %, %s/%s%s%s',
+                                                [NodeData^.ConditionDoc.TickType1.ToString,
+                                                 NodeData^.ConditionDoc.TickType2.ToString,
+                                                 NodeData^.ConditionDoc.InequalityRt.ToString,
+                                                 FloatToStr(NodeData^.ConditionDoc.CondLimit)]);
+                1 : CellText := CellText + Format('Realtime Value, %s%s%s',
+                                                [NodeData^.ConditionDoc.TickType1.ToString,
+                                                 NodeData^.ConditionDoc.InequalityRt.ToString,
+                                                 FloatToStr(NodeData^.ConditionDoc.CondLimit)]);
+                2 : CellText := CellText + Format('Realtime MOAP, %s/MOAP%s%s',
+                                                [NodeData^.ConditionDoc.TickType1.ToString,
+                                                 NodeData^.ConditionDoc.InequalityRt.ToString,
+                                                 FloatToStr(NodeData^.ConditionDoc.CondLimit)]);
+              end;
+            end
+            else if NodeData^.ConditionDoc.CondType = ctTimeGap then
+              CellText := CellText + Format('Time Gap %s - %s',
+                                                [FormatDateTime('HH:mm', Frac(NodeData^.ConditionDoc.StartTime)),
+                                                 FormatDateTime('HH:mm', Frac(NodeData^.ConditionDoc.EndTime))])
+            else if NodeData^.ConditionDoc.CondType = ctGradient then
+              CellText := CellText + Format('Gradient, %d, %s%g%%, %s',
+                                                [NodeData^.ConditionDoc.Monitoring,
+                                                 NodeData^.ConditionDoc.InequalityGr.ToString,
+                                                 NodeData^.ConditionDoc.GradientValue,
+                                                 NodeData^.ConditionDoc.Instrument.SokidInfo.Symbol]);
+          end;
         COL_CALCTYPE:
           CellText := NodeData^.ConditionDoc.ToString;
         COL_STATUS:
@@ -3853,7 +3955,7 @@ begin
   HintText := GetHintString;
 end;
 
-procedure TfrmMonitor.PrepareConditionValues(aNode: PVirtualNode);
+(*procedure TfrmMonitor.PrepareConditionValues(aNode: PVirtualNode);
 var
   Data       : PTreeData;
   DataFactor : PTreeData;
@@ -3899,6 +4001,38 @@ begin
         end;
       finally
         FreeAndNil(FactorList);
+      end;
+    end;
+  end;
+end;*)
+
+procedure TfrmMonitor.PrepareConditionValues(aNode: PVirtualNode);
+var
+  Data       : PTreeData;
+  i          : Integer;
+  Id         : Integer;
+  PriceList  : TPriceList;
+  arrPrices  : TArray<TPrice>;
+begin
+  if Assigned(aNode) then
+  begin
+    Data := aNode^.GetData;
+    if Assigned(Data) and Assigned(Data.ConditionDoc) then
+    begin
+      Id := Data.ConditionDoc.Instrument.SokidInfo.ContractId;
+      if (Id > 0) then
+      begin
+        PriceList := TMonitorLists.PriceCache.GetPriceList(Id);
+        if Assigned(PriceList) then
+        begin
+          arrPrices := PriceList.GetLastPrices(
+            function(const aPrice: TPrice): Boolean
+            begin
+              Result := (DateOf(aPrice.TimeStamp) = DateOf(Date)) and (aPrice.TickType = ttLast);
+            end);
+          for var Price in arrPrices do
+            Data.ConditionDoc.AddToValueList(Price.TimeStamp, Price.Value, 1);
+        end;
       end;
     end;
   end;
@@ -4633,8 +4767,8 @@ begin
     frmDockFormAccountPnL.DataId  := DataId;
     TPublishers.LogPublisher.Write([ltLogWriter], ddText, Self, 'OnManagedAccounts', 'Details=' + Details + ', DataId=' + DataId.ToString);
   end
-  else
-    TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddError, Self, 'OnManagedAccounts', 'Form frmAccountPnL is not assigned');
+  {else
+    TPublishers.LogPublisher.Write([ltLogWriter, ltLogView], ddError, Self, 'OnManagedAccounts', 'Form frmAccountPnL is not assigned'); }
 end;
 
 procedure TfrmMonitor.OnProfitLoss(Sender: TObject; DataId: Integer; DailyPnL, UnrealizedPnL, RealizedPnL: Double);
@@ -5180,7 +5314,7 @@ begin
       begin
         ConditionData := Node^.GetData;
         if Assigned(ConditionData^.ConditionDoc) and
-           (ConditionData^.Enabled) and
+           {(ConditionData^.Enabled) and}
            (ConditionData^.ConditionDoc.Instrument.SokidInfo.ContractId = aContractId) then
         begin
           UpdateCondition(Node);
@@ -5870,20 +6004,32 @@ end;
 procedure TfrmMonitor.pmMainTreePopup(Sender: TObject);
 var
   DocType : TDocType;
-
+  I: integer;
 begin
   DocType := TTreeDocument.GetDocType(vstMonitor, vstMonitor.FocusedNode);
 
-  miDelimiter1.Visible := not (DocType = ntUnknow);
+  {miDelimiter1.Visible := not (DocType = ntUnknow);
   miDelimiter2.Visible := DocType in [ntOrderGroup, ntAlgos, ntFactor];
   miDelimiter3.Visible := not (DocType = ntUnknow);
   miDelimiter4.Visible := not (DocType = ntUnknow);
 
   miGetInfo.Visible := not (DocType = ntUnknow);
   miAddOrderGroup.Visible := false;
-  miTransformToOrders.Visible := false;
+  miTransformToOrders.Visible := false; }
 
   aShowInformationDialog.Caption := 'Get ' + DocType.ToString + ' Info';
+
+  for I := 0 to pmMainTree.Items.Count - 1 do
+    if (pmMainTree.Items.Items[I] = miConditionFactor) or
+       (pmMainTree.Items.Items[I] = miGetInfo) or
+       (pmMainTree.Items.Items[I] = miShowPriceHistory) or
+       (pmMainTree.Items.Items[I] = miOrderStatus) or
+       (pmMainTree.Items.Items[I] = miDelimiter4) or
+       (pmMainTree.Items.Items[I] = miExpandTree) or
+       (pmMainTree.Items.Items[I] = miCollapsTree) then
+      pmMainTree.Items.Items[I].Visible := true
+    else
+      pmMainTree.Items.Items[I].Visible := false;
 end;
 
 function TfrmMonitor.ConnectToIBBroker: string;

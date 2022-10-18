@@ -169,8 +169,8 @@ type
     procedure vstCandidateHeaderMouseDown(Sender: TVTHeader; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstCandidateInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vstCandidatePaintText(Sender: TBaseVirtualTree; const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType);
-    procedure lbColumnsClick(Sender: TObject);
     procedure btnSaveClick(Sender: TObject);
+    procedure lbColumnsDblClick(Sender: TObject);
   private const
     COL_INSTRUMENT  = 0;
     COL_RANKING_SUM = 1;
@@ -485,7 +485,7 @@ begin
   cbDurationTimeUnits.ItemIndex := 0;
 end;
 
-procedure TfrmCandidateMain.lbColumnsClick(Sender: TObject);
+procedure TfrmCandidateMain.lbColumnsDblClick(Sender: TObject);
 var
   ColumnId: Integer;
   ColumnsInfo: TColumnsInfo;

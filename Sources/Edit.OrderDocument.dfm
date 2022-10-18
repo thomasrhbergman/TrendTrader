@@ -26,8 +26,6 @@ object frmOrderDocument: TfrmOrderDocument
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitTop = 344
-    ExplicitWidth = 801
     DesignSize = (
       466
       45)
@@ -47,7 +45,6 @@ object frmOrderDocument: TfrmOrderDocument
       Images = DMImage.vil32
       ParentFont = False
       TabOrder = 0
-      ExplicitLeft = 658
     end
     object btnCancel: TBitBtn
       Left = 262
@@ -65,7 +62,6 @@ object frmOrderDocument: TfrmOrderDocument
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
-      ExplicitLeft = 556
     end
   end
   object pnlTop: TPanel
@@ -76,7 +72,6 @@ object frmOrderDocument: TfrmOrderDocument
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitWidth = 801
     object lblSell: TLabel
       Left = 223
       Top = 1
@@ -212,9 +207,6 @@ object frmOrderDocument: TfrmOrderDocument
     ActiveCard = crdIB
     BevelOuter = bvNone
     TabOrder = 2
-    ExplicitTop = 81
-    ExplicitWidth = 801
-    ExplicitHeight = 233
     object crdIB: TCard
       Left = 0
       Top = 0
@@ -222,8 +214,6 @@ object frmOrderDocument: TfrmOrderDocument
       Height = 108
       CardIndex = 0
       TabOrder = 0
-      ExplicitWidth = 801
-      ExplicitHeight = 233
       object pnlIB: TPanel
         Left = 0
         Top = 0
@@ -234,7 +224,6 @@ object frmOrderDocument: TfrmOrderDocument
         TabOrder = 0
         OnDragDrop = pnlIBDragDrop
         OnDragOver = pnlIBDragOver
-        ExplicitHeight = 145
         DesignSize = (
           466
           108)
@@ -297,6 +286,7 @@ object frmOrderDocument: TfrmOrderDocument
           Mode = nbmCurrency
           MaxValue = 100.000000000000000000
           TabOrder = 1
+          Value = 100.000000000000000000
           UseMouseWheel = True
           OnChangeValue = OnPercentChange
         end
@@ -312,7 +302,6 @@ object frmOrderDocument: TfrmOrderDocument
           Font.Height = -13
           Font.Name = 'Tahoma'
           Font.Style = [fsBold]
-          ImageIndex = 22
           Images = DMImage.vil16
           ParentFont = False
           TabOrder = 2
@@ -326,8 +315,6 @@ object frmOrderDocument: TfrmOrderDocument
       Height = 108
       CardIndex = 1
       TabOrder = 1
-      ExplicitWidth = 801
-      ExplicitHeight = 233
       object pnlNN: TPanel
         Left = 0
         Top = 0
@@ -337,8 +324,6 @@ object frmOrderDocument: TfrmOrderDocument
         BevelOuter = bvNone
         Caption = 'Under development NN'
         TabOrder = 0
-        ExplicitWidth = 801
-        ExplicitHeight = 233
       end
     end
     object crdTest: TCard
@@ -348,8 +333,6 @@ object frmOrderDocument: TfrmOrderDocument
       Height = 108
       CardIndex = 2
       TabOrder = 2
-      ExplicitWidth = 801
-      ExplicitHeight = 233
       object pnlTest: TPanel
         Left = 0
         Top = 0
@@ -359,8 +342,6 @@ object frmOrderDocument: TfrmOrderDocument
         BevelOuter = bvNone
         Caption = 'Under development TEST'
         TabOrder = 0
-        ExplicitWidth = 801
-        ExplicitHeight = 233
       end
     end
   end
@@ -375,8 +356,6 @@ object frmOrderDocument: TfrmOrderDocument
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 3
-    ExplicitTop = 3
-    ExplicitWidth = 801
     object lblLmtPrice: TLabel
       Left = 70
       Top = 5

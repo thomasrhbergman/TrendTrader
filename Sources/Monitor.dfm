@@ -593,6 +593,7 @@ object frmMonitor: TfrmMonitor
           BevelOuter = bvNone
           ParentBackground = False
           TabOrder = 1
+          Visible = False
           DesignSize = (
             1081
             38)
@@ -892,68 +893,89 @@ object frmMonitor: TfrmMonitor
       Action = aShowEditDialog
       Caption = 'Enter/Modify'
       Default = True
+      Visible = False
     end
     object miShowTradeChart: TMenuItem
       Action = aShowTradeChart
       Caption = 'Chart'
+      Visible = False
     end
     object miShowConditionChart: TMenuItem
       Action = aShowConditionAlgosChart
+      Visible = False
     end
     object miDeleteNode: TMenuItem
       Action = aDeleteNode
+      Visible = False
     end
     object miDeleteAllNodes: TMenuItem
       Action = aDeleteAllNodes
+      Visible = False
     end
     object miDelimiter1: TMenuItem
       Caption = '-'
+      Visible = False
     end
     object miAddOrderGroup: TMenuItem
       Action = aAddOrderGroup
+      Visible = False
     end
     object miAddCondition: TMenuItem
       Action = aAddCondition
+      Visible = False
     end
     object miAddAlgos: TMenuItem
       Action = aAddAlgos
       ShortCut = 16449
+      Visible = False
     end
     object miAddFactor: TMenuItem
       Action = aAddFactor
+      Visible = False
     end
     object miDuplicateAlgos: TMenuItem
       Action = aDuplicateAlgos
+      Visible = False
     end
     object miDuplicateCondition: TMenuItem
       Action = aDuplicateCondition
+      Visible = False
     end
     object miDuplicateOrder: TMenuItem
       Action = aDuplicateOrder
+      Visible = False
     end
     object miGetInfo: TMenuItem
       Action = aShowInformationDialog
+      Visible = False
     end
     object miShowPriceHistory: TMenuItem
       Action = aShowPriceHistory
+      Visible = False
     end
     object miShowRuleInformationDialog: TMenuItem
       Action = aShowRuleInformationDialog
+      Visible = False
     end
     object miDelimiter2: TMenuItem
       Caption = '-'
+      Visible = False
     end
     object miActivateOrders: TMenuItem
       Action = aActivateOrders
+      Visible = False
     end
     object miInactivateOrders: TMenuItem
       Action = aInactivateOrders
+      Visible = False
     end
     object miOpenRelation: TMenuItem
       Action = aOpenRelation
+      Visible = False
     end
     object miTransformToOrders: TMenuItem
       Caption = 'Transform to order'
+      Visible = False
       object miTransformToOrder: TMenuItem
         Action = aTransformToOrder
       end
@@ -963,37 +985,47 @@ object frmMonitor: TfrmMonitor
     end
     object miMakeRepetitiveOrder: TMenuItem
       Action = aMakeRepetitiveOrder
+      Visible = False
     end
     object miCancelBrokerOrder: TMenuItem
       Action = aCancelBrokerOrder
     end
     object miOrderStatus: TMenuItem
       Action = aShowOrderStatus
+      Visible = False
     end
     object miDelimiter3: TMenuItem
       Caption = '-'
+      Visible = False
     end
     object miUnhideAll: TMenuItem
       Action = aUnhideAll
+      Visible = False
     end
     object miUnhideLastNode: TMenuItem
       Action = aUnhideLastNode
+      Visible = False
     end
     object miHideNode: TMenuItem
       Action = aHideNode
+      Visible = False
     end
     object miDelimiter4: TMenuItem
       Caption = '-'
+      Visible = False
     end
     object miSaveGroupAs1: TMenuItem
       Action = aSaveGroupSetAs
       Caption = 'Save As New Order Groups...'
+      Visible = False
     end
     object miExpandTree: TMenuItem
       Action = aExpandTree
+      Visible = False
     end
     object miCollapsTree: TMenuItem
       Action = aCollapsTree
+      Visible = False
     end
   end
   object ActionListMain: TActionList

@@ -90,6 +90,8 @@ type
     procedure SetOrderAction(const Value: TIABAction);
     procedure SetOrderType(const Value: TIABOrderType);
     procedure SetScope(const Value: Integer);
+    function GetVisiblePart: Currency;
+    procedure SetVisiblePart(const Value: Currency);
   public
     Instrument: TInstrument;
     procedure Initialize;
@@ -108,6 +110,7 @@ type
     property OrderAction       : TIABAction          read GetOrderAction       write SetOrderAction;
     property OrderType         : TIABOrderType       read GetOrderType         write SetOrderType;
     property Scope             : Integer             read GetScope             write SetScope;
+    property VisiblePart       : Currency            read GetVisiblePart       write SetVisiblePart;
   end;
 
 implementation
@@ -143,6 +146,11 @@ begin
     lblInstrumentName.Caption := aSokidInfo.Name
   else
     lblInstrumentName.Caption := '<Replace from AutoOrder>';
+end;
+
+procedure TfrmOrderDocument.SetVisiblePart(const Value: Currency);
+begin
+  edVisiblePart.ValueFloat := Value;
 end;
 
 procedure TfrmOrderDocument.Initialize;
@@ -460,6 +468,11 @@ begin
   Result := cbScope.ItemIndex;
 end;
 
+function TfrmOrderDocument.GetVisiblePart: Currency;
+begin
+  Result := edVisiblePart.ValueFloat;
+end;
+
 procedure TfrmOrderDocument.SetScope(const Value: Integer);
 begin
   cbScope.ItemIndex := Value;
@@ -498,6 +511,7 @@ begin
     Self.Id              := aDocument.Id;
     Self.Limit           := aDocument.Limit;
     Self.OrderAction     := aDocument.OrderAction;
+    Self.VisiblePart     := aDocument.VisiblePart;
     SetSokidInfo(aDocument.Instrument.SokidInfo);
     if (aDocument is TOrderIBDoc) then
     begin
@@ -539,6 +553,7 @@ begin
     aDocument.Limit           := Self.Limit;
     aDocument.OrderAction     := Self.OrderAction;
     aDocument.OrderType       := Self.OrderType;
+    aDocument.VisiblePart     := Self.VisiblePart;
     aDocument.Instrument.AssignFrom(Self.Instrument);
     if (aDocument is TOrderIBDoc) then
     begin

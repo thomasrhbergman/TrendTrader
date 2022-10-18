@@ -8,7 +8,7 @@ uses
   Vcl.Forms, Winapi.Messages, DebugWriter, IABSocketAPI, IABSocketAPI_const, VirtualTrees, Utils,
   System.Threading, {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} System.Types, Entity.Price, Generics.Helper,
   Publishers.Interfaces, ArrayHelper, Common.Types, Global.Types, XmlFiles, Publishers, System.Math,
-  NNfunctions.Types;
+  NNfunctions.Types, DateUtils;
 {$ENDREGION}
 
 type

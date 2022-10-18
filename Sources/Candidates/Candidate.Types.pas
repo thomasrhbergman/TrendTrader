@@ -48,7 +48,7 @@ type
     ScanCriteria       : TIABScanCriteria;
     GlobalScanCriteria : TIABScanCriteria;
     ScanId             : Integer;
-    CandidateMarket      : TCandidateMarket;
+    CandidateMarket    : TCandidateMarket;
     Step               : Double;
     Weight             : Double;
     MaxRows            : Integer;

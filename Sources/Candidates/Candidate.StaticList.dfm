@@ -215,6 +215,7 @@ object frmCandidateStaticList: TfrmCandidateStaticList
   end
   object fbqStaticLists: TFDQuery
     Connection = DMod.ConnectionStock
+    Transaction = DMod.TransactionStock
     SQL.Strings = (
       'SELECT *'
       'FROM STATICLISTS'

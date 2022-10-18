@@ -168,6 +168,7 @@ begin
     Data^.ConditionDoc.AutoTradesInstance := aAutoTradesCommon.AutoTradesInstance;
     Data^.ConditionDoc.QualifierID        := aAutoTradesCommon.QualifierID;
     Data^.ConditionDoc.QualifierInstance  := aAutoTradesCommon.QualifierInstance;
+    Data^.ConditionDoc.Enabled            := True;
     if Data^.ConditionDoc.Instrument.SokidInfo.ContractId = 0 then
     begin
       Data^.ConditionDoc.Instrument.SokidInfo.ContractId := aInstrumentData.Id;

@@ -161,6 +161,7 @@ type
     FTemplateID: Integer;
     FTradeTime: TDateTime;
     FTriggerMethod: TTriggerMethod;
+    FVisiblePart: Currency;
     function GetCalculationStageItem(Index: TCalculationStage): Double;
     procedure SetCalculationStageItem(Index: TCalculationStage; const Value: Double);
     procedure SetOrderIBId(const Value: Integer);
@@ -220,6 +221,7 @@ type
     property Symbol          : string                 read FSymbol           write FSymbol;
     property TradeTime       : TDateTime              read FTradeTime        write FTradeTime;
     property TriggerMethod   : TTriggerMethod         read FTriggerMethod    write FTriggerMethod;
+    property VisiblePart     : currency               read FVisiblePart      write FVisiblePart;
   end;
 
   TOrderNNDoc = class(TCustomOrderDoc)
@@ -464,6 +466,9 @@ type
     FValueArray: TValueArray;
     FGradientValue: Double;
     FRealTimeType: Integer;
+    FTickType1Value: Double;
+    FTickType2Value: Double;
+    FConditionTime: TDateTime;
     function GetMinMaxValueArrayItem(Index: TMinMaxValue): Double;
     function GetValueArrayItem(Index: TConditionType): Double;
     procedure AddConditionHistory;
@@ -519,6 +524,8 @@ type
     property StartTime              : TTime                    read FStartTime              write FStartTime;
     property TickType1              : TIABTickType             read FTickType1              write FTickType1;
     property TickType2              : TIABTickType             read FTickType2              write FTickType2;
+    property TickType1Value         : Double                   read FTickType1Value         write FTickType1Value;
+    property TickType2Value         : Double                   read FTickType2Value         write FTickType2Value;
     property TrailBuy               : Double                   read FTrailBuy               write FTrailBuy;
     property TrailSell              : Double                   read FTrailSell              write FTrailSell;
     property TypeOperation          : TTypeOperation           read FTypeOperation          write FTypeOperation;
@@ -529,6 +536,7 @@ type
     property TickValue[Index: TIABTickType]       : Double     read GetValueItem            write SetValueItem;
     property GradientValue          : Double                   read FGradientValue          write FGradientValue;
     property RealTimeType           : Integer                  read FRealTimeType           write FRealTimeType;
+    property ConditionTime          : TDateTime                read FConditionTime;
   end;
 
   TAlgosDoc = class(TCustomDocument)
@@ -1243,6 +1251,7 @@ begin
         Self.Instrument.SokidInfo.ContractId := Query.FieldByName('INSTRUMENT').AsInteger;
         if SokidList.ContainsKey(Self.Instrument.SokidInfo.ContractId) then
           Self.Instrument.SokidInfo.AssignFrom(SokidList.Items[Self.Instrument.SokidInfo.ContractId]);
+        Self.VisiblePart       := Query.FieldByName('VISIBLE_PART').AsFloat;
       end;
     end;
   finally
@@ -1376,15 +1385,16 @@ resourcestring
                       'SECURITY_TYPE       = :SecurityType, '      +
                       'TRAIL_STP_PRICE     = :TrailStopPrice, '    +
                       'IS_FINAL            = :IsFinal, '           +
-                      'TRIGGER_METHOD      = :TriggerMethod, '      +
-                      'INSTRUMENT          = :Instrument '      +
+                      'TRIGGER_METHOD      = :TriggerMethod, '     +
+                      'INSTRUMENT          = :Instrument, '        +
+                      'VISIBLE_PART        = :VisiblePart '        +
                       ' WHERE ID = :RecordId';
   C_SQL_INSERT_TEXT =  'INSERT INTO ORDERS '+
                       '(ID,ADVANCED_ORDER_TYPE,DESCRIPTION,ORDER_ACTION,CONTRACT_ID,DECIMALS,INSTRUMENT_NAME,QUANTITY,'+
                       'LIMIT_PRICE,AUX_PRICE,TRAIL_STP_PRICE,TRAILING_PERCENT,ORDER_TYPE,TIME_IN_FORCE,IS_ACTIVATE_CHILD,'+
                       'SCOPE,XML_PARAMS,OCA_GROUP_NUMBER,TIME_START,TIME_STOP,MAX_NUM_SHARES,MAX_NUM_AMOUNT,TRIGGER_METHOD,'+
                       'BROKER_ID,SYMBOL,LOCAL_SYMBOL,CURRENCY,EXPIRY,LMT_PRICE_OFFSET,RATE_TYPE,SECURITY_TYPE,IS_FINAL,EXCHANGE,'+
-                      'INSTRUMENT)' +
+                      'INSTRUMENT,VISIBLE_PART)' +
                       ' VALUES(:RecordId, '          +
                       '        :AdvancedOrderType, ' +
                       '        :Description, '       +
@@ -1418,7 +1428,8 @@ resourcestring
                       '        :SecurityType, '      +
                       '        :IsFinal, '           +
                       '        :Exchange,'           +
-                      '        :Instrument)';
+                      '        :Instrument,'         +
+                      '        :VisiblePart)';
 
   procedure FillXmlParams;
   var
@@ -1513,6 +1524,7 @@ begin
       Query.ParamByName('Expiry').AsDateTime := Self.Expiry
     else
       Query.ParamByName('Expiry').Clear;
+    Query.ParamByName('VisiblePart').AsFloat         := Self.VisiblePart;
     try
       Query.Prepare;
       Query.ExecSQL;
@@ -1740,10 +1752,12 @@ begin
   UpProc                 := 0;
   TickType1              := ttLast;
   TickType2              := ttNotSet;
-  FTypeOperation         := toNone;
+  FTypeOperation         := toDivide;//toNone;
   ValueList              := TObjectDictionary<TDateTime, TPrice>.Create([doOwnsValues]);
   InitTime               := Now;
   FDivisionValue         := 1;
+  TickType1Value         := 0;
+  TickType2Value         := 0;
 end;
 
 destructor TConditionDoc.Destroy;
@@ -2119,6 +2133,8 @@ begin
   begin
     FIsCondition := Value;
     AddConditionHistory;
+    if Value then
+      FConditionTime := Now;
   end;
 end;
 
@@ -2185,7 +2201,34 @@ end;
 
 function TConditionDoc.ToValueString: string;
 begin
-  Result := 'PRIO: ' + PriorityString[Self.Priority];
+  if IsCondition then
+    Result := 'TRUE, '
+  else
+    Result := 'FALSE, ';
+  if CondType = ctRealtimeValue then
+  begin
+    case RealTimeType of
+      0 : Result := Result + Format('%s/%s%s%s',
+                                      [TickType1Value.ToString,
+                                       TickType2Value.ToString,
+                                       InequalityRt.ToString,
+                                       FloatToStr(CondLimit)]);
+      1 : Result := Result + Format('%s%s%s',
+                                      [TickType1Value.ToString,
+                                       InequalityRt.ToString,
+                                       FloatToStr(CondLimit)]);
+      2 : Result := Result + Format('%s/%s%s%s',
+                                      [TickType1Value.ToString,
+                                       TickType2Value.ToString,
+                                       InequalityRt.ToString,
+                                       FloatToStr(CondLimit)]);
+    end;
+  end
+  else if CondType = ctGradient then
+    Result := Result + FloatToStr(Gradient);
+  if ConditionTime > 0 then
+    Result := Result + ', Time: ' + DateTimeToStr(ConditionTime);
+  {Result := 'PRIO: ' + PriorityString[Self.Priority];
   if (Self.CondType = ctRealtimeValue) then
   begin
     if (Self.TickType2 = ttNotSet) then
@@ -2206,7 +2249,7 @@ begin
       Result := Result + ': ' + FormatFloat('0.00 ', Self.Gradient);
     ctCorridorPosition:
       Result := Result + ': ' + FormatFloat('0.00 ', Self.Gradient);
-  end;
+  end; }
 end;
 
 { TFactorDoc }

@@ -347,6 +347,9 @@ object frmCandidateMain: TfrmCandidateMain
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
+    DesignSize = (
+      842
+      583)
     object pnlOptions: TPanel
       Left = 0
       Top = 0
@@ -555,12 +558,13 @@ object frmCandidateMain: TfrmCandidateMain
     end
     object lbColumns: TListBox
       Left = 600
-      Top = 0
+      Top = 2
       Width = 439
       Height = 44
+      Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       TabOrder = 2
-      OnClick = lbColumnsClick
+      OnDblClick = lbColumnsDblClick
     end
   end
   object sbMain: TStatusBar
