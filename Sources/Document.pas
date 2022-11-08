@@ -741,6 +741,9 @@ begin
     Order.Quantity        := aOrder.Quantity;
     Order.TriggerMethod   := Ord(aOrder.TriggerMethod);
     Order.TimeInForce     := TIABTimeInForce(aOrder.TimeInForce);
+    if not SameText(aOrder.PrimaryExchange, 'SFB') then
+      if aOrder.VisiblePart < 100 then
+        Order.DisplaySize     := Trunc(aOrder.Quantity * aOrder.VisiblePart / 100);
     if (aOrder.Multiplier > 0) then
       Order.Multiplier := aOrder.Multiplier.ToString;
 
