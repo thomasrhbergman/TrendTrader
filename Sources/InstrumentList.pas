@@ -168,6 +168,9 @@ type
     FirstTimeStamp: TDateTime;
     InitTimeStamp: TDateTime;
     ResponseTimeStamp: TDateTime;
+    LastReceivedTickType: TIABTickType;
+    PrevPrice: array [ttBidSize .. ttMarket] of Currency;
+
     function GetLastPrices(const aFilterFunc: TFilterFunc): TArray<TPrice>;
     function GetLastPricesBroken(const aFilterFunc: TFilterFunc): TArray<TPrice>;
     constructor Create;
@@ -1050,6 +1053,8 @@ begin
       PriceList.Add(Price);
     end;
 
+    PriceList.LastReceivedTickType    := aTickType;
+    PriceList.PrevPrice[aTickType]    := PriceList.LastPrice[aTickType];
     PriceList.LastPrice[aTickType]    := aValue;
     PriceList.ReceivedTick[aTickType] := True;
     PriceList.LastTimeStamp           := aTimeStamp;

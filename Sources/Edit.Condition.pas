@@ -68,6 +68,14 @@ type
     lblComparisonGr: TLabel;
     edtGradientValue: TNumberBox;
     lblGradientPercent: TLabel;
+    rbTrail: TRadioButton;
+    tabTimeInForce: TTabSheet;
+    lblTimeInForceCaption: TLabel;
+    edtTimeInForce: TEdit;
+    lblTimeInForceSec: TLabel;
+    cbExtendOnLastPriceUp: TCheckBox;
+    lblFirstBracket: TLabel;
+    lblComparison: TLabel;
     procedure aAddFactorExecute(Sender: TObject);
     procedure aAddFactorUpdate(Sender: TObject);
     procedure aCalculateCondExecute(Sender: TObject);
@@ -131,6 +139,10 @@ type
     procedure SetGradientValue(const Value: Currency);
     function GetRealTimeType: integer;
     procedure SetRealTimeType(const Value: integer);
+    function GetTimeInForce: integer;
+    procedure SetTimeInForce(const Value: integer);
+    function GetExtendOnLastPriceUp: boolean;
+    procedure SetExtendOnLastPriceUp(const Value: boolean);
 
     property Modyfied                 : Boolean        read FModyfied                   write FModyfied;
   public
@@ -143,22 +155,24 @@ type
     class function ShowDocument(aDocument: TConditionDoc): TModalResult; overload;
     class function ShowDocument(aDocument: TConditionDoc; const aTree: TVirtualStringTree): TModalResult; overload;
 
-    property CondLimit         : Currency                read GetCondLimit         write SetCondLimit;
-    property CondType          : TConditionType          read GetCondType          write SetCondType;
-    property Name              : string                  read GetCondName          write SetCondName;
-    property EndTime           : TTime                   read GetEndTime           write SetEndTime;
-    property InequalityGr      : TInequalityType         read GetInequalityGr      write SetInequalityGr;
-    property InequalityRt      : TInequalityType         read GetInequalityRt      write SetInequalityRt;
-    property IsCondition       : Boolean                 read FIsCondition         write FIsCondition;
-    property Monitoring        : Integer                 read GetMonitoring        write SetMonitoring;
-    property Priority          : TConditionDoc.TPriority read GetPriority          write SetPriority;
-    property StartTime         : TTime                   read GetStartTime         write SetStartTime;
-    property TickType1         : TIABTickType            read GetTickType1         write SetTickType1;
-    property TickType2         : TIABTickType            read GetTickType2         write SetTickType2;
-    property XmlParams         : string                  read GetXmlParams         write SetXmlParams;
-    property GradientValue     : Currency                read GetGradientValue     write SetGradientValue;
-    property RealTimeType      : integer                 read GetRealTimeType      write SetRealTimeType;
-    property ValueArray[Index: TConditionType]: Double   read GetValueArrayItem    write SetValueArrayItem;
+    property CondLimit           : Currency                read GetCondLimit           write SetCondLimit;
+    property CondType            : TConditionType          read GetCondType            write SetCondType;
+    property Name                : string                  read GetCondName            write SetCondName;
+    property EndTime             : TTime                   read GetEndTime             write SetEndTime;
+    property InequalityGr        : TInequalityType         read GetInequalityGr        write SetInequalityGr;
+    property InequalityRt        : TInequalityType         read GetInequalityRt        write SetInequalityRt;
+    property IsCondition         : Boolean                 read FIsCondition           write FIsCondition;
+    property Monitoring          : Integer                 read GetMonitoring          write SetMonitoring;
+    property Priority            : TConditionDoc.TPriority read GetPriority            write SetPriority;
+    property StartTime           : TTime                   read GetStartTime           write SetStartTime;
+    property TickType1           : TIABTickType            read GetTickType1           write SetTickType1;
+    property TickType2           : TIABTickType            read GetTickType2           write SetTickType2;
+    property XmlParams           : string                  read GetXmlParams           write SetXmlParams;
+    property GradientValue       : Currency                read GetGradientValue       write SetGradientValue;
+    property RealTimeType        : integer                 read GetRealTimeType        write SetRealTimeType;
+    property TimeInForce         : integer                 read GetTimeInForce         write SetTimeInForce;
+    property ExtendOnLastPriceUp : boolean                 read GetExtendOnLastPriceUp write SetExtendOnLastPriceUp;
+    property ValueArray[Index: TConditionType]: Double     read GetValueArrayItem      write SetValueArrayItem;
   end;
 
 var
@@ -220,7 +234,7 @@ begin
   inherited;
   cbConditionType.Items.Clear;
   //for CondType := System.Low(TConditionType) to System.High(TConditionType) do
-  for CondType in [ctRealtimeValue, ctTimeGap, ctGradient] do
+  for CondType in [ctRealtimeValue, ctTimeGap, ctGradient, ctTimeInForce] do
     cbConditionType.Items.Add(CondType.ToString);
 
   cbTickType1.Items.Clear;
@@ -371,18 +385,39 @@ begin
   inherited;
   if rbMOAP.Checked then
   begin
+    lblFirstBracket.Caption := '';
     lblSecondParam.Caption := '/ MOAP';
     cbTickType2.Visible := false;
+    cbInequalityRt.Visible := true;
+    lblDivisionTickTypeCaption2.Visible := true;
+    lblComparison.Caption := '';
   end
   else if rbValue.Checked then
   begin
+    lblFirstBracket.Caption := '';
     lblSecondParam.Caption := ' ';
     cbTickType2.Visible := false;
+    cbInequalityRt.Visible := true;
+    lblDivisionTickTypeCaption2.Visible := true;
+    lblComparison.Caption := '';
+  end
+  else if rbTrail.Checked then
+  begin
+    lblFirstBracket.Caption := '100*(';
+    lblSecondParam.Caption := ' - BasePrice) / BasePrice';
+    cbTickType2.Visible := false;
+    cbInequalityRt.Visible := false;
+    lblDivisionTickTypeCaption2.Visible := false;
+    lblComparison.Caption := 'Mother is BUY <='+ sLineBreak + 'Mother is SELL >='
   end
   else
   begin
+    lblFirstBracket.Caption := '';
     lblSecondParam.Caption := '/ ';
     cbTickType2.Visible := true;
+    cbInequalityRt.Visible := true;
+    lblDivisionTickTypeCaption2.Visible := true;
+    lblComparison.Caption := '';
   end;
 end;
 
@@ -403,7 +438,6 @@ end;
 
 procedure TfrmEditCondition.cbConditionTypeChange(Sender: TObject);
 begin
-
   case TConditionType(cbConditionType.ItemIndex) of
     ctRealtimeValue:
       begin
@@ -416,6 +450,10 @@ begin
     ctGradient:
       begin
         pcMain.ActivePage := tabGradient;
+      end;
+    ctTimeInForce:
+      begin
+        pcMain.ActivePage := tabTimeInForce;
       end;
   end;
 end;
@@ -451,6 +489,11 @@ begin
   dtpTimeEndValid.Time := Value;
 end;
 
+procedure TfrmEditCondition.SetExtendOnLastPriceUp(const Value: boolean);
+begin
+  cbExtendOnLastPriceUp.Checked := Value;
+end;
+
 procedure TfrmEditCondition.SetGradientValue(const Value: Currency);
 begin
   edtGradientValue.ValueFloat := Value;
@@ -459,6 +502,11 @@ end;
 function TfrmEditCondition.GetEndTime: TTime;
 begin
   Result := dtpTimeEndValid.Time;
+end;
+
+function TfrmEditCondition.GetExtendOnLastPriceUp: boolean;
+begin
+  Result := cbExtendOnLastPriceUp.Checked;
 end;
 
 function TfrmEditCondition.GetGradientValue: Currency;
@@ -528,6 +576,11 @@ begin
     Result := TIABTickType(cbTickType2.ItemIndex)
   else
     Result := ttNotSet;
+end;
+
+function TfrmEditCondition.GetTimeInForce: integer;
+begin
+  Result := StrToIntDef(edtTimeInForce.Text, 0);
 end;
 
 procedure TfrmEditCondition.SetSokidInfo(aSokidInfo: TSokidInfo);
@@ -616,6 +669,7 @@ begin
    0: rbPercent.Checked := true;
    1: rbValue.Checked := true;
    2: rbMOAP.Checked := true;
+   3: rbTrail.Checked := true;
   end;
 end;
 
@@ -630,6 +684,8 @@ begin
     Result := 1
   else if rbMOAP.Checked then
     Result := 2
+  else if rbTrail.Checked then
+    Result := 3
   else
     Result := 0;
 end;
@@ -717,6 +773,11 @@ begin
     end;
 end;
 
+procedure TfrmEditCondition.SetTimeInForce(const Value: integer);
+begin
+  edtTimeInForce.Text := Value.ToString;
+end;
+
 procedure TfrmEditCondition.aSyncChildFactorsExecute(Sender: TObject);
 begin
   inherited;
@@ -799,6 +860,8 @@ begin
       Self.ValueArray[CondType] := aDocument.ValueArray[CondType];
     Self.GradientValue     := aDocument.GradientValue;
     Self.RealTimeType      := aDocument.RealTimeType;
+    Self.TimeInForce       := aDocument.TimeInForce;
+    Self.ExtendOnLastPriceUp := aDocument.ExtendOnLastPriceUp;
     SetSokidInfo(aDocument.Instrument.SokidInfo);
   end;
 end;
@@ -823,6 +886,8 @@ begin
     aDocument.Instrument.AssignFrom(Self.Instrument);
     aDocument.GradientValue     := Self.GradientValue;
     aDocument.RealTimeType      := Self.RealTimeType;
+    aDocument.TimeInForce       := Self.TimeInForce;
+    aDocument.ExtendOnLastPriceUp := Self.ExtendOnLastPriceUp;
   end;
 end;
 

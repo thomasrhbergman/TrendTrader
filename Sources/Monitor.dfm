@@ -953,6 +953,10 @@ object frmMonitor: TfrmMonitor
       Action = aShowPriceHistory
       Visible = False
     end
+    object miEmulateLastPriceChange: TMenuItem
+      Caption = 'Emulate Last Price Change'
+      OnClick = miEmulateLastPriceChangeClick
+    end
     object miShowRuleInformationDialog: TMenuItem
       Action = aShowRuleInformationDialog
       Visible = False

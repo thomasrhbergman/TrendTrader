@@ -763,7 +763,7 @@ begin
       end;
 
       //Quantity := 0;
-      OrderAmount := FAutoTrade.Quantity.OrderAmount;
+      //OrderAmount := FAutoTrade.Quantity.OrderAmount;
       if (LastPrice > 0) and (LastExch > 0) then
       begin
         if (FAutoTrade.Quantity.TotalOrderAmount < LastPrice) then

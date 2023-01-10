@@ -147,10 +147,10 @@ type
     function ToString: string;
   end;
 
-  TConditionType = (ctRealtimeValue, ctTimeGap, ctGradient, ctCorridor, ctCorridorPosition, ctTrailBuy, ctTrailSell, ctGradientAndCorridor, ctRealtimeAndTimeGap);
+  TConditionType = (ctRealtimeValue, ctTimeGap, ctGradient, ctTimeInForce, ctCorridor, ctCorridorPosition, ctTrailBuy, ctTrailSell, ctGradientAndCorridor, ctRealtimeAndTimeGap);
   TConditionTypeHelper = record helper for TConditionType
   private const
-    CondTypeString: array[TConditionType] of string = ('Realtime Value', 'Time gap', 'Gradient', 'Corridor', 'Corridor position', 'Trail-buy', 'Trail-sell', 'Gradient And Corridor', 'Realtime And Time Gap');
+    CondTypeString: array[TConditionType] of string = ('Realtime Value', 'Time gap', 'Gradient', 'Time In Force', 'Corridor', 'Corridor position', 'Trail-buy', 'Trail-sell', 'Gradient And Corridor', 'Realtime And Time Gap');
   public
     function ToString: string;
   end;

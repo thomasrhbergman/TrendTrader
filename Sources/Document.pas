@@ -423,6 +423,7 @@ type
     C_SECTION_CONDITION = 'Condition';
   protected
     procedure SetValueItem(Index: TIABTickType; const Value: Double); override;
+    procedure SetEnabled(const Value: boolean); override;
   private
     FName: String;
     FActivationValue: Double;
@@ -469,6 +470,10 @@ type
     FTickType1Value: Double;
     FTickType2Value: Double;
     FConditionTime: TDateTime;
+    FBasePrice: Double;
+    FTimeInForce: Integer;
+    FExtendOnLastPriceUp: Boolean;
+    FTimeInForceStartTime: TDateTime;
     function GetMinMaxValueArrayItem(Index: TMinMaxValue): Double;
     function GetValueArrayItem(Index: TConditionType): Double;
     procedure AddConditionHistory;
@@ -476,6 +481,7 @@ type
     procedure SetIsCondition(const Value: Boolean);
     procedure SetMinMaxValueArrayItem(Index: TMinMaxValue; const Value: Double);
     procedure SetValueArrayItem(Index: TConditionType; const Value: Double);
+    function GetTimeInForceActive: Boolean;
   public
     Instrument: TInstrument;
     ValueList: TObjectDictionary<TDateTime, TPrice>;
@@ -537,6 +543,11 @@ type
     property GradientValue          : Double                   read FGradientValue          write FGradientValue;
     property RealTimeType           : Integer                  read FRealTimeType           write FRealTimeType;
     property ConditionTime          : TDateTime                read FConditionTime;
+    property BasePrice              : Double                   read FBasePrice              write FBasePrice;
+    property TimeInForce            : Integer                  read FTimeInForce            write FTimeInForce;
+    property ExtendOnLastPriceUp    : Boolean                  read FExtendOnLastPriceUp    write FExtendOnLastPriceUp;
+    property TimeInForceStartTime   : TDateTime                read FTimeInForceStartTime   write FTimeInForceStartTime;
+    property TimeInForceActive      : Boolean                  read GetTimeInForceActive;
   end;
 
   TAlgosDoc = class(TCustomDocument)
@@ -1796,38 +1807,40 @@ begin
     Query.First;
     if not Query.IsEmpty then
     begin
-      Self.Name              := Query.FieldByName('NAME').AsString;
-      Self.Active            := Query.FieldByName('COND_ACTIVE').AsBoolean;
-      Self.Bypass            := Query.FieldByName('IS_BYPASS').AsBoolean;
-      Self.CondType          := TConditionType(Query.FieldByName('COND_TYPE').AsInteger);
-      Self.CondLimit         := Query.FieldByName('COND_VALUE').AsFloat;
-//      Self.CondLimitRelative := Query.FieldByName('COND_VALUE_RELATIVE').AsFloat;
-      Self.CondWidth         := Query.FieldByName('WIDTH').AsFloat;
-      Self.Description       := Query.FieldByName('DESCRIPTION').AsString;
-      Self.DivisionValue     := Query.FieldByName('DIVISION_VALUE').AsCurrency;
-      Self.Duration          := TimeOf(Query.FieldByName('DURATION').AsDateTime);
-      Self.EndDate           := Query.FieldByName('END_DATE').AsDateTime;
-      Self.EndTime           := Query.FieldByName('END_TIME').AsDateTime;
-      Self.Gradient          := Query.FieldByName('GRADIENT').AsFloat;
-      Self.InequalityCor     := TInequalityType(Query.FieldByName('INEQUALITY_COL').AsInteger);
-      Self.InequalityGr      := TInequalityType(Query.FieldByName('INEQUALITY_GR').AsInteger);
-      Self.InequalityRt      := TInequalityType(Query.FieldByName('INEQUALITY_RT').AsInteger);
-      Self.isBreakUp         := Query.FieldByName('IS_BREAKUP').AsBoolean;
-      Self.KindCreation      := TKindCreation(Query.FieldByName('KIND_CREATION').AsInteger);
-      Self.Monitoring        := Query.FieldByName('MONITORING').AsInteger;
-      Self.Priority          := TPriority(Query.FieldByName('PRIORITY').AsInteger);
-      Self.StartDate         := Query.FieldByName('START_DATE').AsDateTime;
-      Self.StartTime         := Query.FieldByName('START_TIME').AsDateTime;
-      Self.TickType1         := TIABTickType(Query.FieldByName('TICK_TYPE1').AsInteger);
-      Self.TickType2         := TIABTickType(Query.FieldByName('TICK_TYPE2').AsInteger);
-      Self.TrailBuy          := Query.FieldByName('TRAIL_BUY').AsFloat;
-      Self.TrailSell         := Query.FieldByName('TRAIL_SELL').AsFloat;
-      Self.TypeOperation     := TTypeOperation(Query.FieldByName('TYPE_OPERATION').AsInteger);
-      Self.UpProc            := Query.FieldByName('UP_PROC').AsInteger;
-      Self.XmlParams         := Query.FieldByName('XML_PARAMS').AsString;
-      Self.IsCondition       := Self.Bypass;
-      Self.GradientValue     := Query.FieldByName('GRADIENT_VALUE').AsFloat;
-      Self.RealTimeType      := Query.FieldByName('REALTIME_TYPE').AsInteger;
+      Self.Name                := Query.FieldByName('NAME').AsString;
+      Self.Active              := Query.FieldByName('COND_ACTIVE').AsBoolean;
+      Self.Bypass              := Query.FieldByName('IS_BYPASS').AsBoolean;
+      Self.CondType            := TConditionType(Query.FieldByName('COND_TYPE').AsInteger);
+      Self.CondLimit           := Query.FieldByName('COND_VALUE').AsFloat;
+//      Self.CondLimitRelative   := Query.FieldByName('COND_VALUE_RELATIVE').AsFloat;
+      Self.CondWidth           := Query.FieldByName('WIDTH').AsFloat;
+      Self.Description         := Query.FieldByName('DESCRIPTION').AsString;
+      Self.DivisionValue       := Query.FieldByName('DIVISION_VALUE').AsCurrency;
+      Self.Duration            := TimeOf(Query.FieldByName('DURATION').AsDateTime);
+      Self.EndDate             := Query.FieldByName('END_DATE').AsDateTime;
+      Self.EndTime             := Query.FieldByName('END_TIME').AsDateTime;
+      Self.Gradient            := Query.FieldByName('GRADIENT').AsFloat;
+      Self.InequalityCor       := TInequalityType(Query.FieldByName('INEQUALITY_COL').AsInteger);
+      Self.InequalityGr        := TInequalityType(Query.FieldByName('INEQUALITY_GR').AsInteger);
+      Self.InequalityRt        := TInequalityType(Query.FieldByName('INEQUALITY_RT').AsInteger);
+      Self.isBreakUp           := Query.FieldByName('IS_BREAKUP').AsBoolean;
+      Self.KindCreation        := TKindCreation(Query.FieldByName('KIND_CREATION').AsInteger);
+      Self.Monitoring          := Query.FieldByName('MONITORING').AsInteger;
+      Self.Priority            := TPriority(Query.FieldByName('PRIORITY').AsInteger);
+      Self.StartDate           := Query.FieldByName('START_DATE').AsDateTime;
+      Self.StartTime           := Query.FieldByName('START_TIME').AsDateTime;
+      Self.TickType1           := TIABTickType(Query.FieldByName('TICK_TYPE1').AsInteger);
+      Self.TickType2           := TIABTickType(Query.FieldByName('TICK_TYPE2').AsInteger);
+      Self.TrailBuy            := Query.FieldByName('TRAIL_BUY').AsFloat;
+      Self.TrailSell           := Query.FieldByName('TRAIL_SELL').AsFloat;
+      Self.TypeOperation       := TTypeOperation(Query.FieldByName('TYPE_OPERATION').AsInteger);
+      Self.UpProc              := Query.FieldByName('UP_PROC').AsInteger;
+      Self.XmlParams           := Query.FieldByName('XML_PARAMS').AsString;
+      Self.IsCondition         := Self.Bypass;
+      Self.GradientValue       := Query.FieldByName('GRADIENT_VALUE').AsFloat;
+      Self.RealTimeType        := Query.FieldByName('REALTIME_TYPE').AsInteger;
+      Self.TimeInForce         := Query.FieldByName('TIME_IN_FORCE').AsInteger;
+      Self.ExtendOnLastPriceUp := Query.FieldByName('EXTEND_ON_LAST_PRICE_UP').AsBoolean;
       if (Self.EndDate < Today) then
         Self.EndDate := Today;
       if (Self.StartDate < Today) then
@@ -1876,6 +1889,12 @@ begin
                 FormatDateTime('yyyy-MM-dd HH:mm', Trunc(StartDate) + Frac(StartTime)) + FormatDateTime('-yyyy-MM-dd HH:mm', Trunc(EndDate) + Frac(EndTime));
     ctGradient:
       Result := FormatFloat('0.00 ', Self.Gradient) + Self.InequalityRt.ToString + '-MON=' + Monitoring.ToString;
+    ctTimeInForce:
+      begin
+        Result := '-SEC='+ TimeInForce.ToString;
+        if ExtendOnLastPriceUp then
+          Result := Result + '-EXTEND';
+      end;
     ctCorridor:
       Result := 'GRAD ' + Self.InequalityGr.ToString + FormatFloat('0.00 ', Self.Gradient) +
                 '-CORR ' + FormatFloat('0.00 ', Self.CondWidth) + Self.InequalityCor.ToString +
@@ -1910,6 +1929,11 @@ begin
     1: Result := ' Value';
     2: Result := ' MOAP';
   end;
+end;
+
+function TConditionDoc.GetTimeInForceActive: Boolean;
+begin
+  Result := SecondsBetween(TimeInForceStartTime, Now) > TimeInForce;
 end;
 
 procedure TConditionDoc.SetMinMaxValueArrayItem(Index: TMinMaxValue; const Value: Double);
@@ -1993,6 +2017,8 @@ resourcestring
                       'INSTRUMENT          = :Instrument, '        +
                       'GRADIENT_VALUE      = :GradientValue, '     +
                       'REALTIME_TYPE       = :RealTimeType, '      +
+                      'TIME_IN_FORCE       = :TimeInForce,'        +
+                      'EXTEND_ON_LAST_PRICE_UP = :ExtendOnLastPriceUp, '+
                       'XML_PARAMS          = :XmlParams '          +
                       ' WHERE ID = :RecordId';
 
@@ -2000,7 +2026,8 @@ resourcestring
                       '(NAME,COND_TYPE,DESCRIPTION,DURATION,COND_ACTIVE,IS_BREAKUP, ' +
                       'COND_VALUE,GRADIENT,WIDTH,MONITORING,UP_PROC,START_DATE,END_DATE,START_TIME,END_TIME,PRIORITY,' +
                       'KIND_CREATION,TRAIL_BUY,TRAIL_SELL,IS_BYPASS,TICK_TYPE1,TICK_TYPE2,TYPE_OPERATION,COND_VALUE_RELATIVE,' +
-                      'INEQUALITY_RT, INEQUALITY_GR,INEQUALITY_COL,DIVISION_VALUE,XML_PARAMS,INSTRUMENT,GRADIENT_VALUE,REALTIME_TYPE,ID)'  +
+                      'INEQUALITY_RT, INEQUALITY_GR,INEQUALITY_COL,DIVISION_VALUE,XML_PARAMS,INSTRUMENT,GRADIENT_VALUE,REALTIME_TYPE,'+
+                      'TIME_IN_FORCE, EXTEND_ON_LAST_PRICE_UP, ID)'  +
                       ' VALUES (:Name, '              +
                       '         :CondType, '          +
                       '         :Description, '       +
@@ -2033,6 +2060,8 @@ resourcestring
                       '         :Instrument, '        +
                       '         :GradientValue, '     +
                       '         :RealTimeType, '      +
+                      '         :TimeInForce, '       +
+                      '         :ExtendOnLastPriceUp, '+
                       '         :RecordId)';
 var
   IsExists: Boolean;
@@ -2105,6 +2134,8 @@ begin
       Query.ParamByName('Instrument').Clear;
     Query.ParamByName('GradientValue').AsFloat     := Self.GradientValue;
     Query.ParamByName('RealTimeType').AsInteger    := Self.RealTimeType;
+    Query.ParamByName('TimeInForce').AsInteger     := Self.TimeInForce;
+    Query.ParamByName('ExtendOnLastPriceUp').AsBoolean := Self.ExtendOnLastPriceUp;
     try
       Query.Prepare;
       Query.ExecSQL;
@@ -2127,6 +2158,39 @@ begin
   begin
     FActive := Value;
     AddConditionHistory;
+  end;
+end;
+
+procedure TConditionDoc.SetEnabled(const Value: boolean);
+var Node: PVirtualNode;
+    Data: PTreeData;
+begin
+  inherited;
+  // init base price
+  if Enabled then
+  begin
+    if (CondType = ctRealtimeValue) and (RealTimeType = 3) and Assigned(OwnerNode) then
+    begin
+      // get condition owner order
+      Node := OwnerNode.Parent;
+      while Assigned(Node) and Assigned(Node.Parent) {exclude root node} do
+      begin
+        Data := Node^.GetData;
+        if Data.DocType = ntOrder then
+          if Assigned(Data.OrderDoc.ParentOrder) then
+          begin
+            FBasePrice := Data.OrderDoc.ParentOrder.AvgPrice;
+            if Data.OrderDoc.ParentOrder.OrderAction = iabBuy then
+              InequalityRt := iqBelowOrEqual
+            else
+              InequalityRt := iqAboveOrEqual;
+            break;
+          end;
+        Node := Node.Parent;
+      end;
+    end
+    else if CondType = ctTimeInForce then
+      TimeInForceStartTime := Now;
   end;
 end;
 
@@ -2208,29 +2272,46 @@ begin
     Result := 'TRUE, '
   else
     Result := 'FALSE, ';
+
+  if Enabled then
+    Result := Result + 'ENABLED, '
+  else
+    Result := Result + 'DISABLED, ';
+
+  if (CondType = ctRealTimeValue) and (RealTimeType = 3) then
+    Result := Result + 'BasePrice='+ FBasePrice.ToString + ', ';
+
   if CondType = ctRealtimeValue then
   begin
     case RealTimeType of
-      0 : Result := Result + Format('%s/%s%s%s',
+      0 : Result := Result + Format('%s/%s%s%s, ',
                                       [TickType1Value.ToString,
                                        TickType2Value.ToString,
                                        InequalityRt.ToString,
                                        FloatToStr(CondLimit)]);
-      1 : Result := Result + Format('%s%s%s',
+      1 : Result := Result + Format('%s%s%s, ',
                                       [TickType1Value.ToString,
                                        InequalityRt.ToString,
                                        FloatToStr(CondLimit)]);
-      2 : Result := Result + Format('%s/%s%s%s',
+      2 : Result := Result + Format('%s/%s%s%s, ',
                                       [TickType1Value.ToString,
                                        TickType2Value.ToString,
                                        InequalityRt.ToString,
                                        FloatToStr(CondLimit)]);
+      3 : Result := Result + Format('100*(%s-%s)/%s%s%s, ',
+                                      [TickType1Value.ToString,
+                                       BasePrice.ToString,
+                                       BasePrice.ToString,
+                                       InequalityRt.ToString,
+                                       FloatToStr(CondLimit)])
     end;
   end
   else if CondType = ctGradient then
-    Result := Result + FloatToStr(Gradient);
+    Result := Result + FloatToStr(Gradient) + ', '
+  else if (CondType = ctTimeInForce) and Enabled then
+    Result := Result + ' Trigger on '+ DateTimeToStr(IncSecond(TimeInForceStartTime, TimeInForce)) + ', ';
   if ConditionTime > 0 then
-    Result := Result + ', Time: ' + DateTimeToStr(ConditionTime);
+    Result := Result + 'Time: ' + DateTimeToStr(ConditionTime);
   {Result := 'PRIO: ' + PriorityString[Self.Priority];
   if (Self.CondType = ctRealtimeValue) then
   begin

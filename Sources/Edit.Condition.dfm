@@ -231,9 +231,8 @@ object frmEditCondition: TfrmEditCondition
       object lblSecondParam: TLabel
         Left = 232
         Top = 34
-        Width = 51
+        Width = 9
         Height = 16
-        AutoSize = False
         Caption = '/ '
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
@@ -256,11 +255,29 @@ object frmEditCondition: TfrmEditCondition
         Height = 16
         Caption = 'Condition Limit'
       end
+      object lblFirstBracket: TLabel
+        Left = 86
+        Top = 35
+        Width = 4
+        Height = 16
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+      end
+      object lblComparison: TLabel
+        Left = 392
+        Top = 30
+        Width = 68
+        Height = 16
+      end
       object gbMode: TGroupBox
-        Left = 11
+        Left = 6
         Top = 19
-        Width = 86
-        Height = 88
+        Width = 71
+        Height = 109
         TabOrder = 0
         object rbPercent: TRadioButton
           Left = 12
@@ -287,6 +304,15 @@ object frmEditCondition: TfrmEditCondition
           Height = 17
           Caption = 'MOAP'
           TabOrder = 2
+          OnClick = rbPercentClick
+        end
+        object rbTrail: TRadioButton
+          Left = 12
+          Top = 81
+          Width = 57
+          Height = 17
+          Caption = 'Trail'
+          TabOrder = 3
           OnClick = rbPercentClick
         end
       end
@@ -447,6 +473,42 @@ object frmEditCondition: TfrmEditCondition
         Mode = nbmFloat
         TabOrder = 2
         OnChange = OnTickTypeChange
+      end
+    end
+    object tabTimeInForce: TTabSheet
+      Caption = 'Time In Force'
+      ImageIndex = 3
+      TabVisible = False
+      object lblTimeInForceCaption: TLabel
+        Left = 19
+        Top = 45
+        Width = 80
+        Height = 16
+        Caption = 'Time In Force'
+      end
+      object lblTimeInForceSec: TLabel
+        Left = 165
+        Top = 45
+        Width = 23
+        Height = 16
+        Caption = 'sec.'
+      end
+      object edtTimeInForce: TEdit
+        Left = 108
+        Top = 39
+        Width = 48
+        Height = 24
+        Alignment = taCenter
+        TabOrder = 0
+        Text = '180'
+      end
+      object cbExtendOnLastPriceUp: TCheckBox
+        Left = 272
+        Top = 43
+        Width = 172
+        Height = 17
+        Caption = 'Extend on LAST PRICE up'
+        TabOrder = 1
       end
     end
   end

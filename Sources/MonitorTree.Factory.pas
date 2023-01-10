@@ -16,6 +16,7 @@ uses
 type
   TTreeFactory = class
   private
+    class function IsTopOrder(aNode: PVirtualNode): boolean;
     class procedure FillAlgos(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
     class procedure FillCondition(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
     class procedure FillCondition(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
@@ -168,7 +169,7 @@ begin
     Data^.ConditionDoc.AutoTradesInstance := aAutoTradesCommon.AutoTradesInstance;
     Data^.ConditionDoc.QualifierID        := aAutoTradesCommon.QualifierID;
     Data^.ConditionDoc.QualifierInstance  := aAutoTradesCommon.QualifierInstance;
-    Data^.ConditionDoc.Enabled            := True;
+    Data^.ConditionDoc.Enabled            := IsTopOrder(aNode);
     if Data^.ConditionDoc.Instrument.SokidInfo.ContractId = 0 then
     begin
       Data^.ConditionDoc.Instrument.SokidInfo.ContractId := aInstrumentData.Id;
@@ -275,6 +276,27 @@ var
   SokidInfo: TSokidInfo;
   ExtOptions: TCustomOrderDoc.TExtendedOptions;
   OrderIB: TOrderIBDoc;
+
+  function GetParentOrder(aNode: PVirtualNode): TCustomOrderDoc;
+  var lNode: PVirtualNode;
+      lData: PTreeData;
+  begin
+    Result := nil;
+    lNode := aNode.Parent;
+    while Assigned(lNode) do
+    begin
+      lData := lNode^.GetData;
+      if lData.DocType = ntOrder then
+      begin
+        Result := lData.OrderDoc;
+        break;
+      end
+      else if lData.DocType = ntAutoTrade then
+        break;
+      lNode := lNode.Parent;
+    end;
+  end;
+
 begin
   Data := aNode^.GetData;
   if Assigned(Data^.OrderDoc) then
@@ -298,6 +320,7 @@ begin
     Data^.OrderDoc.AutoTradesInstance := aAutoTradesCommon.AutoTradesInstance;
     Data^.OrderDoc.QualifierID        := aAutoTradesCommon.QualifierID;
     Data^.OrderDoc.QualifierInstance  := aAutoTradesCommon.QualifierInstance;
+    Data^.OrderDoc.ParentOrder        := GetParentOrder(aNode);
 
     if (Data^.OrderDoc.BrokerType = TBrokerType.brIB) then
     begin
@@ -571,6 +594,25 @@ begin
       brTest:
         ;
     end;
+end;
+
+class function TTreeFactory.IsTopOrder(aNode: PVirtualNode): boolean;
+var Node: PVirtualNode;
+    Count: integer;
+    Data: PTreeData;
+begin
+  Node := aNode.Parent;
+  Count := 0;
+  while Assigned(Node) do
+  begin
+    Data := Node^.GetData;
+    if Data.DocType = ntOrder then
+      inc(Count);
+    if Data.DocType = ntAutoTrade then
+      break;
+    Node := Node.Parent;
+  end;
+  Result := Count <= 1;
 end;
 
 class procedure TTreeFactory.FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
