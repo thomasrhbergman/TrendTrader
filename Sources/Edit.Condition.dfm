@@ -12,14 +12,12 @@ object frmEditCondition: TfrmEditCondition
   Font.Height = -13
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = True
   Position = poMainFormCenter
   ShowHint = True
   OnClick = rbPercentClick
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 16
   object pnlTop: TPanel
     Left = 0
@@ -191,7 +189,7 @@ object frmEditCondition: TfrmEditCondition
     Top = 103
     Width = 608
     Height = 141
-    ActivePage = tabRealTime
+    ActivePage = tabGradient
     Align = alClient
     TabOrder = 2
     object tabRealTime: TTabSheet
@@ -270,7 +268,7 @@ object frmEditCondition: TfrmEditCondition
       object lblComparison: TLabel
         Left = 392
         Top = 30
-        Width = 68
+        Width = 4
         Height = 16
       end
       object gbMode: TGroupBox
@@ -469,8 +467,6 @@ object frmEditCondition: TfrmEditCondition
         Width = 62
         Height = 24
         Alignment = taRightJustify
-        CurrencyFormat = 2
-        Mode = nbmFloat
         TabOrder = 2
         OnChange = OnTickTypeChange
       end
