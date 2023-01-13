@@ -804,10 +804,10 @@ begin
 
   TimerTimeGap.Enabled := True;
   btnLogin.ImageIndex := 53;
-  Caption := 'RobotX v.' + General.ModuleVersion + ', Time ' + FormatDateTime('hh:nn:ss', Now);
+  Caption := 'TrendTrader v.' + General.ModuleVersion + ', Time ' + FormatDateTime('hh:nn:ss', Now);
 
   Self.LoadParamsFromXml;
-  SetHeaderColumns;
+  //SetHeaderColumns;  // monitor should have fixed columns
   SetRealTradesText;
   TStoreHelper.LoadFromXml(vstMonitor, C_SECTION_MONITOR + '.Columns');
   if DMod.ConnectionStock.Connected then
