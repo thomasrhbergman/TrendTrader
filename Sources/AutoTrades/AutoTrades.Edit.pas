@@ -157,9 +157,9 @@ resourcestring
 
 begin
   Result := CheckRequired;
-  if Result then
+  {if Result then
     if (FAutoTradeInfo.TotalOrderAmount = 0) then
-      TMessageDialog.ShowWarning(rsTotalOrderAmount);
+      TMessageDialog.ShowWarning(rsTotalOrderAmount); }
 end;
 
 procedure TfrmAutoTradesEdit.aSaveExecute(Sender: TObject);
