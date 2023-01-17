@@ -99,9 +99,9 @@ begin
 
   case DialogMode of
     dmInsert:
-      Self.Caption := Format(rsCaption, ['New Qualifier', General.ModuleVersion]);
+      Self.Caption := Format(rsCaption, ['New Quantity', General.ModuleVersion]);
     dmUpdate:
-      Self.Caption := Format(rsCaption, ['Edit Qualifier', General.ModuleVersion]);
+      Self.Caption := Format(rsCaption, ['Edit Quantity', General.ModuleVersion]);
   end;
 end;
 

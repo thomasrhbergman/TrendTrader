@@ -134,7 +134,7 @@ begin
   inherited;
   FItem := FBaseClass.Create;
   try
-    if (FFormClass.ShowEditForm(FItem, dmUpdate) = mrOk) then
+    if (FFormClass.ShowEditForm(FItem, dmInsert) = mrOk) then
     begin
       FItem.SaveToDB;
       PopulateList(FItem.RecordId);
