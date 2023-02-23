@@ -2408,6 +2408,11 @@ begin
   begin
     Data := aNode^.GetData;
     PriceList := TMonitorLists.PriceCache.GetPriceList(Data^.Id);
+    if (aColumnsInfo.PriceChangeColumn.LastTickType = lttNone)
+       or
+       (aColumnsInfo.PriceChangeColumn.LastPriceType = lptNone) then
+      Exit;
+
     ColumnsItem := Data^.ExtraColumns.Items[aColumnsInfo.ColumnId];
     arrPrices := PriceList.GetLastPricesBroken(
                     function(const aPrice: TPrice): Boolean

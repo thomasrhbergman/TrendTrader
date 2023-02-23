@@ -1052,7 +1052,11 @@ begin
         Result := aColumnsInfo.EmbargoColumn.GetText(@Self);
       stPriceChangeColumn:
         begin
-          if ColumnsItem.PriceChangeWeight = 0 then
+          if (aColumnsInfo.PriceChangeColumn.LastTickType = lttNone)
+             or
+             (aColumnsInfo.PriceChangeColumn.LastPriceType = lptNone)
+             or
+             (ColumnsItem.PriceChangeWeight = 0) then
             Result := '-'
           else
             Result := FormatFloat('0.0000', ColumnsItem.PriceChangeWeight);
@@ -1726,6 +1730,7 @@ end;
 
 procedure TPriceChangeColumn.Clear;
 begin
+  Weight := 0;
 end;
 
 procedure TPriceChangeColumn.FromList(aInfo: string);
