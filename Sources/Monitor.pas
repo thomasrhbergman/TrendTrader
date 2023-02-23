@@ -6084,7 +6084,7 @@ begin
     if (pmMainTree.Items.Items[I] = miConditionFactor) or
        (pmMainTree.Items.Items[I] = miGetInfo) or
        (pmMainTree.Items.Items[I] = miShowPriceHistory) or
-       //(pmMainTree.Items.Items[I] = miEmulateLastPriceChange) or
+       (pmMainTree.Items.Items[I] = miEmulateLastPriceChange) or
        (pmMainTree.Items.Items[I] = miOrderStatus) or
        (pmMainTree.Items.Items[I] = miDelimiter4) or
        (pmMainTree.Items.Items[I] = miExpandTree) or
@@ -7638,7 +7638,8 @@ begin
       Val := '';
       if InputQuery('Enter New Price value', 'New Price Value', Val) then
         if TryStrToFloat(Val, Price) then
-          OnPriceChange(nil, ContractID, ttLast, Price, Now);
+          //OnPriceChange(nil, ContractID, ttLast, Price, Now);
+          TPublishers.FeedPublisher.UpdatePrice(ContractID, ttLast, Price, Now);
     end;
   end;
 end;

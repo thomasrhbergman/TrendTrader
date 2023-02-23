@@ -221,7 +221,9 @@ uses
   Quantities.Types in 'Sources\Quantities\Quantities.Types.pas',
   Quantities.Edit in 'Sources\Quantities\Quantities.Edit.pas' {frmQuantityEdit},
   OrderTemplate.Edit in 'Sources\OrderTemplates\OrderTemplate.Edit.pas' {frmOrderTemplateEdit},
-  OrderTemplate.Types in 'Sources\OrderTemplates\OrderTemplate.Types.pas';
+  OrderTemplate.Types in 'Sources\OrderTemplates\OrderTemplate.Types.pas',
+  Candidate.PriceChangeColumn in 'Sources\Candidates\Candidate.PriceChangeColumn.pas' {frmCandidatePriceChangeColumn},
+  Candidate.EmulatePriceChange in 'Sources\Candidates\Candidate.EmulatePriceChange.pas' {frmCandidateEmulatePriceChange};
 
 {$R *.res}
 
@@ -238,9 +240,9 @@ begin
     Application.MainFormOnTaskbar := True;
     Application.HintPause := 50;
     Application.CreateForm(TDMod, DMod);
-    Application.CreateForm(TDMImage, DMImage);
-    Application.CreateForm(TfrmMonitor, frmMonitor);
-    TfrmSplashScreen.ShowSplashScreen;
+  Application.CreateForm(TDMImage, DMImage);
+  Application.CreateForm(TfrmMonitor, frmMonitor);
+  TfrmSplashScreen.ShowSplashScreen;
     try
       DMod.Initialize;
       frmMonitor.Initialize;

@@ -27,6 +27,7 @@ type
     class procedure FillOrderGroup(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon); overload;
     class procedure SetPriceValue(const aOrderDoc: TOrderIBDoc; const aPrice: Double = 0);
   public
+    class function GetTopOrder(aNode: PVirtualNode): TCustomOrderDoc;
     class procedure FillOrderPrice(const aOrder: TCustomOrderDoc; const aPrice: Currency);
     class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
     class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
@@ -594,6 +595,26 @@ begin
       brTest:
         ;
     end;
+end;
+
+class function TTreeFactory.GetTopOrder(aNode: PVirtualNode): TCustomOrderDoc;
+var Node: PVirtualNode;
+    Data: PTreeData;
+begin
+  Result := nil;
+  Node := aNode;
+  while Assigned(Node) do
+  begin
+    Data := Node^.GetData;
+    if (Data.DocType = ntOrder) and IsTopOrder(Node) then
+    begin
+      Result := Data.OrderDoc;
+      break;
+    end;
+    if Data.DocType = ntAutoTrade then
+      break;
+    Node := Node.Parent;
+  end;
 end;
 
 class function TTreeFactory.IsTopOrder(aNode: PVirtualNode): boolean;

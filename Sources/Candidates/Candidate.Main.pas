@@ -18,7 +18,8 @@ uses
   IABFunctions.MarketData, AutoTrades.Types, DaModule.Utils, VirtualTrees.Helper, Global.Resources, Vcl.Themes,
   Monitor.Info, Publishers, System.Notification, Chart.Trade, Vcl.NumberBox, IABFunctions.Helpers, System.Types,
   MonitorTree.Helper, Candidate.GradientColumn, VirtualTrees.Types, FireDAC.Comp.Client, FireDAC.Stan.Param,
-  FireDAC.Comp.DataSet, ListForm;
+  FireDAC.Comp.DataSet, ListForm, Candidate.PriceChangeColumn,
+  Candidate.EmulatePriceChange, MonitorTree.Factory;
 {$ENDREGION}
 
 type
@@ -112,6 +113,9 @@ type
     pnlButtons: TPanel;
     btnSave: TBitBtn;
     btnCancel: TBitBtn;
+    btnAddPriceChange: TBitBtn;
+    aAddPriceChangeColumn: TAction;
+    mmEmulatePriceChange: TMenuItem;
     procedure aAddEmbargoColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnUpdate(Sender: TObject);
@@ -171,6 +175,8 @@ type
     procedure vstCandidatePaintText(Sender: TBaseVirtualTree; const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType);
     procedure btnSaveClick(Sender: TObject);
     procedure lbColumnsDblClick(Sender: TObject);
+    procedure aAddPriceChangeColumnExecute(Sender: TObject);
+    procedure mmEmulatePriceChangeClick(Sender: TObject);
   private const
     COL_INSTRUMENT  = 0;
     COL_RANKING_SUM = 1;
@@ -228,6 +234,7 @@ type
     procedure CalculateGradient(const aNode: PVirtualNode; const aColumnsInfo: TColumnsInfo);
     procedure CalculateGradientLogTerm(const aNode: PVirtualNode; const aColumnsInfo: TColumnsInfo);
     procedure CalculateRankingSum(const aData: PInstrumentData);
+    function CalculatePriceChangeWeight(const aNode: PVirtualNode; const aColumnsInfo: TColumnsInfo): currency;
     procedure CalculateValuesForAllNodes;
     procedure CancelScan;
     procedure CheckRankingCriteria(const aData: PInstrumentData);
@@ -619,6 +626,17 @@ begin
   AutoTradeInfoToGUI;
 end;
 
+procedure TfrmCandidateMain.mmEmulatePriceChangeClick(Sender: TObject);
+var
+  Data: PInstrumentData;
+begin
+  if Assigned(vstCandidate.FocusedNode) then
+  begin
+    Data := vstCandidate.FocusedNode^.GetData;
+    TfrmCandidateEmulatePriceChange.ShowDocument(Data^.Id);
+  end;
+end;
+
 procedure TfrmCandidateMain.SaveParamsToXml;
 begin
   try
@@ -834,19 +852,23 @@ begin
       begin
         TThread.Synchronize(nil,
           procedure
+          var LNode: PVirtualNode;
           begin
-            if FMonitor.CreateOrders(FAutoTrade,
-                                     aData,
-                                     TAutoTradesCommon.Create(Quantity,
-                                                              0{FAutoTrade.Qualifier.QualifierInstance},
-                                                              FAutoTrade.Qualifier.RecordId,
-                                                              FAutoTrade.Qualifier.InstanceNum,
-                                                              FCandidate.RecordId,
-                                                              false{AllowSendDuplicateOrder})) <> nil then
+            LNode := FMonitor.CreateOrders(FAutoTrade,
+                                           aData,
+                                           TAutoTradesCommon.Create(Quantity,
+                                                                    0{FAutoTrade.Qualifier.QualifierInstance},
+                                                                    FAutoTrade.Qualifier.RecordId,
+                                                                    FAutoTrade.Qualifier.InstanceNum,
+                                                                    FCandidate.RecordId,
+                                                                    false{AllowSendDuplicateOrder}));
+            if LNode <> nil then
             begin
               if aData^.IsLocked then
                 CreatedOrdersCount := CreatedOrdersCount + 1;
               aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
+              aData^.Description := 'Created';
+              aData^.MotherOrderDoc := TTreeFactory.GetTopOrder(LNode);
             end;
             {if FMonitor.CreateTemplateStructure(FCandidate.OrderGroupId,
                                                 aData,
@@ -1463,6 +1485,8 @@ begin
         ColumnName := 'Tick Column: ' + RunColumnsInfo.Caption;
       stEmbargoColumn:
         ColumnName := 'Embargo Column: ' + RunColumnsInfo.EmbargoColumn.Caption;
+      stPriceChangeColumn:
+        ColumnName := 'Price Change Column: ' + RunColumnsInfo.PriceChangeColumn.Caption;
     end;
     if (lbColumns.Items.IndexOf(ColumnName) < 0) and not ColumnName.IsEmpty then
       lbColumns.Items.AddObject(ColumnName, TObject(RunColumnsInfo.ColumnId));
@@ -1492,7 +1516,7 @@ procedure TfrmCandidateMain.OpenSequenceRecord;
       begin
         if XMLFile.ReadAttributes then
         begin
-          ColumnsInfo := TColumnsInfo.Create(TSourceType(XMLFile.Attributes.GetAttributeValue('SourceType', stCandidateMarket)));
+          ColumnsInfo := TColumnsInfo.Create(TSourceType(XMLFile.Attributes.GetAttributeValue('SourceType', stCandidateMarket)), FCandidate.MotherOrderAction);
           ColumnsInfo.KindAppend     := TKindAppend(XMLFile.Attributes.GetAttributeValue('KindAppend', kaAddAll));
           ColumnsInfo.ColumnPosition := XMLFile.Attributes.GetAttributeValue('ColumnPosition', 0);
           ColumnsInfo.ColumnWidth    := XMLFile.Attributes.GetAttributeValue('ColumnWidth', 80);
@@ -1824,6 +1848,23 @@ begin
   end;
 end;
 
+procedure TfrmCandidateMain.aAddPriceChangeColumnExecute(Sender: TObject);
+var
+  ColumnsInfo: TColumnsInfo;
+  RunColumnsInfo: TColumnsInfo;
+begin
+  if (TfrmCandidatePriceChangeColumn.ShowDocument(dmInsert, ColumnsInfo, FCandidate) = mrOk) then
+  begin
+    for RunColumnsInfo in FColumns.Values do
+      if RunColumnsInfo.IsEquals(ColumnsInfo) then
+      begin
+        TMessageDialog.ShowWarning(Format(rsColumnExists, [ColumnsInfo.Caption]));
+        Exit;
+      end;
+    AddOrGetColumn(ColumnsInfo);
+  end;
+end;
+
 procedure TfrmCandidateMain.aChangeWeigthValueColumnExecute(Sender: TObject);
 begin
   EditWeigthColumn(vstCandidate.FocusedColumn);
@@ -1919,6 +1960,14 @@ begin
       stEmbargoColumn:
         begin
           TfrmCandidateEmbargoColumn.ShowDocument(dmUpdate, FColumns, ColumnsInfo);
+          Column := TVirtualTreeColumn(vstCandidate.Header.Columns.FindItemID(ColumnsInfo.ColumnId));
+          if Assigned(Column) then
+            Column.Text := ColumnsInfo.Caption;
+          FColumns.AddOrSetValue(aColumnID, ColumnsInfo);
+        end;
+      stPriceChangeColumn:
+        begin
+          TfrmCandidatePriceChangeColumn.ShowDocument(dmUpdate, ColumnsInfo, FCandidate);
           Column := TVirtualTreeColumn(vstCandidate.Header.Columns.FindItemID(ColumnsInfo.ColumnId));
           if Assigned(Column) then
             Column.Text := ColumnsInfo.Caption;
@@ -2343,6 +2392,75 @@ begin
   end;
 end;
 
+function TfrmCandidateMain.CalculatePriceChangeWeight(
+  const aNode: PVirtualNode; const aColumnsInfo: TColumnsInfo): currency;
+var Data: PInstrumentData;
+    PriceList: TPriceList;
+    arrPrices: TArray<TPrice>;
+    ColumnsItem: TExtraColumns.TColumnsItem;
+    LMaxMinPrice: currency;
+    I, LSeconds: Integer;
+    LCalc: boolean;
+begin
+  Result := 0;
+  if Assigned(aNode) and
+    (aColumnsInfo.SourceType = stPriceChangeColumn) then
+  begin
+    Data := aNode^.GetData;
+    PriceList := TMonitorLists.PriceCache.GetPriceList(Data^.Id);
+    ColumnsItem := Data^.ExtraColumns.Items[aColumnsInfo.ColumnId];
+    arrPrices := PriceList.GetLastPricesBroken(
+                    function(const aPrice: TPrice): Boolean
+                    begin
+                      Result := (DateOf(aPrice.TimeStamp) = Date);
+                    end);
+    LCalc := false;
+    if Length(arrPrices) >= aColumnsInfo.PriceChangeColumn.LastTickCount then
+    begin
+      LMaxMinPrice := arrPrices[0].Value;
+      if aColumnsInfo.PriceChangeColumn.LastPrice then
+      begin
+        for I := 1 to Length(arrPrices) - 1 do
+          if ((aColumnsInfo.PriceChangeColumn.LastPriceType = lptHigh) and (LMaxMinPrice < arrPrices[I].Value))
+             or
+             ((aColumnsInfo.PriceChangeColumn.LastPriceType = lptLow) and (LMaxMinPrice > arrPrices[I].Value)) then
+            LMaxMinPrice := arrPrices[I].Value;
+      end;
+
+      LCalc := true;
+      for I := Length(arrPrices) - 1 downto Length(arrPrices) - aColumnsInfo.PriceChangeColumn.LastTickCount + 1 do
+      begin
+        if aColumnsInfo.PriceChangeColumn.LastTickType = lttUp then
+          if arrPrices[I].Value < arrPrices[I-1].Value then
+          begin
+            LCalc := false;
+            break;
+          end;
+        if aColumnsInfo.PriceChangeColumn.LastTickType = lttDown then
+          if arrPrices[I].Value > arrPrices[I-1].Value then
+          begin
+            LCalc := false;
+            break;
+          end;
+      end;
+
+      if LCalc then
+        if aColumnsInfo.PriceChangeColumn.LastPrice then
+          LCalc := arrPrices[Length(arrPrices) - 1].Value = LMaxMinPrice;
+    end;
+    if LCalc then
+    begin
+      LSeconds := 0;
+      if Length(arrPrices) > 0 then
+        LSeconds := Abs(SecondsBetween(arrPrices[Length(arrPrices) - 1].TimeStamp, arrPrices[Length(arrPrices) - aColumnsInfo.PriceChangeColumn.LastTickCount].TimeStamp));
+      if LCalc and (LSeconds <> 0) then
+        Result := aColumnsInfo.PriceChangeColumn.Weight / LSeconds;
+    end
+    else
+      Result := 0;
+  end;
+end;
+
 function TfrmCandidateMain.GetCreatedOrdersCount: Integer;
 begin
   Result := FCandidate.CreatedOrdersCount;
@@ -2734,7 +2852,8 @@ begin
     FIsPriceExists := FInstrumentList.ContainsKey(Id);
   for ColumnsInfo in FColumns.Values do
     if ((ColumnsInfo.SourceType = stTickColumn) and ((ColumnsInfo.TickColumn.IBValue1 = TickType) or (ColumnsInfo.TickColumn.IBValue2 = TickType))) or
-       ((ColumnsInfo.SourceType = stCalcColumn) and (TickType = ttLast) and (ColumnsInfo.CalcColumn.CalculationType in [ctGradientToday, ctCorridorWidth])) then
+       ((ColumnsInfo.SourceType = stCalcColumn) and (TickType = ttLast) and (ColumnsInfo.CalcColumn.CalculationType in [ctGradientToday, ctCorridorWidth])) or
+       (ColumnsInfo.SourceType = stPriceChangeColumn) then
     begin
       InstrumentItem := FInstrumentList.GetItem(Id);
       if Assigned(InstrumentItem) then
@@ -2767,6 +2886,14 @@ begin
                     end;
                   stCalcColumn:
                     CalculateGradient(Node, ColumnsInfo);
+                  stPriceChangeColumn:
+                    begin
+                      // stop calculate if order is filled
+                      if Assigned(Data.MotherOrderDoc) and (Data.MotherOrderDoc.Filled > 0) then
+                        ColumnsItem.StopCalculatePriceChange := true
+                      else
+                        ColumnsItem.PriceChangeWeight := CalculatePriceChangeWeight(Node, ColumnsInfo);
+                    end;
                 end;
 
                 if (ColumnsItem.Price = 0) then
@@ -3077,6 +3204,8 @@ begin
       TargetCanvas.Font.Color := ColumnsInfo.EmbargoColumn.GetCriteriaColor(@ColumnsInfo, @Data^.ExtraColumns)
     else if (ColumnsInfo.SourceType = stCandidateMarket) and (ColumnsInfo.CandidateColumn.Weight = 0) then
       TargetCanvas.Font.Color := clMedGray
+    else if (ColumnsInfo.SourceType = stPriceChangeColumn) and ColumnsItem.StopCalculatePriceChange then
+      TargetCanvas.Font.Color := clGray
     else if (ColumnsItem.Weight <> 0) then
     begin
       TargetCanvas.Brush.Color := clSilver;

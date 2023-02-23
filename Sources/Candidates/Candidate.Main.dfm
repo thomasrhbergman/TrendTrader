@@ -360,8 +360,8 @@ object frmCandidateMain: TfrmCandidateMain
       ShowCaption = False
       TabOrder = 0
       object lblAutoTradeTemplateCaption: TLabel
-        Left = 205
-        Top = 0
+        Left = 244
+        Top = -1
         Width = 38
         Height = 16
         Alignment = taRightJustify
@@ -376,7 +376,7 @@ object frmCandidateMain: TfrmCandidateMain
         ParentFont = False
       end
       object lblMaxNumberOrder: TLabel
-        Left = 483
+        Left = 508
         Top = 1
         Width = 88
         Height = 14
@@ -389,8 +389,8 @@ object frmCandidateMain: TfrmCandidateMain
         ParentFont = False
       end
       object edAutoTradeTemplate: TEdit
-        Left = 205
-        Top = 22
+        Left = 244
+        Top = 21
         Width = 260
         Height = 21
         TabOrder = 0
@@ -452,7 +452,7 @@ object frmCandidateMain: TfrmCandidateMain
         TabOrder = 5
       end
       object seMaxNumberOrder: TSpinEdit
-        Left = 483
+        Left = 508
         Top = 21
         Width = 88
         Height = 22
@@ -461,6 +461,17 @@ object frmCandidateMain: TfrmCandidateMain
         TabOrder = 6
         Value = 0
         OnChange = OnGUIToAutoTradeInfo
+      end
+      object btnAddPriceChange: TBitBtn
+        Left = 184
+        Top = 7
+        Width = 36
+        Height = 36
+        Action = aAddPriceChangeColumn
+        Images = DMImage.vil32
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 7
       end
     end
     object pnlContent: TPanel
@@ -746,7 +757,7 @@ object frmCandidateMain: TfrmCandidateMain
       OnExecute = aOpenTickColumnsExecute
     end
     object aOpenGradientColumn: TAction
-      Hint = 'Add Gradient Column'
+      Hint = 'Add Function Column'
       ImageIndex = 67
       ImageName = 'AddCalculatedField_32x32'
       OnExecute = aOpenGradientColumnExecute
@@ -815,6 +826,12 @@ object frmCandidateMain: TfrmCandidateMain
       ShortCut = 16456
       OnExecute = aShowPriceHistoryExecute
     end
+    object aAddPriceChangeColumn: TAction
+      Hint = 'Add Price Change Column'
+      ImageIndex = 19
+      ImageName = 'InsertSectionBreakContinuous_32x32'
+      OnExecute = aAddPriceChangeColumnExecute
+    end
   end
   object PopupMenu: TPopupMenu
     Left = 120
@@ -848,6 +865,10 @@ object frmCandidateMain: TfrmCandidateMain
     end
     object miShowPriceHistory: TMenuItem
       Action = aShowPriceHistory
+    end
+    object mmEmulatePriceChange: TMenuItem
+      Caption = 'Emulate Price Change'
+      OnClick = mmEmulatePriceChangeClick
     end
     object miSep: TMenuItem
       Caption = '-'

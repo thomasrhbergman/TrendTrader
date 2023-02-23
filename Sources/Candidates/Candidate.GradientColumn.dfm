@@ -13,7 +13,7 @@ object frmCandidateGradientColumn: TfrmCandidateGradientColumn
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
-  
+  PixelsPerInch = 96
   TextHeight = 13
   object lblWeight: TLabel
     Left = 265

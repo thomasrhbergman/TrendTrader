@@ -2142,7 +2142,7 @@ begin
       end;
       Node := Node.NextSibling;
     end;
-    ColumnsInfo := TColumnsInfo.Create(stStaticList);
+    ColumnsInfo := TColumnsInfo.Create(stStaticList, iabIdle);
     if (aDragDropOptions.StaticListId <= 0) then
     begin
       if aDragDropOptions.StaticListName.IsEmpty then
@@ -2209,7 +2209,7 @@ begin
       Inc(Index);
       Node := Node.NextSibling;
     end;
-    ColumnsInfo := TColumnsInfo.Create(stCandidateMarket);
+    ColumnsInfo := TColumnsInfo.Create(stCandidateMarket, iabIdle);
     ColumnsInfo.Weight := FScanOptions.Weight;
     SetRootInstrument;
     ColumnsInfo.CandidateColumn.FromList(FScanOptions.ToList);

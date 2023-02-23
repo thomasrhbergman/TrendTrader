@@ -40,7 +40,7 @@ begin
   try
     DialogMode := aDialogMode;
     if (aDialogMode = dmInsert) then
-      FColumnsInfo := TColumnsInfo.Create(stTickColumn)
+      FColumnsInfo := TColumnsInfo.Create(stTickColumn, iabIdle)
     else
       FColumnsInfo := ColumnsInfo;
     Initialize;

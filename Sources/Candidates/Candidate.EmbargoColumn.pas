@@ -83,7 +83,7 @@ begin
     DialogMode := aDialogMode;
     FColumns := AColumns;
     if (aDialogMode = dmInsert) then
-      FColumnsInfo := TColumnsInfo.Create(stEmbargoColumn)
+      FColumnsInfo := TColumnsInfo.Create(stEmbargoColumn, iabIdle)
     else
       FColumnsInfo := ColumnsInfo;
     Initialize;

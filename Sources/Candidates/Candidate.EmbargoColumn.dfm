@@ -14,7 +14,7 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
-  
+  PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0

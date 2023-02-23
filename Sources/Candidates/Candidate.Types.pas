@@ -14,11 +14,25 @@ uses
 
 type
   TKindAppend = (kaAddAll, kaUpdate, kaReduce, kaIntersection);
-  TSourceType = (stFixed, stStaticList, stCandidateMarket, stTickColumn, stCalcColumn, stEmbargoColumn);
+  TSourceType = (stFixed, stStaticList, stCandidateMarket, stTickColumn, stCalcColumn, stEmbargoColumn, stPriceChangeColumn);
   TEmbargoType = (etReleaseTime, etHoldTime, etRankingPosition, etRankingSum, etColumnValue, etColumnValueExists, etTimeInterval);
   TEmbargoTypeHelper = record helper for TEmbargoType
   private
     const EmbargoTypeName: array [TEmbargoType] of string = ('Release Time', 'Hold Time', 'Ranking Position', 'Ranking Sum', 'Column', 'Value Exists', 'Time Interval');
+  public
+    function ToString: string;
+  end;
+  TLastTickType = (lttNone, lttUp, lttDown);
+  TLastTickTypeHelper = record helper for TLastTickType
+  private
+    const LastTickTypeName: array [TLastTickType] of string = ('None', 'Up', 'Down');
+  public
+    function ToString: string;
+  end;
+  TLastPriceType = (lptNone, lptHigh, lptLow);
+  TLastPriceTypeHelper = record helper for TLastPriceType
+  private
+    const LastPriceTypeName: array [TLastPriceType] of string = ('None', 'High', 'Low');
   public
     function ToString: string;
   end;
@@ -123,6 +137,22 @@ type
     procedure FromList(aInfo: string);
   end;
 
+  TPriceChangeColumn = record
+  public
+    LastTickType: TLastTickType;
+    LastTickCount: Integer;
+    LastPrice: Boolean;
+    LastPriceType: TLastPriceType;
+    Weight: Double;
+
+    function Caption: string;
+    function IsEquals(aPriceChangeColumn: TPriceChangeColumn): Boolean;
+    function ToList: string;
+    procedure FromList(aInfo: string);
+    procedure Init(aMotherOrderAction: TIABAction);
+    procedure Clear;
+  end;
+
   TColumnsInfo = record
   private
     FRecordId: Integer;
@@ -137,11 +167,13 @@ type
     KindAppend        : TKindAppend;
     TickColumn        : TTickColumn;
     CalcColumn        : TCalculationColumn;
-    CandidateColumn     : TCandidateColumn;
+    CandidateColumn   : TCandidateColumn;
     StaticColumn      : TStaticListColumn;
     EmbargoColumn     : TEmbargoColumn;
+    PriceChangeColumn : TPriceChangeColumn;
     InitTimeStamp     : TTime;
-    constructor Create(ASourceType: TSourceType);
+    MotherOrderAction : TIABAction;
+    constructor Create(ASourceType: TSourceType; AMotherOrderAction: TIABAction);
     function Caption: string;
     function IsEquals(AColumnsInfo: TColumnsInfo): Boolean;
     function ToList: string;
@@ -154,13 +186,15 @@ type
   TExtraColumns = record
   type
     TColumnsItem = record
-      IsUnsufficientData : Boolean;
-      Price              : Currency;
-      Rank               : Double;
-      OriginRank         : Double;
-      Weight             : Double;
-      ColTick            : TColor;
-      TimeStamp          : TDateTime;
+      IsUnsufficientData       : Boolean;
+      Price                    : Currency;
+      Rank                     : Double;
+      OriginRank               : Double;
+      Weight                   : Double;
+      ColTick                  : TColor;
+      TimeStamp                : TDateTime;
+      PriceChangeWeight        : Currency;
+      StopCalculatePriceChange : Boolean;
     end;
   public
     Items          : TDictionary<Integer, TColumnsItem>;
@@ -199,6 +233,8 @@ type
     Multiplier      : Double;
     InitTimeStamp   : TDateTime;
     TWSMessageItem  : TTWSMessageItem;
+    OrderDoc        : TCustomOrderDoc;
+    MotherOrderDoc  : TCustomOrderDoc;
     procedure SaveInstrumentToSokidList;
     procedure Assign(aIABScan: TIABScanResultItem); overload;
     procedure Assign(aOrderDoc: TCustomOrderDoc); overload;
@@ -342,6 +378,7 @@ type
     ScanCount: Integer;
     CreateTime: TTime;
     Active: Boolean;
+    MotherOrderAction: TIABAction;
 
     procedure FromDB(aID: Integer); override;
     procedure SaveToDB; override;
@@ -495,6 +532,8 @@ begin
         Result := Self.CalcColumn.IsEquals(AColumnsInfo.CalcColumn);
       stEmbargoColumn:
         Result := Self.EmbargoColumn.IsEquals(AColumnsInfo.EmbargoColumn);
+      stPriceChangeColumn:
+        Result := Self.PriceChangeColumn.IsEquals(AColumnsInfo.PriceChangeColumn);
     end;
 end;
 
@@ -511,6 +550,8 @@ begin
       Result := Self.EmbargoColumn.ToList;
     stCalcColumn:
       Result := Self.CalcColumn.ToList;
+    stPriceChangeColumn:
+      Result := Self.PriceChangeColumn.ToList;
   else
     Result := '';
   end;
@@ -535,6 +576,8 @@ begin
       Self.CandidateColumn.FromList(AColumnsInfo.CandidateColumn.ToList);
     stCalcColumn:
       Self.CalcColumn.FromList(AColumnsInfo.CalcColumn.ToList);
+    stPriceChangeColumn:
+      Self.PriceChangeColumn.FromList(AColumnsInfo.PriceChangeColumn.ToList);
   end;
 end;
 
@@ -551,6 +594,8 @@ begin
       Result := Self.EmbargoColumn.Caption;
     stCalcColumn:
       Result := Self.CalcColumn.Caption;
+    stPriceChangeColumn:
+      Result := Self.PriceChangeColumn.Caption;
   end;
 //  Result := ColumnId.ToString + ' ' + Result;
 end;
@@ -568,14 +613,19 @@ begin
       Self.EmbargoColumn.Clear;
     stCalcColumn:
       Self.CalcColumn.Clear;
+    stPriceChangeColumn:
+      Self.PriceChangeColumn.Clear;
   end;
 end;
 
-constructor TColumnsInfo.Create(ASourceType: TSourceType);
+constructor TColumnsInfo.Create(ASourceType: TSourceType; AMotherOrderAction: TIABAction);
 begin
   Self := Default(TColumnsInfo);
   Self.SourceType := ASourceType;
   Self.InitTimeStamp := Now;
+  Self.MotherOrderAction := AMotherOrderAction;
+  if ASourceType = stPriceChangeColumn then
+    Self.PriceChangeColumn.Init(AMotherOrderAction);
 end;
 
 procedure TColumnsInfo.FromList(aInfo: string);
@@ -591,6 +641,8 @@ begin
       Self.EmbargoColumn.FromList(aInfo);
     stCalcColumn:
       Self.CalcColumn.FromList(aInfo);
+    stPriceChangeColumn:
+      Self.PriceChangeColumn.FromList(aInfo);
   end;
 end;
 
@@ -998,6 +1050,13 @@ begin
         Result := FormatFloat(C_CURRENCY_FORMAT, ColumnsItem.Rank * aColumnsInfo.Weight);
       stEmbargoColumn:
         Result := aColumnsInfo.EmbargoColumn.GetText(@Self);
+      stPriceChangeColumn:
+        begin
+          if ColumnsItem.PriceChangeWeight = 0 then
+            Result := '-'
+          else
+            Result := FormatFloat('0.0000', ColumnsItem.PriceChangeWeight);
+        end
     else
       Result := '0.00';
     end;
@@ -1505,7 +1564,15 @@ end;
 
 procedure TCandidate.FromDB(aID: Integer);
 resourcestring
-  C_SQL_SELECT_TEXT = 'SELECT * FROM CANDIDATES WHERE ID=:ID';
+  C_SQL_SELECT_TEXT =
+    ' SELECT C.*, '+
+    '    (SELECT FIRST 1 O.ORDER_ACTION '+
+    '      FROM AUTOTRADES A '+
+    '        INNER JOIN ORDER_TEMPLATE_RELATIONS ORT ON ORT.ORDER_TEMPLATE_ID = A.ORDER_TEMPLATE_ID '+
+    '        INNER JOIN ORDERS O ON O.ID = ORT.RECORD_ID '+
+    '      WHERE A.CANDIDATE_ID = C.ID AND ORT.DOC_TYPE = 4 AND ORT.PARENT_ID = -1 '+
+    '    ) AS MOTHER_ORDER_ACTION '+
+    ' FROM CANDIDATES C WHERE C.ID=:ID';
 var
   Query: TFDQuery;
 begin
@@ -1526,6 +1593,12 @@ begin
         Self.ColumnsInfo             := Query.FieldByName('COLUMNS_INFO').AsString;
         Self.MaxNumberOrder          := Query.FieldByName('MAX_NUMBER_ORDER').AsInteger;
         Self.CreateTime              := Now;
+        if Query.FieldByName('MOTHER_ORDER_ACTION').IsNull then
+          Self.MotherOrderAction := iabIdle
+        else if Query.FieldByName('MOTHER_ORDER_ACTION').AsBoolean then
+          Self.MotherOrderAction := iabBuy
+        else
+          Self.MotherOrderAction := iabSell;
       end;
     finally
       FreeAndNil(Query);
@@ -1639,6 +1712,99 @@ begin
             ' MAX:' + MaxNumberOrder.ToString +
             ' LMT:' + MaxRows.ToString +
             IfThen(HistoricalDataParams.SubscribeHistData, ' HIST', '');  *}
+end;
+
+{ TPriceChangeColumn }
+
+function TPriceChangeColumn.Caption: string;
+begin
+  Result := LastTickType.ToString + ' ' + LastTickCount.ToString + ' ticks';
+  if LastPrice then
+    Result := Result + '; Last Price = ' + LastPriceType.ToString;
+  Result := Result + '; Weight = '+ Weight.ToString;
+end;
+
+procedure TPriceChangeColumn.Clear;
+begin
+end;
+
+procedure TPriceChangeColumn.FromList(aInfo: string);
+var
+  StList: TStringList;
+begin
+  if not aInfo.IsEmpty then
+  begin
+    StList := TStringList.Create;
+    try
+      StList.Text := aInfo;
+      LastTickCount  := StrToIntDef(StList.Values['LastTickCount'], 0);
+      LastPrice      := StrToBoolDef(StList.Values['LastPrice'], True);
+      Weight         := StrToFloatDef(StList.Values['Weight'], 0);
+    finally
+      FreeAndNil(StList);
+    end;
+  end;
+end;
+
+procedure TPriceChangeColumn.Init(aMotherOrderAction: TIABAction);
+begin
+  if aMotherOrderAction = iabBuy then
+  begin
+    LastTickType := lttUp;
+    LastPriceType := lptHigh;
+  end
+  else if aMotherOrderAction = iabSell then
+  begin
+    LastTickType := lttDown;
+    LastPriceType := lptLow;
+  end
+  else
+  begin
+    LastTickType := lttNone;
+    LastPriceType := lptNone;
+  end;
+end;
+
+function TPriceChangeColumn.IsEquals(
+  aPriceChangeColumn: TPriceChangeColumn): Boolean;
+begin
+  Result := (Self.LastTickType = aPriceChangeColumn.LastTickType) and
+            (Self.LastTickCount = aPriceChangeColumn.LastTickCount) and
+            (Self.LastPrice = aPriceChangeColumn.LastPrice) and
+            (Self.LastPriceType = aPriceChangeColumn.LastPriceType) and
+            (Self.Weight = aPriceChangeColumn.Weight);
+
+end;
+
+function TPriceChangeColumn.ToList: string;
+var
+  sb: TStringBuilder;
+begin
+  sb := TStringBuilder.Create;
+  try
+    sb.AppendFormat('LastTickType=%d', [Ord(LastTickType)]).AppendLine
+      .AppendFormat('LastTickCount=%d', [LastTickCount]).AppendLine
+      .AppendFormat('LastPrice=%s', [BoolToStr(LastPrice, True)]).AppendLine
+      .AppendFormat('LastPriceType=%d', [Ord(LastPriceType)]).AppendLine
+      .AppendFormat('Weight=%.10f', [Weight]).AppendLine;
+    Result := sb.ToString;
+  finally
+    FreeAndNil(sb);
+  end;
+end;
+
+{ TLastTickTypeHelper }
+
+function TLastTickTypeHelper.ToString: string;
+begin
+  Result := LastTickTypeName[Self];
+end;
+
+{ TLastPriceTypeHelper }
+
+function TLastPriceTypeHelper.ToString: string;
+begin
+  Result := LastPriceTypeName[Self];
 end;
 
 end.

@@ -12,7 +12,7 @@ uses
   DaModule.Utils, Publishers, MonitorTree.Helper, MonitorTree.Document,
   FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
   FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
-  FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client;
+  FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client, IABSocketAPI_const;
 {$ENDREGION}
 
 type
@@ -377,7 +377,7 @@ begin
         Query.Next;
       end;
       Query.First;
-      ColumnsInfo := TColumnsInfo.Create(stStaticList);
+      ColumnsInfo := TColumnsInfo.Create(stStaticList, iabIdle);
       ColumnsInfo.StaticColumn.RecordId := aStaticListsId;
       ColumnsInfo.StaticColumn.Name     := Query.FieldByName('SL_NAME').AsString;
       ColumnsInfo.Weight                := Query.FieldByName('WEIGHT').AsFloat;
