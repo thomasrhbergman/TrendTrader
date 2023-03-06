@@ -3,7 +3,7 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Add PriceChange'
-  ClientHeight = 136
+  ClientHeight = 158
   ClientWidth = 263
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -11,21 +11,18 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
-    Top = 95
+    Top = 117
     Width = 263
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitTop = 202
-    ExplicitWidth = 635
+    ExplicitTop = 95
     object btnAddColumn: TBitBtn
       Left = 121
       Top = 0
@@ -44,9 +41,6 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
       ModalResult = 1
       ParentFont = False
       TabOrder = 0
-      ExplicitLeft = 464
-      ExplicitTop = 1
-      ExplicitHeight = 40
     end
     object btnCancel: TBitBtn
       Left = 20
@@ -64,9 +58,6 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
-      ExplicitLeft = 362
-      ExplicitTop = 1
-      ExplicitHeight = 40
     end
   end
   object pnlNumberTicks: TPanel
@@ -77,16 +68,15 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitWidth = 332
     object lblLastTicks: TLabel
-      Left = 10
+      Left = 31
       Top = 7
       Width = 78
       Height = 13
       Caption = 'Last # ticks are:'
     end
     object lblLastTickType: TLabel
-      Left = 100
+      Left = 121
       Top = 7
       Width = 28
       Height = 13
@@ -117,9 +107,8 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 2
-    ExplicitWidth = 332
     object lblLastPriceType: TLabel
-      Left = 100
+      Left = 124
       Top = 8
       Width = 28
       Height = 13
@@ -132,7 +121,7 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
       ParentFont = False
     end
     object cbLastPrice: TCheckBox
-      Left = 10
+      Left = 34
       Top = 7
       Width = 75
       Height = 17
@@ -144,17 +133,16 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
     Left = 0
     Top = 60
     Width = 263
-    Height = 30
+    Height = 54
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 3
-    ExplicitWidth = 332
-    object lblWeight: TLabel
-      Left = 10
+    object lblTimeWeight: TLabel
+      Left = 35
       Top = 6
-      Width = 43
+      Width = 74
       Height = 13
-      Caption = 'Weight:'
+      Caption = 'Time Weight:'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -11
@@ -162,7 +150,21 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
       Font.Style = [fsBold]
       ParentFont = False
     end
-    object edWeight: TNumberBox
+    object lblWeight: TLabel
+      Left = 19
+      Top = 34
+      Width = 92
+      Height = 16
+      Alignment = taRightJustify
+      Caption = 'Column Weight:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object edTimeWeight: TNumberBox
       Left = 164
       Top = 5
       Width = 50
@@ -170,6 +172,19 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
       Mode = nbmFloat
       TabOrder = 0
       Value = 10.000000000000000000
+    end
+    object edWeight: TNumberBox
+      Left = 164
+      Top = 30
+      Width = 50
+      Height = 21
+      AcceptExpressions = True
+      CurrencyString = '%'
+      Mode = nbmFloat
+      MaxValue = 100.000000000000000000
+      TabOrder = 1
+      Value = 1.000000000000000000
+      UseMouseWheel = True
     end
   end
 end

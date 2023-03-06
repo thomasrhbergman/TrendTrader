@@ -900,7 +900,7 @@ begin
   begin
     if FColumns.ContainsKey(vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id) then
       ColumnsInfo := FColumns[vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id];
-    TAction(Sender).Enabled := ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn];
+    TAction(Sender).Enabled := ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn, stPriceChangeColumn];
   end;
 end;
 
@@ -913,7 +913,7 @@ begin
   begin
     if FColumns.ContainsKey(vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id) then
       ColumnsInfo := FColumns[vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id];
-    TAction(Sender).Enabled := ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn];
+    TAction(Sender).Enabled := ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn, stPriceChangeColumn];
   end;
 end;
 
@@ -1826,7 +1826,7 @@ begin
     if FColumns.ContainsKey(vstCandidate.Header.Columns[aColumnIndex].Id) then
       ColumnsInfo := FColumns[vstCandidate.Header.Columns[aColumnIndex].Id];
 
-    if ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn] then
+    if ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn, stPriceChangeColumn] then
     begin
       Weight := ColumnsInfo.Weight;
       if (TfrmCandidateEditWeight.ShowDocument(Weight) = mrOk) then
@@ -1836,10 +1836,11 @@ begin
         vstCandidate.Header.Columns[aColumnIndex].Hint := 'Weight: ' + Weight.ToString;
         vstCandidate.Header.Columns[aColumnIndex].Text := ColumnsInfo.Caption;
 
+        FColumns.AddOrSetValue(vstCandidate.Header.Columns[aColumnIndex].Id, ColumnsInfo);
         if (ColumnsInfo.SourceType = stCandidateMarket) then
-          CalculateColumn(Coef, ColumnsInfo.ColumnId)
-        else
-          FColumns.AddOrSetValue(vstCandidate.Header.Columns[aColumnIndex].Id, ColumnsInfo);
+          CalculateColumn(Coef, ColumnsInfo.ColumnId);
+//        else
+//          FColumns.AddOrSetValue(vstCandidate.Header.Columns[aColumnIndex].Id, ColumnsInfo);
         FillColumnList;
       end;
       CalculateAllRankingSum;
@@ -1885,7 +1886,7 @@ begin
     if FColumns.ContainsKey(vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id) then
       ColumnsInfo := FColumns[vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id];
 
-    if ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn] then
+    if ColumnsInfo.SourceType in [stStaticList, stCandidateMarket, stTickColumn, stPriceChangeColumn] then
     begin
       Node := vstCandidate.FocusedNode;
       Data := Node^.GetData;
@@ -2063,11 +2064,12 @@ begin
       begin
         ColumnsItem := aData^.ExtraColumns.Items[ColumnsInfo.ColumnId];
         Weight := IfThen((ColumnsItem.Weight > 0), ColumnsItem.Weight, ColumnsInfo.Weight);
+        //Weight := ColumnsItem.Weight;
         case ColumnsInfo.SourceType of
           stStaticList:
             RankingSum := RankingSum + ColumnsItem.Rank * Weight;
           stCandidateMarket:
-            RankingSum := RankingSum + ColumnsItem.Rank;
+            RankingSum := RankingSum + ColumnsItem.Rank * Weight;
           stCalcColumn:
             RankingSum := RankingSum + ColumnsItem.Price * Weight;
           stTickColumn:
@@ -2075,6 +2077,8 @@ begin
 //              RankingSum := RankingSum + ColumnsItem.Price * Weight * 100
 //            else
               RankingSum := RankingSum + ColumnsItem.Price * Weight;
+          stPriceChangeColumn:
+            RankingSum := RankingSum + ColumnsItem.PriceChangeWeight * Weight;
         end;
       end;
     end;

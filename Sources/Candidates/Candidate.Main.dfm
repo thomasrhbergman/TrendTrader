@@ -12,7 +12,6 @@ object frmCandidateMain: TfrmCandidateMain
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = True
   Position = poMainFormCenter
   ShowHint = True
   OnClose = FormClose
@@ -20,7 +19,6 @@ object frmCandidateMain: TfrmCandidateMain
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlAutoOrder: TPanel
     Left = 842
@@ -315,7 +313,6 @@ object frmCandidateMain: TfrmCandidateMain
           Width = 85
           Height = 24
           TabOrder = 3
-          Value = 1.000000000000000000
           SpinButtonOptions.Placement = nbspCompact
           UseMouseWheel = True
           OnChange = OnGUIToAutoTradeInfo

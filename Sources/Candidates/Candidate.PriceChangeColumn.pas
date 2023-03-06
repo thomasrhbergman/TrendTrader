@@ -21,10 +21,12 @@ type
     pnlLastPrice: TPanel;
     cbLastPrice: TCheckBox;
     pnlWeight: TPanel;
-    lblWeight: TLabel;
-    edWeight: TNumberBox;
+    lblTimeWeight: TLabel;
+    edTimeWeight: TNumberBox;
     lblLastTickType: TLabel;
     lblLastPriceType: TLabel;
+    lblWeight: TLabel;
+    edWeight: TNumberBox;
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
     FColumnsInfo: TColumnsInfo;
@@ -88,16 +90,16 @@ begin
   cbLastPrice.Checked                    := FColumnsInfo.PriceChangeColumn.LastPrice;
   lblLastPriceType.Caption               := FColumnsInfo.PriceChangeColumn.LastPriceType.ToString;
   seLastTickCount.Value                  := FColumnsInfo.PriceChangeColumn.LastTickCount;
-  edWeight.ValueFloat                    := FColumnsInfo.PriceChangeColumn.Weight;
+  edTimeWeight.ValueFloat                := FColumnsInfo.PriceChangeColumn.Weight;
+  edWeight.ValueFloat                    := FColumnsInfo.Weight;
 end;
 
 procedure TfrmCandidatePriceChangeColumn.Denitialize;
 begin
-  FColumnsInfo.PriceChangeColumn.LastPrice := cbLastPrice.Checked;
-  FColumnsInfo.PriceChangeColumn.LastTickCount := seLastTickCount.Value;
-  FColumnsInfo.PriceChangeColumn.Weight := edWeight.ValueFloat;
-
-  FColumnsInfo.Weight := 0;
+  FColumnsInfo.PriceChangeColumn.LastPrice      := cbLastPrice.Checked;
+  FColumnsInfo.PriceChangeColumn.LastTickCount  := seLastTickCount.Value;
+  FColumnsInfo.PriceChangeColumn.Weight         := edTimeWeight.ValueFloat;
+  FColumnsInfo.Weight                           := edWeight.ValueFloat;
 end;
 
 procedure TfrmCandidatePriceChangeColumn.FormCloseQuery(Sender: TObject; var CanClose: Boolean);

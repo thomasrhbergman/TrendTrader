@@ -11,17 +11,15 @@ object frmCandidateEditWeight: TfrmCandidateEditWeight
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poMainFormCenter
-  
   TextHeight = 13
   object lblWeight: TLabel
-    Left = 11
+    Left = 8
     Top = 9
-    Width = 45
+    Width = 92
     Height = 16
     Alignment = taRightJustify
-    Caption = 'Weight:'
+    Caption = 'Column Weight:'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
@@ -73,7 +71,7 @@ object frmCandidateEditWeight: TfrmCandidateEditWeight
     end
   end
   object edtWeight: TNumberBox
-    Left = 63
+    Left = 107
     Top = 8
     Width = 65
     Height = 21
