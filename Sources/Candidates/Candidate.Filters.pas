@@ -54,18 +54,18 @@ type
   public const
     RangeStateString: array [TRangeState] of string = ('unknown', 'less than', 'greater than', 'in the range');
 
-    C_TYPE_FIELD_AMOUNT          = 'Candidate.filter.InvestmentAmountField';
-    C_TYPE_FIELD_BOOLEAN         = 'Candidate.filter.BooleanField';
-    C_TYPE_FIELD_COMBO           = 'Candidate.filter.ComboField';
-    C_TYPE_FIELD_COMBO_CONVERTED = 'Candidate.filter.ComboField$ConvertedComboField';
-    C_TYPE_FIELD_CONID           = 'Candidate.filter.ConidField';
-    C_TYPE_FIELD_DATE            = 'Candidate.filter.DateField';
-    C_TYPE_FIELD_DOUBLE          = 'Candidate.filter.DoubleField';
-    C_TYPE_FIELD_EMBEDDED        = 'Candidate.filter.EmbeddedFilterField';
-    C_TYPE_FIELD_INTEGER         = 'Candidate.filter.IntField';
-    C_TYPE_FIELD_SEPARATOR       = 'Candidate.filter.SeparatorField';
-    C_TYPE_FIELD_SLIDER          = 'Candidate.filter.SliderField';
-    C_TYPE_FIELD_STRING          = 'Candidate.filter.StringField';
+    C_TYPE_FIELD_AMOUNT          = 'scanner.filter.InvestmentAmountField';
+    C_TYPE_FIELD_BOOLEAN         = 'scanner.filter.BooleanField';
+    C_TYPE_FIELD_COMBO           = 'scanner.filter.ComboField';
+    C_TYPE_FIELD_COMBO_CONVERTED = 'scanner.filter.ComboField$ConvertedComboField';
+    C_TYPE_FIELD_CONID           = 'scanner.filter.ConidField';
+    C_TYPE_FIELD_DATE            = 'scanner.filter.DateField';
+    C_TYPE_FIELD_DOUBLE          = 'scanner.filter.DoubleField';
+    C_TYPE_FIELD_EMBEDDED        = 'scanner.filter.EmbeddedFilterField';
+    C_TYPE_FIELD_INTEGER         = 'scanner.filter.IntField';
+    C_TYPE_FIELD_SEPARATOR       = 'scanner.filter.SeparatorField';
+    C_TYPE_FIELD_SLIDER          = 'scanner.filter.SliderField';
+    C_TYPE_FIELD_STRING          = 'scanner.filter.StringField';
 
     C_LEFT_MAX  = 280;
     C_LEFT_MIN  = 215;
