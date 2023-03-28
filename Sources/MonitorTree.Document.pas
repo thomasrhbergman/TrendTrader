@@ -104,7 +104,7 @@ begin
     Data^.AutoTrade := aAutoTrade;
 
   Data^.AutoTrade.OwnerNode := Result;
-  Data^.RecordId := -1;
+  //Data^.RecordId := -1;
   SetIcon(Result, aTree);
 end;
 

@@ -28,6 +28,7 @@ type
     class procedure SetPriceValue(const aOrderDoc: TOrderIBDoc; const aPrice: Double = 0);
   public
     class function GetTopOrder(aNode: PVirtualNode): TCustomOrderDoc;
+    class function HasChildOrders(aNode: PVirtualNode): boolean;
     class procedure FillOrderPrice(const aOrder: TCustomOrderDoc; const aPrice: Currency);
     class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
     class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
@@ -310,7 +311,7 @@ begin
       Data^.OrderDoc.MarketList := SokidInfo.MarketRuleIds;
     Data^.OrderDoc.Multiplier         := StrToFloatDef(SokidInfo.Multiplier, 0);
     Data^.OrderDoc.Id                 := aInstrumentData.Id;
-    Data^.OrderDoc.InstrumentName     := aInstrumentData.Name;
+    Data^.OrderDoc.InstrumentName     := SokidInfo.Name;
     Data^.OrderDoc.Currency           := aInstrumentData.Currency;
     Data^.OrderDoc.Exchange           := aInstrumentData.Exchange;
     Data^.OrderDoc.Symbol             := aInstrumentData.Symbol;
@@ -614,6 +615,41 @@ begin
     if Data.DocType = ntAutoTrade then
       break;
     Node := Node.Parent;
+  end;
+end;
+
+class function TTreeFactory.HasChildOrders(aNode: PVirtualNode): boolean;
+var Childs: TList<PVirtualNode>;
+
+  procedure GetChilds(aNode: PVirtualNode);
+  var
+    Child: PVirtualNode;
+    Data: PTreeData;
+  begin
+    if Assigned(aNode) then
+    begin
+//      Data := aNode^.GetData;
+//      if Assigned(Data) and (Data.DocType = ntOrder) then
+//        Result.Add(aNode);
+
+      Child := aNode.FirstChild;
+      while Assigned(Child) do
+      begin
+        Data := Child^.GetData;
+        if Assigned(Data) and (Data.DocType = ntOrder) then
+          Childs.Add(Child);
+        GetChilds(Child);
+        Child := Child.NextSibling;
+      end;
+    end;
+  end;
+begin
+  Childs := TList<PVirtualNode>.Create;
+  try
+    GetChilds(aNode);
+    Result := Childs.Count > 0;
+  finally
+    Childs.Free;
   end;
 end;
 

@@ -373,6 +373,8 @@ type
     ColumnsInfo: string;
     Columns: string;
     MaxNumberOrder: Integer;
+    AlwaysMax: Boolean;
+    RepeatInstruments: Boolean;
     CreatedOrdersCount: Integer;
     LastUpdate: TDateTime;
     ScanCount: Integer;
@@ -1596,6 +1598,8 @@ begin
         Self.Name                    := Query.FieldByName('NAME').AsString;
         Self.ColumnsInfo             := Query.FieldByName('COLUMNS_INFO').AsString;
         Self.MaxNumberOrder          := Query.FieldByName('MAX_NUMBER_ORDER').AsInteger;
+        Self.AlwaysMax               := Query.FieldByName('ALWAYS_MAX').AsBoolean;
+        Self.RepeatInstruments       := Query.FieldByName('REPEAT_INSTRUMENTS').AsBoolean;
         Self.CreateTime              := Now;
         if Query.FieldByName('MOTHER_ORDER_ACTION').IsNull then
           Self.MotherOrderAction := iabIdle
@@ -1629,12 +1633,14 @@ end;
 procedure TCandidate.SaveToDB;
 resourcestring
   C_SQL_EXISTS_TEXT = 'SELECT COUNT(*) AS CNT FROM CANDIDATES WHERE ID=:RecordId';
-  C_SQL_INSERT_TEXT = 'INSERT INTO CANDIDATES(ID, NAME, COLUMNS_INFO, MAX_NUMBER_ORDER) ' +
-                                    ' VALUES(:ID,:NAME,:COLUMNS_INFO,:MAX_NUMBER_ORDER); ';
+  C_SQL_INSERT_TEXT = 'INSERT INTO CANDIDATES(ID, NAME, COLUMNS_INFO, MAX_NUMBER_ORDER, ALWAYS_MAX, REPEAT_INSTRUMENTS) ' +
+                                    ' VALUES(:ID,:NAME,:COLUMNS_INFO,:MAX_NUMBER_ORDER,:ALWAYS_MAX,:REPEAT_INSTRUMENTS); ';
   C_SQL_UPDATE_TEXT = 'UPDATE CANDIDATES SET '                                   +
                       'NAME=:NAME,  '                                            +
                       'COLUMNS_INFO=:COLUMNS_INFO, '                             +
-                      'MAX_NUMBER_ORDER=:MAX_NUMBER_ORDER '                     +
+                      'MAX_NUMBER_ORDER=:MAX_NUMBER_ORDER, '                     +
+                      'ALWAYS_MAX=:ALWAYS_MAX,'                                  +
+                      'REPEAT_INSTRUMENTS=:REPEAT_INSTRUMENTS '                  +
                       'WHERE ID=:ID;';
 var
   IsExists: Boolean;
@@ -1678,6 +1684,8 @@ begin
     Query.ParamByName('NAME').AsString                        := Copy(Self.Name, 0, 100);
     Query.ParamByName('COLUMNS_INFO').AsString                := Self.ColumnsInfo;
     Query.ParamByName('MAX_NUMBER_ORDER').AsInteger           := Self.MaxNumberOrder;
+    Query.ParamByName('ALWAYS_MAX').AsBoolean                 := Self.AlwaysMax;
+    Query.ParamByName('REPEAT_INSTRUMENTS').AsBoolean         := Self.RepeatInstruments;
     try
       Query.Prepare;
       Query.ExecSQL;

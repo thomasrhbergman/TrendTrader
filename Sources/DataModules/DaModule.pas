@@ -289,6 +289,8 @@ begin
   CreateNewField('STORE_TREE', 'NAME', 'VARCHAR(100)', '');
   CreateNewField('TICK_DATA', 'AVERAGE5', 'FLOAT', '0', ConnectionFeed);
   CreateNewField('TICK_DATA', 'IS_HISTORICAL', 'BOOLEAN', '0', ConnectionFeed);
+  CreateNewField('CANDIDATES', 'ALWAYS_MAX', 'BOOLEAN', 'FALSE');
+  CreateNewField('CANDIDATES', 'REPEAT_INSTRUMENTS', 'BOOLEAN', 'FALSE');
 
   CreateObject('TICK_TYPES', C_SQL_CREATE_TICK_TYPES, rtTable, ConnectionFeed);
 

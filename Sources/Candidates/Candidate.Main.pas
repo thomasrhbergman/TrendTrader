@@ -19,12 +19,13 @@ uses
   Monitor.Info, Publishers, System.Notification, Chart.Trade, Vcl.NumberBox, IABFunctions.Helpers, System.Types,
   MonitorTree.Helper, Candidate.GradientColumn, VirtualTrees.Types, FireDAC.Comp.Client, FireDAC.Stan.Param,
   FireDAC.Comp.DataSet, ListForm, Candidate.PriceChangeColumn,
-  Candidate.EmulatePriceChange, MonitorTree.Factory;
+  Candidate.EmulatePriceChange, MonitorTree.Factory, NNfunctions.Types;
 {$ENDREGION}
 
 type
   TfrmCandidateMain = class(TCustomForm, ICandidateMarket,
                                        IScanner,
+                                       IOrderState,
                                        IAutoTrade,
                                        IInstrumentSpecDetails,
                                        IUpdateFeeds,
@@ -116,6 +117,8 @@ type
     btnAddPriceChange: TBitBtn;
     aAddPriceChangeColumn: TAction;
     mmEmulatePriceChange: TMenuItem;
+    cbAlwaysMax: TCheckBox;
+    cbRepeatInstruments: TCheckBox;
     procedure aAddEmbargoColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnUpdate(Sender: TObject);
@@ -283,6 +286,14 @@ type
     //implementation IInstrumentSpecDetails
     procedure OnInstrumentSpecDetails(Sender: TObject; Index: Integer);
 
+    //implementation IOrderState
+    procedure OnCloseOrder(const aTempId: Integer);
+    procedure OnExecution(Sender: TObject; Order: TIABOrder);
+    procedure OnOpenOrder(Sender: TObject; Order: TIABOrder);
+    procedure OnOpenOrderNN(const aOrderList: array of TOrder);
+    procedure OnOrderStatus(Sender: TObject; Order: TIABOrder; Status: TIABOrderState);
+    procedure OnRebuildFromTWS(Sender: TObject);
+
     procedure DockTo;
     procedure LoadParamsFromXml;
     procedure OpenSequenceRecord;
@@ -415,6 +426,7 @@ begin
   TPublishers.HistoricalDataPublisher.Subscribe(Self);
   TPublishers.InstrumentSpecDetailsPublisher.Subscribe(Self);
   TPublishers.ScannerPublisher.Subscribe(Self);
+  TPublishers.OrderStatePublisher.Subscribe(Self);
 
   if not Supports(Application.MainForm, IMonitor, FMonitor) then
     raise Exception.Create(rsNotSupportsIMonitor);
@@ -448,6 +460,7 @@ begin
   TPublishers.HistoricalDataPublisher.Unsubscribe(Self);
   TPublishers.InstrumentSpecDetailsPublisher.Unsubscribe(Self);
   TPublishers.ScannerPublisher.Unsubscribe(Self);
+  TPublishers.OrderStatePublisher.Unsubscribe(Self);
   //FCandidate.TradesState := TTradesState.tsNotConsidered;
   AutoTradesControllerPublisher.UpdateState(Self);
   FreeAndNil(FSubscribedList);
@@ -581,6 +594,8 @@ procedure TfrmCandidateMain.DisableEditors;
 begin
   edAutoTradeTemplate.ReadOnly := true;
   seMaxNumberOrder.ReadOnly := true;
+  cbAlwaysMax.Enabled := false;
+  cbRepeatInstruments.Enabled := false;
   pnlButtons.Visible := false;
 end;
 
@@ -748,6 +763,7 @@ begin
             ', Currency=' + aData^.Currency +
             ', Multiplier=' + aData^.Multiplier.ToString;
 //    TPublishers.LogPublisher.Write([ltLogWriter], ddText, 'PreExecutionEvaluation', Info);
+    if SokidList.ActiveInstruments.Contains(aData^.Id) then Exit; // cannot use the same instrument in two active orders
     LastPrice := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, ttLast);
     if (LastPrice = 0) then
     begin
@@ -858,9 +874,9 @@ begin
                                            aData,
                                            TAutoTradesCommon.Create(Quantity,
                                                                     0{FAutoTrade.Qualifier.QualifierInstance},
-                                                                    FAutoTrade.Qualifier.RecordId,
-                                                                    FAutoTrade.Qualifier.InstanceNum,
                                                                     FCandidate.RecordId,
+                                                                    FAutoTrade.InstanceNum,
+                                                                    FAutoTrade.RecordId,
                                                                     false{AllowSendDuplicateOrder}));
             if LNode <> nil then
             begin
@@ -869,6 +885,8 @@ begin
               aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
               aData^.Description := 'Created';
               aData^.MotherOrderDoc := TTreeFactory.GetTopOrder(LNode);
+              if not SokidList.ActiveInstruments.Contains(aData^.Id) then
+                SokidList.ActiveInstruments.Add(aData^.Id);
             end;
             {if FMonitor.CreateTemplateStructure(FCandidate.OrderGroupId,
                                                 aData,
@@ -2848,6 +2866,49 @@ begin
   end;
 end;
 
+procedure TfrmCandidateMain.OnOpenOrder(Sender: TObject; Order: TIABOrder);
+begin
+end;
+
+procedure TfrmCandidateMain.OnOpenOrderNN(const aOrderList: array of TOrder);
+begin
+end;
+
+procedure TfrmCandidateMain.OnOrderStatus(Sender: TObject; Order: TIABOrder; Status: TIABOrderState);
+var Node: PVirtualNode;
+    Data: PTreeData;
+    InstrumentData: PInstrumentData;
+    InstrumentItem: TInstrumentItem;
+begin
+  if Order.Completed and (Order.TempId > 0) then  //Only TWS API orders
+  begin
+    Node := TMonitorLists.OrderList.GetNodeOrder(Order.TempId);
+    if Assigned(Node) then
+    begin
+      if TTreeFactory.HasChildOrders(Node) then Exit;
+      Data := Node^.GetData;
+      if Assigned(Data^.OrderDoc) and (Data^.OrderDoc.AutoTradesID = FAutoTrade.RecordId) then
+      begin
+        if SokidList.ActiveInstruments.Contains(Order.ContractId) then
+          SokidList.ActiveInstruments.Remove(Order.ContractId);
+        if cbAlwaysMax.Checked then
+          CreatedOrdersCount := CreatedOrdersCount - 1;
+        if cbRepeatInstruments.Checked then
+        begin
+          InstrumentItem := FInstrumentList.GetItem(Order.ContractId);
+          if Assigned(InstrumentItem) then
+            for Node in InstrumentItem.NodeList do
+              if Assigned(Node) then
+              begin
+                InstrumentData := Node^.GetData;
+                InstrumentData^.IsLocked := false;
+              end;
+        end;
+      end;
+    end;
+  end;
+end;
+
 procedure TfrmCandidateMain.OnPriceChange(Sender: TObject; Id: Integer; TickType: TIABTickType; Value: Currency; TimeStamp: TDateTime);
 var
   ColumnsInfo: TColumnsInfo;
@@ -2925,6 +2986,10 @@ begin
           PreExecutionEvaluationOrders;
         end);
     end;
+end;
+
+procedure TfrmCandidateMain.OnRebuildFromTWS(Sender: TObject);
+begin
 end;
 
 procedure TfrmCandidateMain.OnScannerData(Sender: TObject; Scan: TIABScan);
@@ -3060,6 +3125,14 @@ begin
     end
 end;
 
+procedure TfrmCandidateMain.OnCloseOrder(const aTempId: Integer);
+begin
+end;
+
+procedure TfrmCandidateMain.OnExecution(Sender: TObject; Order: TIABOrder);
+begin
+end;
+
 procedure TfrmCandidateMain.OnGUIToAutoTradeInfo(Sender: TObject);
 begin
   if Showing then
@@ -3099,6 +3172,8 @@ begin
     begin
       FCandidate.Active                  := cbAutoOrderActive.Checked;
       FCandidate.MaxNumberOrder          := seMaxNumberOrder.Value;
+      FCandidate.AlwaysMax               := cbAlwaysMax.Checked;
+      FCandidate.RepeatInstruments       := cbRepeatInstruments.Checked;
     end;
     FCandidate.Name := edAutoTradeTemplate.Text;
 
@@ -3119,6 +3194,8 @@ begin
   edAutoTradeTemplate.Text          := FCandidate.Name;
   cbAutoOrderActive.Checked         := FCandidate.Active;
   seMaxNumberOrder.Value            := FCandidate.MaxNumberOrder;
+  cbAlwaysMax.Checked               := FCandidate.AlwaysMax;
+  cbRepeatInstruments.Checked       := FCandidate.RepeatInstruments;
   UpdateCaptions;
 //  if Assigned(FAutoTradesEdit) then
 //    FAutoTradesEdit.SetAutoTradeInfo(FCandidate);
@@ -3131,6 +3208,8 @@ begin
     FCandidate.ColumnsInfo := ColumnsInfoToXml;
     FCandidate.Name := edAutoTradeTemplate.Text;
     FCandidate.MaxNumberOrder := seMaxNumberOrder.Value;
+    FCandidate.AlwaysMax               := cbAlwaysMax.Checked;
+    FCandidate.RepeatInstruments       := cbRepeatInstruments.Checked;
     //FCandidate.SaveToDB;
     //AutoTradeInfoToGUI;
     ModalResult := mrOk;

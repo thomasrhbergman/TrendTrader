@@ -94,6 +94,7 @@ type
     FOnProgress          : TProgressEvent;
     FOnStartProgress     : TStartProgressEvent;
     FThread              : TThreadSokid;
+    FActiveInstruments   : TList<Integer>;
     //implementation ICustomInterface
     function GetInstance: TObject;
     procedure OnTickByTick(Sender: TObject; DataID: Integer; TickData: TIABTickData);         //IOnTickByTick
@@ -127,6 +128,7 @@ type
     property OnFinishingProgress : TProgressEvent      read FOnFinishingProgress write FOnFinishingProgress;
     property OnStartProgress     : TStartProgressEvent read FOnStartProgress     write FOnStartProgress;
     property OnAbort             : TAbortEvent         read FAbortEvent          write FAbortEvent;
+    property ActiveInstruments   : TList<Integer>      read FActiveInstruments;  // instruments that have active orders
   end;
 
 var
@@ -334,12 +336,14 @@ begin
   FThread := TThreadSokid.Create;
   FIsPriceChecked := False;
   FIsInstrumentChecked := False;
+  FActiveInstruments := TList<Integer>.Create;
 end;
 
 destructor TSokidList.Destroy;
 begin
   FThread.Terminate;
   WaitForSingleObject(FThread.Handle, INFINITE);
+  FreeAndNil(FActiveInstruments);
   inherited;
 end;
 

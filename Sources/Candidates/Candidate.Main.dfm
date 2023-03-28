@@ -3,7 +3,7 @@ object frmCandidateMain: TfrmCandidateMain
   Top = 0
   Caption = 'Scan'
   ClientHeight = 649
-  ClientWidth = 1039
+  ClientWidth = 1256
   Color = clBtnFace
   Constraints.MinHeight = 600
   Constraints.MinWidth = 1055
@@ -21,7 +21,7 @@ object frmCandidateMain: TfrmCandidateMain
   OnShow = FormShow
   TextHeight = 13
   object pnlAutoOrder: TPanel
-    Left = 842
+    Left = 1059
     Top = 0
     Width = 197
     Height = 583
@@ -29,6 +29,7 @@ object frmCandidateMain: TfrmCandidateMain
     BevelOuter = bvNone
     TabOrder = 1
     Visible = False
+    ExplicitLeft = 842
     object gbSpecificationAutoTrade: TGroupBox
       AlignWithMargins = True
       Left = 0
@@ -339,23 +340,25 @@ object frmCandidateMain: TfrmCandidateMain
   object pnlMain: TPanel
     Left = 0
     Top = 0
-    Width = 842
+    Width = 1059
     Height = 583
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitWidth = 842
     DesignSize = (
-      842
+      1059
       583)
     object pnlOptions: TPanel
       Left = 0
       Top = 0
-      Width = 842
+      Width = 1059
       Height = 50
       Align = alTop
       BevelOuter = bvNone
       ShowCaption = False
       TabOrder = 0
+      ExplicitWidth = 842
       object lblAutoTradeTemplateCaption: TLabel
         Left = 244
         Top = -1
@@ -470,19 +473,38 @@ object frmCandidateMain: TfrmCandidateMain
         ShowHint = True
         TabOrder = 7
       end
+      object cbAlwaysMax: TCheckBox
+        Left = 606
+        Top = 20
+        Width = 54
+        Height = 23
+        Caption = 'Always Max'
+        TabOrder = 8
+        WordWrap = True
+      end
+      object cbRepeatInstruments: TCheckBox
+        Left = 666
+        Top = 21
+        Width = 79
+        Height = 23
+        Caption = 'Repeat Instruments'
+        TabOrder = 9
+        WordWrap = True
+      end
     end
     object pnlContent: TPanel
       Left = 0
       Top = 50
-      Width = 842
+      Width = 1059
       Height = 533
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
+      ExplicitWidth = 842
       object vstCandidate: TVirtualStringTree
         Left = 0
         Top = 0
-        Width = 842
+        Width = 1059
         Height = 450
         Align = alClient
         BevelInner = bvNone
@@ -518,6 +540,7 @@ object frmCandidateMain: TfrmCandidateMain
         OnInitNode = vstCandidateInitNode
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+        ExplicitWidth = 842
         Columns = <
           item
             CaptionAlignment = taCenter
@@ -537,7 +560,7 @@ object frmCandidateMain: TfrmCandidateMain
       object gbIsolate: TGroupBox
         Left = 0
         Top = 450
-        Width = 842
+        Width = 1059
         Height = 83
         Align = alBottom
         Caption = 'Excluded Instruments'
@@ -546,10 +569,11 @@ object frmCandidateMain: TfrmCandidateMain
         ParentColor = False
         TabOrder = 1
         Visible = False
+        ExplicitWidth = 842
         object lbIsolate: TListBox
           Left = 2
           Top = 15
-          Width = 838
+          Width = 1055
           Height = 66
           Align = alClient
           Color = clInfoBk
@@ -565,9 +589,9 @@ object frmCandidateMain: TfrmCandidateMain
       end
     end
     object lbColumns: TListBox
-      Left = 600
+      Left = 752
       Top = 2
-      Width = 439
+      Width = 504
       Height = 44
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
@@ -578,7 +602,7 @@ object frmCandidateMain: TfrmCandidateMain
   object sbMain: TStatusBar
     Left = 0
     Top = 630
-    Width = 1039
+    Width = 1256
     Height = 19
     DoubleBuffered = True
     Panels = <
@@ -638,20 +662,22 @@ object frmCandidateMain: TfrmCandidateMain
     ParentDoubleBuffered = False
     ParentShowHint = False
     ShowHint = False
+    ExplicitWidth = 1039
   end
   object pnlButtons: TPanel
     Left = 0
     Top = 583
-    Width = 1039
+    Width = 1256
     Height = 47
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 3
+    ExplicitWidth = 1039
     DesignSize = (
-      1039
+      1256
       47)
     object btnSave: TBitBtn
-      Left = 932
+      Left = 1149
       Top = 3
       Width = 100
       Height = 40
@@ -668,9 +694,10 @@ object frmCandidateMain: TfrmCandidateMain
       ParentFont = False
       TabOrder = 0
       OnClick = btnSaveClick
+      ExplicitLeft = 932
     end
     object btnCancel: TBitBtn
-      Left = 831
+      Left = 1048
       Top = 3
       Width = 100
       Height = 40
@@ -686,6 +713,7 @@ object frmCandidateMain: TfrmCandidateMain
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
+      ExplicitLeft = 831
     end
   end
   object ActionList: TActionList
