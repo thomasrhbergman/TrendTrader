@@ -78,6 +78,7 @@ type
     const InequalityFullName: array[TInequalityType] of string = ('Above >', 'Above or equal >=', 'Below <', 'Below or equal <=', 'Equal =', 'Crosses ✕', 'Crosses Up ↑', 'Crosses Down ↓', 'Between');
     const InequalityName: array[TInequalityType] of string = ('>', '>=', '<', '<=', '=', '✕', '↑', '↓', 'in');
   public
+    class function FromString(aValue: string): TInequalityType; static;
     function ToString: string;
     function ToFullName: string;
     function IsCondition(const Value1, Value2: Currency): Boolean;
@@ -369,6 +370,18 @@ begin
 end;
 
 { TInequalityTypeHelper }
+
+class function TInequalityTypeHelper.FromString(aValue: string): TInequalityType;
+var InequalityType: TInequalityType;
+begin
+  Result := iqAbove;
+  for InequalityType := Low(TInequalityType) to High(TInequalityType) do
+    if SameText(InequalityType.ToString, aValue) or SameText(InequalityType.ToFullName, aValue) then
+    begin
+      Result := InequalityType;
+      break;
+    end;
+end;
 
 function TInequalityTypeHelper.IsCondition(const Value1, Value2: Currency): Boolean;
 const

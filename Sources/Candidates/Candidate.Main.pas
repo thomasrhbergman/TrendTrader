@@ -301,6 +301,7 @@ type
     procedure SetCreatedOrdersCount(const Value: Integer);
     procedure SetValueFromPriceCache(const aData: PInstrumentData; const aColumnsInfo: TColumnsInfo);
     procedure DisableEditors;
+    procedure RefreshColumnValues(const aColumnId: integer);
 
     property CreatedOrdersCount : Integer      read GetCreatedOrdersCount write SetCreatedOrdersCount;
     property IsLoaded           : Boolean      read FIsLoaded             write FIsLoaded;
@@ -1249,7 +1250,7 @@ begin
       vstCandidate.Header.Columns.Delete(vstCandidate.FocusedColumn);
       TimerEmbargo.Enabled := False;
       for ColumnsInfo in FColumns.Values do
-        if (ColumnsInfo.SourceType = stEmbargoColumn) and (ColumnsInfo.EmbargoColumn.EmbargoType in [etReleaseTime, etHoldTime]) then
+        if (ColumnsInfo.SourceType = stEmbargoColumn) and (ColumnsInfo.EmbargoColumn.EmbargoType in [etReleaseTime, etHoldTime, etTimePeriod]) then
         begin
           TimerEmbargo.Enabled := True;
           Break;
@@ -1412,7 +1413,7 @@ begin
           end;
         stEmbargoColumn:
           begin
-            if aColumnsInfo.EmbargoColumn.EmbargoType in [etReleaseTime, etHoldTime] then
+            if aColumnsInfo.EmbargoColumn.EmbargoType in [etReleaseTime, etHoldTime, etTimePeriod] then
               TimerEmbargo.Enabled := True;
           end;
         stTickColumn:
@@ -1994,6 +1995,7 @@ begin
         end;
     end;
   FillColumnList;
+  RefreshColumnValues(aColumnID);
 end;
 
 procedure TfrmCandidateMain.aShowColumnDetailsExecute(Sender: TObject);
@@ -2527,17 +2529,25 @@ var
   ColumnsItem: TExtraColumns.TColumnsItem;
 begin
   if Assigned(aData) and
-    (aColumnsInfo.SourceType = stTickColumn) and
     (aData^.ExtraColumns.Items.ContainsKey(aColumnsInfo.ColumnId)) then
   begin
     ColumnsItem := aData^.ExtraColumns.Items[aColumnsInfo.ColumnId];
-    if (aColumnsInfo.TickColumn.IBValue2 <> ttNotSet) then
-      ColumnsItem.Price := aColumnsInfo.TickColumn.TypeOperation.Calc(TMonitorLists.PriceCache.GetLastPrice(aData^.Id, aColumnsInfo.TickColumn.IBValue1),
-                                                                      TMonitorLists.PriceCache.GetLastPrice(aData^.Id, aColumnsInfo.TickColumn.IBValue2))
+    if (aColumnsInfo.SourceType = stTickColumn) then
+    begin
+      if (aColumnsInfo.TickColumn.IBValue2 <> ttNotSet)  and (aColumnsInfo.TickColumn.TypeOperation <> toNone) then
+        ColumnsItem.Price := aColumnsInfo.TickColumn.TypeOperation.Calc(TMonitorLists.PriceCache.GetLastPrice(aData^.Id, aColumnsInfo.TickColumn.IBValue1),
+                                                                        TMonitorLists.PriceCache.GetLastPrice(aData^.Id, aColumnsInfo.TickColumn.IBValue2))
+      else
+        ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, aColumnsInfo.TickColumn.IBValue1);
+      if (ColumnsItem.Price <> 0) then
+        ColumnsItem.ColTick := clRed;
+    end
+    else if (aColumnsInfo.SourceType = stEmbargoColumn) and (aColumnsInfo.EmbargoColumn.EmbargoType = etVolumeAmount) then
+      ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, aColumnsInfo.EmbargoColumn.IBValue)
+                           *
+                           TMonitorLists.PriceCache.GetLastPrice(aData^.Id, ttLast)
     else
-      ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, aColumnsInfo.TickColumn.IBValue1);
-    if (ColumnsItem.Price <> 0) then
-      ColumnsItem.ColTick := clRed;
+      Exit;
     aData^.ExtraColumns.Items.AddOrSetValue(aColumnsInfo.ColumnId, ColumnsItem);
     vstCandidate.InvalidateNode(aData^.Node);
   end;
@@ -2551,6 +2561,34 @@ begin
     TfrmCandidateMarket.ShowDocument(aColumnID, aScanOptions, Self)
   else
     TMessageDialog.ShowWarning(rsInstances);
+end;
+
+procedure TfrmCandidateMain.RefreshColumnValues(const aColumnId: integer);
+var
+  Data: PInstrumentData;
+  Node: PVirtualNode;
+  ColumnsInfo: TColumnsInfo;
+begin
+  vstCandidate.BeginUpdate;
+  try
+    ColumnsInfo := FColumns.Items[aColumnId];
+    if ((ColumnsInfo.SourceType = stEmbargoColumn) and (ColumnsInfo.EmbargoColumn.EmbargoType = etVolumeAmount))
+       or
+       (ColumnsInfo.SourceType = stTickColumn) then
+    begin
+      Node := vstCandidate.GetFirstChild(vstCandidate.RootNode);
+      while Assigned(Node) do
+      begin
+        Data := Node^.GetData;
+        SetValueFromPriceCache(Data, ColumnsInfo);
+        CheckRankingCriteria(Data);
+        PreExecutionEvaluation(Data);
+        Node := Node.NextSibling;
+      end;
+    end;
+  finally
+    vstCandidate.EndUpdate;
+  end;
 end;
 
 procedure TfrmCandidateMain.RequestMarketData(const aContractId: Integer);
@@ -2923,6 +2961,7 @@ begin
   for ColumnsInfo in FColumns.Values do
     if ((ColumnsInfo.SourceType = stTickColumn) and ((ColumnsInfo.TickColumn.IBValue1 = TickType) or (ColumnsInfo.TickColumn.IBValue2 = TickType))) or
        ((ColumnsInfo.SourceType = stCalcColumn) and (TickType = ttLast) and (ColumnsInfo.CalcColumn.CalculationType in [ctGradientToday, ctCorridorWidth])) or
+       ((ColumnsInfo.SourceType = stEmbargoColumn) and (ColumnsInfo.EmbargoColumn.EmbargoType = etVolumeAmount) and (TickType in [ColumnsInfo.EmbargoColumn.IBValue, ttLast])) or
        (ColumnsInfo.SourceType = stPriceChangeColumn) then
     begin
       InstrumentItem := FInstrumentList.GetItem(Id);
@@ -2946,11 +2985,11 @@ begin
                     ;
                   stTickColumn:
                     begin
-                      if (ColumnsInfo.TickColumn.IBValue2 <> ttNotSet) then
+                      if (ColumnsInfo.TickColumn.IBValue2 <> ttNotSet) and (ColumnsInfo.TickColumn.TypeOperation <> toNone) then
                         ColumnsItem.Price := ColumnsInfo.TickColumn.TypeOperation.Calc(TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue1),
                                                                                        TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue2))
                       else
-                        ColumnsItem.Price := Value;
+                        ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue1);
                       if (ColumnsItem.TimeStamp = 0) then
                         ColumnsItem.TimeStamp := TimeStamp;
                     end;
@@ -2964,6 +3003,10 @@ begin
                       else
                         ColumnsItem.PriceChangeWeight := CalculatePriceChangeWeight(Node, ColumnsInfo);
                     end;
+                  stEmbargoColumn:
+                    ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.EmbargoColumn.IBValue)
+                                         *
+                                         TMonitorLists.PriceCache.GetLastPrice(Id, ttLast);
                 end;
 
                 if (ColumnsItem.Price = 0) then

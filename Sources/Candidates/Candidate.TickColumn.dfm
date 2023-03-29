@@ -11,9 +11,7 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poMainFormCenter
-  PixelsPerInch = 96
   TextHeight = 13
   object lblWeight: TLabel
     Left = 41
@@ -51,7 +49,6 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitTop = 121
     object btnAddColumn: TBitBtn
       Left = 249
       Top = 1
@@ -122,5 +119,6 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
     Width = 48
     Height = 21
     TabOrder = 4
+    OnChange = cbTypeOperationChange
   end
 end

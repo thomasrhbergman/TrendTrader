@@ -29,7 +29,6 @@ object frmCandidateMain: TfrmCandidateMain
     BevelOuter = bvNone
     TabOrder = 1
     Visible = False
-    ExplicitLeft = 842
     object gbSpecificationAutoTrade: TGroupBox
       AlignWithMargins = True
       Left = 0
@@ -345,7 +344,6 @@ object frmCandidateMain: TfrmCandidateMain
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitWidth = 842
     DesignSize = (
       1059
       583)
@@ -358,7 +356,6 @@ object frmCandidateMain: TfrmCandidateMain
       BevelOuter = bvNone
       ShowCaption = False
       TabOrder = 0
-      ExplicitWidth = 842
       object lblAutoTradeTemplateCaption: TLabel
         Left = 244
         Top = -1
@@ -500,7 +497,6 @@ object frmCandidateMain: TfrmCandidateMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitWidth = 842
       object vstCandidate: TVirtualStringTree
         Left = 0
         Top = 0
@@ -540,7 +536,6 @@ object frmCandidateMain: TfrmCandidateMain
         OnInitNode = vstCandidateInitNode
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-        ExplicitWidth = 842
         Columns = <
           item
             CaptionAlignment = taCenter
@@ -569,7 +564,6 @@ object frmCandidateMain: TfrmCandidateMain
         ParentColor = False
         TabOrder = 1
         Visible = False
-        ExplicitWidth = 842
         object lbIsolate: TListBox
           Left = 2
           Top = 15
@@ -662,7 +656,6 @@ object frmCandidateMain: TfrmCandidateMain
     ParentDoubleBuffered = False
     ParentShowHint = False
     ShowHint = False
-    ExplicitWidth = 1039
   end
   object pnlButtons: TPanel
     Left = 0
@@ -672,7 +665,6 @@ object frmCandidateMain: TfrmCandidateMain
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 3
-    ExplicitWidth = 1039
     DesignSize = (
       1256
       47)
@@ -694,7 +686,6 @@ object frmCandidateMain: TfrmCandidateMain
       ParentFont = False
       TabOrder = 0
       OnClick = btnSaveClick
-      ExplicitLeft = 932
     end
     object btnCancel: TBitBtn
       Left = 1048
@@ -713,7 +704,6 @@ object frmCandidateMain: TfrmCandidateMain
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
-      ExplicitLeft = 831
     end
   end
   object ActionList: TActionList

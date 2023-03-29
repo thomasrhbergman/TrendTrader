@@ -15,10 +15,10 @@ uses
 type
   TKindAppend = (kaAddAll, kaUpdate, kaReduce, kaIntersection);
   TSourceType = (stFixed, stStaticList, stCandidateMarket, stTickColumn, stCalcColumn, stEmbargoColumn, stPriceChangeColumn);
-  TEmbargoType = (etReleaseTime, etHoldTime, etRankingPosition, etRankingSum, etColumnValue, etColumnValueExists, etTimeInterval);
+  TEmbargoType = (etReleaseTime, etHoldTime, etRankingPosition, etRankingSum, etColumnValue, etColumnValueExists, etTimeInterval, etTimePeriod, etVolumeAmount);
   TEmbargoTypeHelper = record helper for TEmbargoType
   private
-    const EmbargoTypeName: array [TEmbargoType] of string = ('Release Time', 'Hold Time', 'Ranking Position', 'Ranking Sum', 'Column', 'Value Exists', 'Time Interval');
+    const EmbargoTypeName: array [TEmbargoType] of string = ('Release Time', 'Hold Time', 'Ranking Position', 'Ranking Sum', 'Column', 'Value Exists', 'Time Interval', 'Time Period', 'Volume / Amount');
   public
     function ToString: string;
   end;
@@ -127,6 +127,9 @@ type
     RefRecordId    : Integer;
     WorkingDays    : Boolean;
     TimeInterval   : Integer;
+    TimeStart      : TTime;
+    TimeFinish     : TTime;
+    IBValue        : TIABTickType;
     function Caption: string;
     function GetCriteriaColor(aColumnsInfo: PColumnsInfo; aExtraColumns: PExtraColumns): TColor;
     function GetText(aExtraColumns: PExtraColumns): string;
@@ -1051,7 +1054,12 @@ begin
       stStaticList:
         Result := FormatFloat(C_CURRENCY_FORMAT, ColumnsItem.Rank * aColumnsInfo.Weight);
       stEmbargoColumn:
-        Result := aColumnsInfo.EmbargoColumn.GetText(@Self);
+      begin
+        if aColumnsInfo.EmbargoColumn.EmbargoType = etVolumeAmount then
+          Result := FormatFloat(C_CURRENCY_FORMAT, ColumnsItem.Price)
+        else
+          Result := aColumnsInfo.EmbargoColumn.GetText(@Self);
+      end;
       stPriceChangeColumn:
         begin
           if (aColumnsInfo.PriceChangeColumn.LastTickType = lttNone)
@@ -1121,7 +1129,7 @@ end;
 
 function TTickColumn.Caption: string;
 begin
-  if (IBValue2 <> ttNotSet) then
+  if (IBValue2 <> ttNotSet) and (TypeOperation <> toNone) then
     Result := Concat(IBValue1.ToString, ' ', TypeOperation.ToString, ' ', IBValue2.ToString)
   else
     Result := IBValue1.ToString;
@@ -1207,11 +1215,16 @@ begin
   case Self.EmbargoType of
     etReleaseTime, etHoldTime:
       Result := Result and (Self.WorkingDays = aEmbargoColumn.WorkingDays) and (Self.TimeStamp = aEmbargoColumn.TimeStamp);
+    etTimePeriod:
+      Result := Result and (Self.WorkingDays = aEmbargoColumn.WorkingDays) and (Self.TimeStart = aEmbargoColumn.TimeStart)
+                and (Self.TimeFinish = aEmbargoColumn.TimeFinish);
     etRankingPosition, etRankingSum:
       Result := Result and (Self.Value1 = aEmbargoColumn.Value1) and
                            (Self.Value2 = aEmbargoColumn.Value2);
     etColumnValue, etColumnValueExists, etTimeInterval:
       Result := Result and (Self.RefRecordId = aEmbargoColumn.RefRecordId);
+    etVolumeAmount:
+      Result := Result and (Self.IBValue = aEmbargoColumn.IBValue) and (Self.Value1 = aEmbargoColumn.Value1);
   end;
 end;
 
@@ -1227,7 +1240,10 @@ begin
       .AppendFormat('Value1=%.10f', [Value1]).AppendLine
       .AppendFormat('Value2=%.10f', [Value2]).AppendLine
       .AppendFormat('WorkingDays=%s', [BoolToStr(WorkingDays)]).AppendLine
-      .AppendFormat('TimeInterval=%d', [TimeInterval]).AppendLine;
+      .AppendFormat('TimeInterval=%d', [TimeInterval]).AppendLine
+      .AppendFormat('TimeStart=%.10f', [TimeStart]).AppendLine
+      .AppendFormat('TimeFinish=%.10f', [TimeFinish]).AppendLine
+      .AppendFormat('IBValue=%d', [Ord(IBValue)]).AppendLine;
     if Assigned(ColumnsInfo) then
       sb.AppendFormat('RefRecordId=%d', [ColumnsInfo^.RecordId]).AppendLine
     else
@@ -1262,6 +1278,9 @@ begin
       RefRecordId    := StrToIntDef(StList.Values['RefRecordId'], -1);
       WorkingDays    := StrToBoolDef(StList.Values['WorkingDays'], True);
       TimeInterval   := StrToIntDef(StList.Values['TimeInterval'], 0);
+      TimeStart      := StrToFloatDef(StList.Values['TimeStart'], 0);
+      TimeFinish     := StrToFloatDef(StList.Values['TimeFinish'], 0);
+      IBValue        := TIABTickType(StrToIntDef(StList.Values['IBValue'], 0));
     finally
       FreeAndNil(StList);
     end;
@@ -1279,14 +1298,14 @@ end;
 function TEmbargoColumn.Caption: string;
 begin
   case EmbargoType of
-    etReleaseTime, etHoldTime:
+    etReleaseTime, etHoldTime, etTimePeriod:
     begin
       Result := EmbargoType.ToString;
       if WorkingDays then
         Result := Result + ' Wrk';
     end;
     etRankingPosition, etRankingSum:
-      Result := EmbargoType.ToString + ' (' + InequalityType.ToString + ')';
+      Result := EmbargoType.ToString + ' (' + InequalityType.ToString + ' ' + Value1.ToString + ')';
     etColumnValue, etColumnValueExists:
       begin
         Result := EmbargoType.ToString;
@@ -1299,6 +1318,8 @@ begin
         if Assigned(Self.ColumnsInfo) then
           Result := Result + ' [' + Self.ColumnsInfo^.Caption + '] (' + TimeInterval.ToString + ')';
       end;
+    etVolumeAmount:
+      Result := EmbargoType.ToString + ' (' + InequalityType.ToString + ' ' + Value1.ToString + ')';
   end;
 end;
 
@@ -1309,6 +1330,16 @@ begin
   case EmbargoType of
     etReleaseTime, etHoldTime:
       Result := TimeToStr(TimeStamp);
+    etTimePeriod:
+      Result := TimeToStr(TimeStart) + ' - ' + TimeToStr(TimeFinish);
+    etVolumeAmount:
+    begin
+      if Assigned(ColumnsInfo) and aExtraColumns^.Items.ContainsKey(ColumnsInfo.ColumnId) then
+      begin
+        ColumnsItem := aExtraColumns^.Items[ColumnsInfo.ColumnId];
+        Result := FormatFloat(C_CURRENCY_FORMAT, ColumnsItem.Price);
+      end;
+    end;
     etRankingPosition:
       case InequalityType of
         iqAbove, iqAboveOrEqual:
@@ -1361,6 +1392,14 @@ var
 begin
   Result := False;
   case EmbargoType of
+    etTimePeriod:
+      if WorkingDays then
+        Result := (DayOfWeek(Date) in [2 .. 6]) and (TimeOf(TimeStart) < TimeOf(Now)) and (TimeOf(TimeFinish) > TimeOf(Now))
+      else
+        Result := (TimeOf(TimeStart) < TimeOf(Now)) and (TimeOf(TimeFinish) > TimeOf(Now));
+    etVolumeAmount:
+      if Assigned(aColumnsInfo) and aExtraColumns^.Items.ContainsKey(aColumnsInfo.ColumnId) then
+        Result := InequalityType.IsCondition(aExtraColumns^.Items[aColumnsInfo.ColumnId].Price, Value1);
     etReleaseTime:
       if WorkingDays then
         Result := (DayOfWeek(Date) in [2 .. 6]) and (TimeOf(TimeStamp) < TimeOf(Now))
@@ -1383,7 +1422,7 @@ begin
         iqBetween:
           Result := (Value1 <= aExtraColumns^.RankingSum) and (Value2 >= aExtraColumns^.RankingSum);
       else
-        Result := InequalityType.IsCondition(Value1, aExtraColumns^.RankingSum)
+        Result := InequalityType.IsCondition(aExtraColumns^.RankingSum, Value1)
       end;
     etColumnValue:
       if Assigned(ColumnsInfo) and aExtraColumns^.Items.ContainsKey(ColumnsInfo.ColumnId) then
@@ -1750,6 +1789,8 @@ begin
     StList := TStringList.Create;
     try
       StList.Text := aInfo;
+      LastTickType   := TLastTickType(StrToIntDef(StList.Values['LastTickType'], 0));
+      LastPriceType  := TLastPriceType(StrToIntDef(StList.Values['LastPriceType'], 0));
       LastTickCount  := StrToIntDef(StList.Values['LastTickCount'], 0);
       LastPrice      := StrToBoolDef(StList.Values['LastPrice'], True);
       Weight         := StrToFloatDef(StList.Values['Weight'], 0);

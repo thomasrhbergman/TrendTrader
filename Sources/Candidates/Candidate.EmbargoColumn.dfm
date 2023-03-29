@@ -3,7 +3,7 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Add Embargo'
-  ClientHeight = 243
+  ClientHeight = 133
   ClientWidth = 635
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -11,19 +11,31 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
-    Top = 202
+    Top = 92
     Width = 635
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
+    object Label1: TLabel
+      Left = 16
+      Top = 24
+      Width = 302
+      Height = 13
+      Caption = 'There are hidden outdated edits below!!! Note for programmer'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clRed
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+      Visible = False
+    end
     object btnAddColumn: TBitBtn
       Left = 464
       Top = 1
@@ -60,12 +72,11 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     end
   end
   object rbReleaseTime: TRadioButton
-    Left = 5
-    Top = 6
+    Left = 0
+    Top = 210
     Width = 220
     Height = 17
     Caption = 'Release Time'
-    Checked = True
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
@@ -73,12 +84,12 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     Font.Style = []
     ParentFont = False
     TabOrder = 1
-    TabStop = True
+    Visible = False
     OnClick = OnChangeEnabled
   end
   object rbHoldTime: TRadioButton
-    Left = 5
-    Top = 34
+    Left = 0
+    Top = 238
     Width = 220
     Height = 17
     Caption = 'Hold Time'
@@ -89,12 +100,13 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     Font.Style = []
     ParentFont = False
     TabOrder = 2
+    Visible = False
     OnClick = OnChangeEnabled
   end
   object rbRankingSum: TRadioButton
-    Left = 5
-    Top = 62
-    Width = 220
+    Left = 8
+    Top = 8
+    Width = 205
     Height = 17
     Caption = 'Ranking Sum'
     Font.Charset = DEFAULT_CHARSET
@@ -107,8 +119,8 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     OnClick = OnChangeEnabled
   end
   object rbRankingPosition: TRadioButton
-    Left = 5
-    Top = 90
+    Left = 0
+    Top = 264
     Width = 220
     Height = 17
     Caption = 'Ranking Position'
@@ -119,25 +131,26 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     Font.Style = []
     ParentFont = False
     TabOrder = 4
+    Visible = False
     OnClick = OnChangeEnabled
   end
   object pnlConditions: TPanel
     Left = 220
     Top = 0
     Width = 415
-    Height = 202
+    Height = 92
     Align = alRight
     BevelOuter = bvNone
     TabOrder = 5
     object pnlReleaseTime: TPanel
-      Left = 0
-      Top = 0
+      Left = 5
+      Top = 208
       Width = 415
       Height = 28
-      Align = alTop
       BevelOuter = bvNone
       ParentBackground = False
       TabOrder = 0
+      Visible = False
       object edReleaseTime: TDateTimePicker
         Left = 122
         Top = 3
@@ -160,14 +173,14 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
       end
     end
     object pnlHoldTime: TPanel
-      Left = 0
-      Top = 28
+      Left = 5
+      Top = 236
       Width = 415
       Height = 28
-      Align = alTop
       BevelOuter = bvNone
       ParentBackground = False
       TabOrder = 1
+      Visible = False
       object edHoldTime: TDateTimePicker
         Left = 122
         Top = 4
@@ -191,19 +204,27 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     end
     object pnlRankingSum: TPanel
       Left = 0
-      Top = 56
+      Top = 0
       Width = 415
       Height = 28
       Align = alTop
       BevelOuter = bvNone
       ParentBackground = False
       TabOrder = 2
+      object lblRankingSumOperation: TLabel
+        Left = 206
+        Top = 6
+        Width = 16
+        Height = 13
+        Caption = '>='
+      end
       object cbRankingSum: TComboBox
-        Left = 122
+        Left = 14
         Top = 3
         Width = 101
         Height = 21
         TabOrder = 0
+        Visible = False
         OnChange = cbRankingSumChange
         Items.Strings = (
           'greater or equal'
@@ -249,14 +270,14 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
       end
     end
     object pnlRankingPosition: TPanel
-      Left = 0
-      Top = 84
+      Left = 5
+      Top = 292
       Width = 415
       Height = 28
-      Align = alTop
       BevelOuter = bvNone
       ParentBackground = False
       TabOrder = 3
+      Visible = False
       object cbRankingPosition: TComboBox
         Left = 122
         Top = 3
@@ -308,14 +329,14 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
       end
     end
     object pnlColumnValue: TPanel
-      Left = 0
-      Top = 112
+      Left = 5
+      Top = 320
       Width = 415
       Height = 28
-      Align = alTop
       BevelOuter = bvNone
       ParentBackground = False
       TabOrder = 4
+      Visible = False
       object cbColumns: TComboBox
         Left = 5
         Top = 4
@@ -387,14 +408,14 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
       end
     end
     object pnlValueExistInColumn: TPanel
-      Left = 0
-      Top = 140
+      Left = 5
+      Top = 348
       Width = 415
       Height = 28
-      Align = alTop
       BevelOuter = bvNone
       ParentBackground = False
       TabOrder = 5
+      Visible = False
       object cbValueExistInColumn: TComboBox
         Left = 5
         Top = 4
@@ -404,14 +425,14 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
       end
     end
     object pnlTimeIntervalFromDataObtained: TPanel
-      Left = 0
-      Top = 168
+      Left = 5
+      Top = 376
       Width = 415
       Height = 28
-      Align = alTop
       BevelOuter = bvNone
       ParentBackground = False
       TabOrder = 6
+      Visible = False
       object lblTimeIntervalMs: TLabel
         Left = 311
         Top = 7
@@ -437,10 +458,85 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
         UseMouseWheel = True
       end
     end
+    object pnlTimePeriod: TPanel
+      Left = 0
+      Top = 28
+      Width = 415
+      Height = 28
+      Align = alTop
+      BevelOuter = bvNone
+      ParentBackground = False
+      TabOrder = 7
+      object edTimeStart: TDateTimePicker
+        Left = 83
+        Top = 4
+        Width = 101
+        Height = 21
+        Date = 44057.000000000000000000
+        Time = 0.375000000000000000
+        Kind = dtkTime
+        TabOrder = 0
+      end
+      object edTimeFinish: TDateTimePicker
+        Left = 192
+        Top = 4
+        Width = 101
+        Height = 21
+        Date = 44057.000000000000000000
+        Time = 0.812500000000000000
+        Kind = dtkTime
+        TabOrder = 1
+      end
+      object cbTimePeriodWorkingDays: TCheckBox
+        Left = 299
+        Top = 6
+        Width = 109
+        Height = 17
+        Caption = 'Only working days'
+        Checked = True
+        State = cbChecked
+        TabOrder = 2
+      end
+    end
+    object pnlVolumeAmount: TPanel
+      Left = 0
+      Top = 56
+      Width = 415
+      Height = 28
+      Align = alTop
+      BevelOuter = bvNone
+      ParentBackground = False
+      TabOrder = 8
+      object cbVolumeAmountTick: TComboBox
+        Left = 109
+        Top = 4
+        Width = 112
+        Height = 21
+        TabOrder = 0
+      end
+      object cbVolumeAmountOperation: TComboBox
+        Left = 225
+        Top = 4
+        Width = 101
+        Height = 21
+        TabOrder = 1
+        OnChange = cbColumnValueChange
+      end
+      object edVolumeAmountValue1: TNumberBox
+        Left = 333
+        Top = 4
+        Width = 75
+        Height = 21
+        AcceptExpressions = True
+        Mode = nbmFloat
+        TabOrder = 2
+        UseMouseWheel = True
+      end
+    end
   end
   object rbColumnValue: TRadioButton
-    Left = 5
-    Top = 118
+    Left = 0
+    Top = 292
     Width = 220
     Height = 17
     Caption = 'Column With a Specific Value'
@@ -451,11 +547,12 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     Font.Style = []
     ParentFont = False
     TabOrder = 6
+    Visible = False
     OnClick = OnChangeEnabled
   end
   object rbValueExistInColumn: TRadioButton
-    Left = 5
-    Top = 146
+    Left = 0
+    Top = 320
     Width = 220
     Height = 17
     Caption = 'Value Exist In Column'
@@ -466,11 +563,12 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     Font.Style = []
     ParentFont = False
     TabOrder = 7
+    Visible = False
     OnClick = OnChangeEnabled
   end
   object rbTimeIntervalFromDataObtained: TRadioButton
-    Left = 8
-    Top = 174
+    Left = 3
+    Top = 348
     Width = 216
     Height = 17
     Caption = 'Time Interval From Data Obtained'
@@ -481,6 +579,37 @@ object frmCandidateEmbargoColumn: TfrmCandidateEmbargoColumn
     Font.Style = []
     ParentFont = False
     TabOrder = 8
+    Visible = False
+    OnClick = OnChangeEnabled
+  end
+  object rbTimePeriod: TRadioButton
+    Left = 8
+    Top = 36
+    Width = 205
+    Height = 17
+    Caption = 'Time Period'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 9
+    OnClick = OnChangeEnabled
+  end
+  object rbVolumeAmount: TRadioButton
+    Left = 9
+    Top = 64
+    Width = 205
+    Height = 17
+    Caption = 'Volume / Amount'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    TabOrder = 10
     OnClick = OnChangeEnabled
   end
 end

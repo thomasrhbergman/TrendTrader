@@ -23,10 +23,14 @@ type
     pnlWeight: TPanel;
     lblTimeWeight: TLabel;
     edTimeWeight: TNumberBox;
-    lblLastTickType: TLabel;
-    lblLastPriceType: TLabel;
     lblWeight: TLabel;
     edWeight: TNumberBox;
+    pnlLastTickType: TPanel;
+    rbUp: TRadioButton;
+    rbDown: TRadioButton;
+    Panel1: TPanel;
+    rbHigh: TRadioButton;
+    rbLow: TRadioButton;
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
     FColumnsInfo: TColumnsInfo;
@@ -86,9 +90,15 @@ begin
         end;
       end;
   end;
-  lblLastTickType.Caption                := FColumnsInfo.PriceChangeColumn.LastTickType.ToString;
+  if FColumnsInfo.PriceChangeColumn.LastTickType = lttUp then
+    rbUp.Checked := true
+  else
+    rbDown.Checked := true;
   cbLastPrice.Checked                    := FColumnsInfo.PriceChangeColumn.LastPrice;
-  lblLastPriceType.Caption               := FColumnsInfo.PriceChangeColumn.LastPriceType.ToString;
+  if FColumnsInfo.PriceChangeColumn.LastPriceType = lptHigh then
+    rbHigh.Checked := true
+  else
+    rbLow.Checked := true;
   seLastTickCount.Value                  := FColumnsInfo.PriceChangeColumn.LastTickCount;
   edTimeWeight.ValueFloat                := FColumnsInfo.PriceChangeColumn.Weight;
   edWeight.ValueFloat                    := FColumnsInfo.Weight;
@@ -96,6 +106,14 @@ end;
 
 procedure TfrmCandidatePriceChangeColumn.Denitialize;
 begin
+  if rbUp.Checked then
+    FColumnsInfo.PriceChangeColumn.LastTickType := lttUp
+  else
+    FColumnsInfo.PriceChangeColumn.LastTickType := lttDown;
+  if rbHigh.Checked then
+    FColumnsInfo.PriceChangeColumn.LastPriceType := lptHigh
+  else
+    FColumnsInfo.PriceChangeColumn.LastPriceType := lptLow;
   FColumnsInfo.PriceChangeColumn.LastPrice      := cbLastPrice.Checked;
   FColumnsInfo.PriceChangeColumn.LastTickCount  := seLastTickCount.Value;
   FColumnsInfo.PriceChangeColumn.Weight         := edTimeWeight.ValueFloat;

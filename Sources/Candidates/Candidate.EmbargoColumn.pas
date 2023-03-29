@@ -7,7 +7,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics, Vcl.Controls,
   Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Buttons, Vcl.ExtCtrls, Vcl.Samples.Spin, System.Math, Vcl.ComCtrls,
   System.Generics.Collections, Common.Types, {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} CustomForms, IABFunctions,
-  IABSocketAPI, IABSocketAPI_const, Candidate.Types, DaImages, Utils, Vcl.NumberBox;
+  IABSocketAPI, IABSocketAPI_const, Candidate.Types, DaImages, Utils, Vcl.NumberBox, IABFunctions.Helpers;
 {$ENDREGION}
 
 type
@@ -55,6 +55,18 @@ type
     rbReleaseTime: TRadioButton;
     rbTimeIntervalFromDataObtained: TRadioButton;
     rbValueExistInColumn: TRadioButton;
+    lblRankingSumOperation: TLabel;
+    rbTimePeriod: TRadioButton;
+    rbVolumeAmount: TRadioButton;
+    pnlTimePeriod: TPanel;
+    edTimeStart: TDateTimePicker;
+    edTimeFinish: TDateTimePicker;
+    cbTimePeriodWorkingDays: TCheckBox;
+    pnlVolumeAmount: TPanel;
+    cbVolumeAmountTick: TComboBox;
+    cbVolumeAmountOperation: TComboBox;
+    edVolumeAmountValue1: TNumberBox;
+    Label1: TLabel;
     procedure cbColumnValueChange(Sender: TObject);
     procedure cbRankingPositionChange(Sender: TObject);
     procedure cbRankingSumChange(Sender: TObject);
@@ -65,6 +77,7 @@ type
     FColumns: TObjectDictionary<Integer, TColumnsInfo>;
     FColumnsInfo: TColumnsInfo;
     function CheckData: Boolean;
+    procedure UpdateControlsColor;
   public
     class function ShowDocument(aDialogMode: TDialogMode; AColumns: TObjectDictionary<Integer, TColumnsInfo>; var ColumnsInfo: TColumnsInfo): TModalResult;
     procedure Initialize;
@@ -98,11 +111,38 @@ begin
   end;
 end;
 
+procedure TfrmCandidateEmbargoColumn.UpdateControlsColor;
+var I: Integer;
+    Control: TControl;
+begin
+  for I := 0 to ComponentCount - 1 do
+    if (Components[I] is TComboBox)
+       or
+       (Components[I] is TNumberBox)
+       or
+       (Components[I] is TDateTimePicker)
+       or
+       (Components[I] is TCheckBox) then
+    begin
+      Control := TControl(Components[I]);
+      while True do
+      begin
+        if Assigned(Control.Parent) and (Control.Parent is TPanel) and (Control.Parent <> pnlConditions) then
+          Control := Control.Parent
+        else
+          break;
+      end;
+      if Control is TPanel then
+        TControl(Components[I]).Enabled := Control.Enabled;
+    end;
+end;
+
 procedure TfrmCandidateEmbargoColumn.Initialize;
 var
   Inequality: TInequalityType;
   Pair: TPair<Integer, TColumnsInfo>;
   ColumnsInfo: TColumnsInfo;
+  TickType: TIABTickType;
 begin
   cbColumns.Items.Clear;
   cbColumnValue.Items.Clear;
@@ -115,7 +155,13 @@ begin
     cbColumnValue.Items.Add(Inequality.ToString);
     cbRankingPosition.Items.Add(Inequality.ToString);
     cbRankingSum.Items.Add(Inequality.ToString);
+    if Inequality in [iqAbove, iqBelow] then
+      cbVolumeAmountOperation.Items.Add(Inequality.ToString);
   end;
+
+  for TickType := Low(TIABTickType) to High(TIABTickType) do
+    if TickType in [ttAskSize, ttBidSize, ttLastSize, ttVolume, ttAvgVolume] then
+      cbVolumeAmountTick.Items.Add(TickType.ToString);
 
   if Assigned(FColumns) then
     for Pair in FColumns do
@@ -154,8 +200,12 @@ begin
         rbReleaseTime.Checked                  := FColumnsInfo.EmbargoColumn.EmbargoType = etReleaseTime;
         rbValueExistInColumn.Checked           := FColumnsInfo.EmbargoColumn.EmbargoType = etColumnValueExists;
         rbTimeIntervalFromDataObtained.Checked := FColumnsInfo.EmbargoColumn.EmbargoType = etTimeInterval;
+        rbTimePeriod.Checked                   := FColumnsInfo.EmbargoColumn.EmbargoType = etTimePeriod;
+        rbVolumeAmount.Checked                 := FColumnsInfo.EmbargoColumn.EmbargoType = etVolumeAmount;
+
         cbReleaseWorkingDays.Checked           := FColumnsInfo.EmbargoColumn.WorkingDays;
         cbHoldWorkingDays.Checked              := FColumnsInfo.EmbargoColumn.WorkingDays;
+        cbTimePeriodWorkingDays.Checked        := FColumnsInfo.EmbargoColumn.WorkingDays;
 
         cbColumnValue.ItemIndex     := Ord(FColumnsInfo.EmbargoColumn.InequalityType);
         cbRankingPosition.ItemIndex := Ord(FColumnsInfo.EmbargoColumn.InequalityType);
@@ -166,10 +216,21 @@ begin
         edHoldTime.Time                         := FColumnsInfo.EmbargoColumn.TimeStamp;
         edRankingPosition1.ValueInt             := Trunc(FColumnsInfo.EmbargoColumn.Value1);
         edRankingPosition2.ValueInt             := Trunc(FColumnsInfo.EmbargoColumn.Value2);
-        edRankingSum1.ValueFloat                := FColumnsInfo.EmbargoColumn.Value1;
-        edRankingSum2.ValueFloat                := FColumnsInfo.EmbargoColumn.Value2;
+        if rbRankingSum.Checked then
+        begin
+          edRankingSum1.ValueFloat                := FColumnsInfo.EmbargoColumn.Value1;
+          edRankingSum2.ValueFloat                := FColumnsInfo.EmbargoColumn.Value2;
+        end;
         edReleaseTime.Time                      := FColumnsInfo.EmbargoColumn.TimeStamp;
         edTimeIntervalFromDataObtained.ValueInt := FColumnsInfo.EmbargoColumn.TimeInterval;
+        edTimeStart.Time                        := FColumnsInfo.EmbargoColumn.TimeStart;
+        edTimeFinish.Time                       := FColumnsInfo.EmbargoColumn.TimeFinish;
+        if rbVolumeAmount.Checked then
+        begin
+          cbVolumeAmountTick.ItemIndex            := cbVolumeAmountTick.Items.IndexOf(FColumnsInfo.EmbargoColumn.IBValue.ToString);
+          cbVolumeAmountOperation.ItemIndex       := cbVolumeAmountOperation.Items.IndexOf(FColumnsInfo.EmbargoColumn.InequalityType.ToString);
+          edVolumeAmountValue1.ValueFloat         := FColumnsInfo.EmbargoColumn.Value1;
+        end;
 
         for var i := 0 to cbColumns.Items.Count - 1 do
           if FColumns.ContainsKey(Integer(cbColumns.Items.Objects[i])) then
@@ -188,7 +249,7 @@ begin
         cbColumnValueChange(nil);
         cbRankingPositionChange(nil);
         cbRankingSumChange(nil);
-        OnChangePanelColour(nil);
+        //OnChangePanelColour(nil);
       end;
   end;
   OnChangeEnabled(nil);
@@ -210,10 +271,24 @@ begin
     FColumnsInfo.EmbargoColumn.TimeStamp   := edHoldTime.Time;
     FColumnsInfo.EmbargoColumn.WorkingDays := cbHoldWorkingDays.Checked;
   end
+  else if rbTimePeriod.Checked then
+  begin
+    FColumnsInfo.EmbargoColumn.EmbargoType := etTimePeriod;
+    FColumnsInfo.EmbargoColumn.TimeStart   := edTimeStart.Time;
+    FColumnsInfo.EmbargoColumn.TimeFinish  := edTimeFinish.Time;
+    FColumnsInfo.EmbargoColumn.WorkingDays := cbTimePeriodWorkingDays.Checked;
+  end
+  else if rbVolumeAmount.Checked then
+  begin
+    FColumnsInfo.EmbargoColumn.EmbargoType     := etVolumeAmount;
+    FColumnsInfo.EmbargoColumn.IBValue         := TIABTickType.FromString(cbVolumeAmountTick.Text);
+    FColumnsInfo.EmbargoColumn.InequalityType  := TInequalityType.FromString(cbVolumeAmountOperation.Text);
+    FColumnsInfo.EmbargoColumn.Value1          := edVolumeAmountValue1.ValueFloat;
+  end
   else if rbRankingSum.Checked then
   begin
     FColumnsInfo.EmbargoColumn.EmbargoType    := etRankingSum;
-    FColumnsInfo.EmbargoColumn.InequalityType := TInequalityType(cbRankingSum.ItemIndex);
+    FColumnsInfo.EmbargoColumn.InequalityType := iqAboveOrEqual;//TInequalityType(cbRankingSum.ItemIndex);
     FColumnsInfo.EmbargoColumn.Value1         := edRankingSum1.ValueFloat;
     FColumnsInfo.EmbargoColumn.Value2         := edRankingSum2.ValueFloat;
   end
@@ -276,15 +351,29 @@ function TfrmCandidateEmbargoColumn.CheckData: Boolean;
 resourcestring
   rcSelectInequalityType = 'Please select "Type Of Inequality"' + sLineBreak;
   rcSelectColumnSpecific = 'Please select "Column With a Specific Value"' + sLineBreak;
+  rcSelectTickType = 'Please select "Tick Type"' + sLineBreak;
   rcSelectColumnExist    = 'Please select "Value Exist In Column"' + sLineBreak;
 var
   Problems: string;
 begin
   Problems := '';
-  if rbRankingSum.Checked and (cbRankingSum.ItemIndex = -1) then
+  {if rbRankingSum.Checked and (cbRankingSum.ItemIndex = -1) then
   begin
     Problems := rcSelectInequalityType;
     SetFocusSafely(cbRankingSum);
+  end}
+  if rbVolumeAmount.Checked then
+  begin
+    if (cbVolumeAmountTick.ItemIndex = -1) then
+    begin
+      Problems := rcSelectTickType;
+      SetFocusSafely(cbVolumeAmountTick);
+    end;
+    if (cbVolumeAmountOperation.ItemIndex = -1) then
+    begin
+      Problems := rcSelectInequalityType;
+      SetFocusSafely(cbVolumeAmountOperation);
+    end;
   end
   else if rbRankingPosition.Checked and (cbRankingPosition.ItemIndex = -1) then
   begin
@@ -335,6 +424,9 @@ begin
   pnlReleaseTime.Enabled                  := rbReleaseTime.Checked;
   pnlTimeIntervalFromDataObtained.Enabled := rbTimeIntervalFromDataObtained.Checked;
   pnlValueExistInColumn.Enabled           := rbValueExistInColumn.Checked;
+  pnlTimePeriod.Enabled                   := rbTimePeriod.Checked;
+  pnlVolumeAmount.Enabled                 := rbVolumeAmount.Checked;
+  UpdateControlsColor;
 end;
 
 procedure TfrmCandidateEmbargoColumn.OnChangePanelColour(Sender: TObject);
@@ -353,6 +445,10 @@ begin
     pnlValueExistInColumn.Color := clInfoBk;
   if rbTimeIntervalFromDataObtained.Checked then
     pnlTimeIntervalFromDataObtained.Color := clInfoBk;
+  if rbTimePeriod.Checked then
+    pnlTimePeriod.Color := clInfoBk;
+  if rbVolumeAmount.Checked then
+    pnlVolumeAmount.Color := clInfoBk;
 end;
 
 procedure TfrmCandidateEmbargoColumn.cbColumnValueChange(Sender: TObject);

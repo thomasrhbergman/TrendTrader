@@ -21,6 +21,7 @@ type
     lblTickType: TLabel;
     lblWeight: TLabel;
     pnlBottom: TPanel;
+    procedure cbTypeOperationChange(Sender: TObject);
   private
     FColumnsInfo: TColumnsInfo;
   public
@@ -99,6 +100,21 @@ begin
         edWeight.ValueFloat       := FColumnsInfo.Weight;
       end;
   end;
+
+  cbIBValue2.Visible := cbTypeOperation.ItemIndex > 0;
+end;
+
+procedure TfrmCandidateTickColumn.cbTypeOperationChange(Sender: TObject);
+begin
+  inherited;
+  cbIBValue2.Visible := cbTypeOperation.ItemIndex > 0;
+  if cbTypeOperation.ItemIndex = 0 then
+  begin
+    edWeight.ValueFloat := 0;
+    cbIBValue2.ItemIndex := 0;
+  end
+  else
+    edWeight.ValueFloat := 1;
 end;
 
 procedure TfrmCandidateTickColumn.Denitialize;

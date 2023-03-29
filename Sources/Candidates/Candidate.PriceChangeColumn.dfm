@@ -3,7 +3,7 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Add PriceChange'
-  ClientHeight = 158
+  ClientHeight = 201
   ClientWidth = 263
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -16,13 +16,13 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
-    Top = 117
+    Top = 160
     Width = 263
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitTop = 95
+    ExplicitTop = 117
     object btnAddColumn: TBitBtn
       Left = 121
       Top = 0
@@ -64,33 +64,20 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
     Left = 0
     Top = 0
     Width = 263
-    Height = 30
+    Height = 51
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
     object lblLastTicks: TLabel
       Left = 31
-      Top = 7
+      Top = 19
       Width = 78
       Height = 13
       Caption = 'Last # ticks are:'
     end
-    object lblLastTickType: TLabel
-      Left = 121
-      Top = 7
-      Width = 28
-      Height = 13
-      Caption = 'none'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = [fsBold]
-      ParentFont = False
-    end
     object seLastTickCount: TSpinEdit
-      Left = 164
-      Top = 4
+      Left = 191
+      Top = 16
       Width = 50
       Height = 22
       MaxValue = 0
@@ -98,45 +85,81 @@ object frmCandidatePriceChangeColumn: TfrmCandidatePriceChangeColumn
       TabOrder = 0
       Value = 3
     end
+    object pnlLastTickType: TPanel
+      Left = 115
+      Top = 4
+      Width = 70
+      Height = 45
+      BevelOuter = bvNone
+      TabOrder = 1
+      object rbUp: TRadioButton
+        Left = 8
+        Top = 3
+        Width = 36
+        Height = 17
+        Caption = 'Up'
+        TabOrder = 0
+      end
+      object rbDown: TRadioButton
+        Left = 8
+        Top = 24
+        Width = 49
+        Height = 17
+        Caption = 'Down'
+        TabOrder = 1
+      end
+    end
   end
   object pnlLastPrice: TPanel
     Left = 0
-    Top = 30
+    Top = 51
     Width = 263
-    Height = 30
+    Height = 51
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 2
-    object lblLastPriceType: TLabel
-      Left = 124
-      Top = 8
-      Width = 28
-      Height = 13
-      Caption = 'none'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = [fsBold]
-      ParentFont = False
-    end
     object cbLastPrice: TCheckBox
       Left = 34
-      Top = 7
+      Top = 18
       Width = 75
       Height = 17
       Caption = 'Last Price ='
       TabOrder = 0
     end
+    object Panel1: TPanel
+      Left = 115
+      Top = 4
+      Width = 70
+      Height = 45
+      BevelOuter = bvNone
+      TabOrder = 1
+      object rbHigh: TRadioButton
+        Left = 8
+        Top = 3
+        Width = 36
+        Height = 17
+        Caption = 'High'
+        TabOrder = 0
+      end
+      object rbLow: TRadioButton
+        Left = 8
+        Top = 24
+        Width = 49
+        Height = 17
+        Caption = 'Low'
+        TabOrder = 1
+      end
+    end
   end
   object pnlWeight: TPanel
     Left = 0
-    Top = 60
+    Top = 102
     Width = 263
     Height = 54
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 3
+    ExplicitTop = 60
     object lblTimeWeight: TLabel
       Left = 35
       Top = 6

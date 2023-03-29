@@ -54,6 +54,7 @@ type
       '%0.2f'{ttETFNavLast}, '%0.2f'{ttETFNavFrozenLast}, '%0.2f'{ttETFNavHigh}, '%0.2f'{ttETFNavLow},
       '%0.2f'{ttNotSet},'%0.2f'{ttMotherFilledPrice},'%0.2f'{ttExchange},'%0.2f'{ttMarket});
   public
+    class function FromString(aValue: string): TIABTickType; static;
     function ToString: string;
     function ToFormat: string;
   end;
@@ -171,7 +172,6 @@ type
     function ToString: string;
   end;
 
-
 implementation
 
 { TAdvancedOrderTypeHelper }
@@ -182,6 +182,18 @@ begin
 end;
 
 { TIABTickTypeHelper }
+
+class function TIABTickTypeHelper.FromString(aValue: string): TIABTickType;
+var TickType: TIABTickType;
+begin
+  Result := ttNotSet;
+  for TickType := Low(TIABTickType) to High(TIABTickType) do
+    if SameText(TickType.ToString, aValue) then
+    begin
+      Result := TickType;
+      break;
+    end;
+end;
 
 function TIABTickTypeHelper.ToFormat: string;
 begin
