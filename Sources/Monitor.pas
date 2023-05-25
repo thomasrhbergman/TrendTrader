@@ -2082,6 +2082,16 @@ begin
           end;
         end;
 
+        if (CurData.DocType = ntOrder) and
+            Assigned(CurData.OrderDoc) and
+            CurData.OrderDoc.IsActiveTime and
+            (CurData.OrderDoc.OrderStatus in [osPendSubmit,osPreSubmit,osSubmitted,osPartlyFilled]) and
+            (CurData.OrderDoc is TOrderIBDoc) and
+            (Now > IncSecond(CurData.OrderDoc.StartedAt, CurData.OrderDoc.ActiveTime)) then
+        begin
+          CurData.OrderDoc.CancelOrder;
+        end;
+
         if (vstMonitor.GetNodeLevel(Node) <> 0) and
            //CurData.Enabled and
            Assigned(CurData.ConditionDoc) and
@@ -2186,6 +2196,7 @@ begin
         end;
         Node := vstMonitor.GetNext(Node);
       end;
+      vstMonitor.Repaint;
     end;
   end;
 end;
@@ -2775,6 +2786,15 @@ begin
           else
             Doc.IsCondition := false;
           //Doc.Enabled := false;
+        end
+        // Amount size
+        else if Doc.RealTimeType = 4 then
+        begin
+          Doc.Ask := PriceList.LastPrice[TIABTickType.ttAsk];
+          if Doc.SingleOrderAmount <> 0 then
+            Doc.IsCondition := Doc.InequalityRt.IsCondition(Value1 / Doc.SingleOrderAmount * Doc.Ask, Doc.CondLimit)
+          else
+            Doc.IsCondition := false;
         end;
         Doc.TickType1Value := Value1;
         Doc.TickType2Value := Value2;
@@ -3307,7 +3327,7 @@ begin
                                                          AutoTradeInfo.Qualifier.RecordId,
                                                          AutoTradeInfo.InstanceNum,
                                                          AutoTradeInfo.RecordId,
-                                                         AutoTradeInfo.AllowSendDuplicateOrder));
+                                                         AutoTradeInfo.AllowSendDuplicateOrder, 0));
 
         Node := aSourceTree.GetNextSelected(Node, False);
       end;
@@ -5325,7 +5345,7 @@ begin
                                                               Data^.OrderDoc.QualifierID,
                                                               Data^.OrderDoc.AutoTradesInstance,
                                                               Data^.OrderDoc.AutoTradesID,
-                                                              False),
+                                                              False, 0),
                                      AfterLoadProc,
                                      AfterLoadTreeProc);
           SetChildsEnabled(Node, True);

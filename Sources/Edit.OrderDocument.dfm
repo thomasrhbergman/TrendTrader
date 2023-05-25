@@ -11,12 +11,10 @@ object frmOrderDocument: TfrmOrderDocument
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = True
   Position = poMainFormCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
@@ -245,18 +243,33 @@ object frmOrderDocument: TfrmOrderDocument
         end
         object lblInstrument: TLabel
           Left = 64
-          Top = 55
+          Top = 79
           Width = 57
           Height = 13
           Alignment = taRightJustify
           Caption = 'Instrument:'
         end
         object lblInstrumentName: TLabel
-          Left = 127
-          Top = 55
+          Left = 126
+          Top = 79
           Width = 133
           Height = 13
           Caption = '<Replace from AutoOrder>'
+        end
+        object lblActiveTime: TLabel
+          Left = 64
+          Top = 56
+          Width = 57
+          Height = 13
+          Alignment = taRightJustify
+          Caption = 'Active time:'
+        end
+        object lblSeconds: TLabel
+          Left = 193
+          Top = 56
+          Width = 39
+          Height = 13
+          Caption = 'seconds'
         end
         object cbScope: TComboBox
           Left = 126
@@ -276,7 +289,7 @@ object frmOrderDocument: TfrmOrderDocument
             'FILL OR KILL')
         end
         object edVisiblePart: TNumberBox
-          Left = 127
+          Left = 126
           Top = 28
           Width = 60
           Height = 21
@@ -292,7 +305,7 @@ object frmOrderDocument: TfrmOrderDocument
         end
         object btnShowSearchForm: TBitBtn
           Left = 350
-          Top = 46
+          Top = 70
           Width = 32
           Height = 32
           Action = aShowSearchInstruments
@@ -305,6 +318,28 @@ object frmOrderDocument: TfrmOrderDocument
           Images = DMImage.vil16
           ParentFont = False
           TabOrder = 2
+        end
+        object edActiveTime: TNumberBox
+          Left = 145
+          Top = 52
+          Width = 41
+          Height = 21
+          Hint = 'Always posivite'
+          AcceptExpressions = True
+          Alignment = taRightJustify
+          MaxValue = 100.000000000000000000
+          TabOrder = 3
+          Value = 100.000000000000000000
+          UseMouseWheel = True
+          OnChangeValue = OnPercentChange
+        end
+        object cbIsActiveTime: TCheckBox
+          Left = 126
+          Top = 55
+          Width = 17
+          Height = 17
+          TabOrder = 4
+          OnClick = cbIsActiveTimeClick
         end
       end
     end

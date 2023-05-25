@@ -1,5 +1,4 @@
 object DMod: TDMod
-  OldCreateOrder = True
   Height = 691
   Width = 752
   object dsInstruments: TDataSource

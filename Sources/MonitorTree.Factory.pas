@@ -28,7 +28,10 @@ type
     class procedure SetPriceValue(const aOrderDoc: TOrderIBDoc; const aPrice: Double = 0);
   public
     class function GetTopOrder(aNode: PVirtualNode): TCustomOrderDoc;
+    class function GetTopOrderNode(aNode: PVirtualNode): PVirtualNode;
     class function HasChildOrders(aNode: PVirtualNode): boolean;
+    class function StartChildOrders(aNode: PVirtualNode; aQuantity: integer): boolean;
+    class procedure CancelChildOrders(aNode: PVirtualNode);
     class procedure FillOrderPrice(const aOrder: TCustomOrderDoc; const aPrice: Currency);
     class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
     class procedure FillDocuments(const aNode: PVirtualNode; const aInstrumentData: Candidate.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon; const aAfterLoadProc: TAfterLoadEachDocumentProc; const aAfterLoadTreeProc: TAfterLoadTreeProc); overload;
@@ -125,6 +128,30 @@ begin
       aAfterLoadTreeProc(aNode);
 end;
 
+class procedure TTreeFactory.CancelChildOrders(aNode: PVirtualNode);
+  procedure CancelChilds(aNode: PVirtualNode);
+  var
+    Child: PVirtualNode;
+    Data: PTreeData;
+  begin
+    if Assigned(aNode) then
+    begin
+      Child := aNode.FirstChild;
+      while Assigned(Child) do
+      begin
+        Data := Child^.GetData;
+        if Assigned(Data) and (Data.DocType = ntOrder) then
+          if (Data.OrderDoc.OrderStatus in [osSleeping]) then
+            Data.OrderDoc.CancelOrder;
+        CancelChilds(Child);
+        Child := Child.NextSibling;
+      end;
+    end;
+  end;
+begin
+  CancelChilds(aNode);
+end;
+
 class procedure TTreeFactory.FillAlgos(const aNode: PVirtualNode; const aInstrumentData: Scanner.Types.TInstrumentData; const aPrice: Currency; const aAutoTradesCommon: TAutoTradesCommon);
 var
   Data: PTreeData;
@@ -171,6 +198,7 @@ begin
     Data^.ConditionDoc.AutoTradesInstance := aAutoTradesCommon.AutoTradesInstance;
     Data^.ConditionDoc.QualifierID        := aAutoTradesCommon.QualifierID;
     Data^.ConditionDoc.QualifierInstance  := aAutoTradesCommon.QualifierInstance;
+    Data^.ConditionDoc.SingleOrderAmount  := aAutoTradesCommon.SingleOrderAmount;
     Data^.ConditionDoc.Enabled            := IsTopOrder(aNode);
     if Data^.ConditionDoc.Instrument.SokidInfo.ContractId = 0 then
     begin
@@ -583,6 +611,35 @@ begin
   end;
 end;
 
+class function TTreeFactory.StartChildOrders(aNode: PVirtualNode; aQuantity: integer): boolean;
+  procedure StartChilds(aNode: PVirtualNode);
+  var
+    Child: PVirtualNode;
+    Data: PTreeData;
+  begin
+    if Assigned(aNode) then
+    begin
+      Child := aNode.FirstChild;
+      while Assigned(Child) do
+      begin
+        Data := Child^.GetData;
+        if Assigned(Data) and (Data.DocType = ntOrder) then
+          if (Data.OrderDoc.OrderStatus in [osSleeping]) then
+          begin
+            Data.OrderDoc.Quantity := aQuantity;
+            Data.OrderDoc.Enabled := true;
+            Result := true;
+          end;
+        StartChilds(Child);
+        Child := Child.NextSibling;
+      end;
+    end;
+  end;
+begin
+  Result := false;
+  StartChilds(aNode);
+end;
+
 class procedure TTreeFactory.FillOrderPrice(const aOrder: TCustomOrderDoc; const aPrice: Currency);
 var
   OrderIB: TOrderIBDoc absolute aOrder;
@@ -618,6 +675,23 @@ begin
   end;
 end;
 
+class function TTreeFactory.GetTopOrderNode(aNode: PVirtualNode): PVirtualNode;
+var Node: PVirtualNode;
+    Data: PTreeData;
+begin
+  Result := nil;
+  Node := aNode;
+  while Assigned(Node) do
+  begin
+    Data := Node^.GetData;
+    if (Data.DocType = ntOrder) {and IsTopOrder(Node)} then
+      Result := Node;
+    if Data.DocType = ntAutoTrade then
+      break;
+    Node := Node.Parent;
+  end;
+end;
+
 class function TTreeFactory.HasChildOrders(aNode: PVirtualNode): boolean;
 var Childs: TList<PVirtualNode>;
 
@@ -628,10 +702,6 @@ var Childs: TList<PVirtualNode>;
   begin
     if Assigned(aNode) then
     begin
-//      Data := aNode^.GetData;
-//      if Assigned(Data) and (Data.DocType = ntOrder) then
-//        Result.Add(aNode);
-
       Child := aNode.FirstChild;
       while Assigned(Child) do
       begin

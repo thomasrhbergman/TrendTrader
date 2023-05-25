@@ -6,7 +6,7 @@ interface
 uses
   System.SysUtils, System.Variants, System.Classes, System.Generics.Defaults, System.Generics.Collections,
   {$IFDEF USE_CODE_SITE}CodeSiteLogging, {$ENDIF} Winapi.Windows, System.DateUtils, Common.Types, System.IniFiles,
-  Vcl.Controls;
+  Vcl.Controls, Forms;
 {$ENDREGION}
 
   function FloatToStrEx(Value: Double): string;
@@ -35,6 +35,7 @@ uses
   function VarToInt64Def(const Value: Variant; DefValue: Int64 = 0): Int64; inline;
   function VarToIntDef(const Value: Variant; DefValue: Integer = 0): Integer; inline;
   procedure SetFocusSafely(const aControl: TWinControl); inline;
+  procedure SaveToLog(AText: string);
 
   function IsInternetConnected: Boolean;
 
@@ -48,6 +49,20 @@ var
   NoDecimalSeparator: string;
 
 implementation
+
+procedure SaveToLog(AText: string);
+var F: TextFile;
+    FileName: string;
+begin
+  FileName := ChangeFileExt(Application.ExeName,'.log');
+  AssignFile(F, FileName);
+  if FileExists(FileName) then
+    Append(F)
+  else
+    Rewrite(F);
+  WriteLn(F, DateTimeToStr(Now) + ' : ' + AText);
+  CloseFile(F);
+end;
 
 function InternetGetConnectedState(lpdwFlags: LPDWORD; dwReserved:DWORD):BOOL; stdcall; external 'wininet.dll' name 'InternetGetConnectedState';
 

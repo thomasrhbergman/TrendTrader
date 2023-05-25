@@ -15,7 +15,6 @@ object frmMonitor: TfrmMonitor
   Font.Style = []
   KeyPreview = True
   Menu = MainMenu
-  OldCreateOrder = True
   Position = poScreenCenter
   ShowHint = True
   OnClose = FormClose
@@ -25,7 +24,6 @@ object frmMonitor: TfrmMonitor
   OnMouseWheelDown = FormMouseWheelDown
   OnMouseWheelUp = FormMouseWheelUp
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlTopOld: TPanel
     Left = 0
@@ -359,6 +357,14 @@ object frmMonitor: TfrmMonitor
           inherited pnlAvailableFilters: TPanel
             Width = 435
             ExplicitWidth = 435
+            inherited lblAvailableFilters: TLabel
+              Left = 6
+              Width = 73
+              Height = 13
+              ExplicitLeft = 6
+              ExplicitWidth = 73
+              ExplicitHeight = 13
+            end
             inherited edtAvailableFilters: TEdit
               Width = 221
               Height = 19

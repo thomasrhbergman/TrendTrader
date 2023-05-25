@@ -53,6 +53,10 @@ type
     lblInstrument: TLabel;
     lblInstrumentName: TLabel;
     aClear: TAction;
+    lblActiveTime: TLabel;
+    edActiveTime: TNumberBox;
+    cbIsActiveTime: TCheckBox;
+    lblSeconds: TLabel;
     procedure aSaveExecute(Sender: TObject);
     procedure cbBrokerChange(Sender: TObject);
     procedure cbOrderTypeChange(Sender: TObject);
@@ -67,6 +71,7 @@ type
     procedure pnlIBDragDrop(Sender, Source: TObject; X, Y: Integer);
     procedure pnlIBDragOver(Sender, Source: TObject; X, Y: Integer;
       State: TDragState; var Accept: Boolean);
+    procedure cbIsActiveTimeClick(Sender: TObject);
   private
     FAction: TIABAction;
     FId: Integer;
@@ -79,6 +84,9 @@ type
     function GetOrderAction: TIABAction;
     function GetOrderType: TIABOrderType;
     function GetScope: Integer;
+    function GetVisiblePart: Currency;
+    function GetActiveTime: Integer;
+    function GetIsActiveTime: Boolean;
 
     procedure ChangeOrderType;
     procedure NormalizationOrder;
@@ -90,8 +98,9 @@ type
     procedure SetOrderAction(const Value: TIABAction);
     procedure SetOrderType(const Value: TIABOrderType);
     procedure SetScope(const Value: Integer);
-    function GetVisiblePart: Currency;
     procedure SetVisiblePart(const Value: Currency);
+    procedure SetActiveTime(const Value: Integer);
+    procedure SetIsActiveTime(const Value: Boolean);
   public
     Instrument: TInstrument;
     procedure Initialize;
@@ -111,6 +120,8 @@ type
     property OrderType         : TIABOrderType       read GetOrderType         write SetOrderType;
     property Scope             : Integer             read GetScope             write SetScope;
     property VisiblePart       : Currency            read GetVisiblePart       write SetVisiblePart;
+    property IsActiveTime      : Boolean             read GetIsActiveTime      write SetIsActiveTime;
+    property ActiveTime        : Integer             read GetActiveTime        write SetActiveTime;
   end;
 
 implementation
@@ -285,12 +296,22 @@ begin
   OnPercentChange(nil);
 end;
 
+function TfrmOrderDocument.GetActiveTime: Integer;
+begin
+  Result := edActiveTime.ValueInt;
+end;
+
 function TfrmOrderDocument.GetBrokerType: TBrokerType;
 begin
   if (cbBroker.ItemIndex > -1) then
     Result := TBrokerType.FromInteger(cbBroker.ItemIndex)
   else
     Result := TBrokerType.brIB;
+end;
+
+procedure TfrmOrderDocument.SetActiveTime(const Value: Integer);
+begin
+  edActiveTime.ValueInt := Value;
 end;
 
 procedure TfrmOrderDocument.SetBrokerType(const Value: TBrokerType);
@@ -309,9 +330,20 @@ begin
     cpMain.ActiveCardIndex := cbBroker.ItemIndex;
 end;
 
+procedure TfrmOrderDocument.cbIsActiveTimeClick(Sender: TObject);
+begin
+  inherited;
+  edActiveTime.Enabled := cbIsActiveTime.Checked;
+end;
+
 function TfrmOrderDocument.GetDescription: string;
 begin
   Result := string(edDescription.Text).Trim;
+end;
+
+function TfrmOrderDocument.GetIsActiveTime: Boolean;
+begin
+  Result := cbIsActiveTime.Checked;
 end;
 
 procedure TfrmOrderDocument.SetDescription(const Value: string);
@@ -428,6 +460,12 @@ begin
   FId := Value;
 end;
 
+procedure TfrmOrderDocument.SetIsActiveTime(const Value: Boolean);
+begin
+  cbIsActiveTime.Checked := Value;
+  cbIsActiveTimeClick(cbIsActiveTime);
+end;
+
 function TfrmOrderDocument.GetLimitPrice: Double;
 begin
   Result := edLimit.ValueFloat;
@@ -512,6 +550,8 @@ begin
     Self.Limit           := aDocument.Limit;
     Self.OrderAction     := aDocument.OrderAction;
     Self.VisiblePart     := aDocument.VisiblePart;
+    Self.IsActiveTime    := aDocument.IsActiveTime;
+    Self.ActiveTime      := aDocument.ActiveTime;
     SetSokidInfo(aDocument.Instrument.SokidInfo);
     if (aDocument is TOrderIBDoc) then
     begin
@@ -554,6 +594,8 @@ begin
     aDocument.OrderAction     := Self.OrderAction;
     aDocument.OrderType       := Self.OrderType;
     aDocument.VisiblePart     := Self.VisiblePart;
+    aDocument.IsActiveTime    := Self.IsActiveTime;
+    aDocument.ActiveTime      := Self.ActiveTime;
     aDocument.Instrument.AssignFrom(Self.Instrument);
     if (aDocument is TOrderIBDoc) then
     begin

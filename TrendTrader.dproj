@@ -196,18 +196,12 @@
             </Platforms>
             <Deployment Version="4">
                 <DeployFile LocalName="bin\TrendTrader.exe" Configuration="Debug" Class="ProjectOutput"/>
-                <DeployFile LocalName="bin\TrendTrader.exe" Configuration="Debug" Class="ProjectOutput"/>
-                <DeployFile LocalName="bin\TrendTrader.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployFile LocalName="bin\TrendTrader.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txaPackage" Configuration="Debug" Class="ProjectFile"/>
-                <DeployFile LocalName="ModelSupport_TrendTrader\default.txaPackage" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txaPackage" Configuration="Release" Class="ProjectFile"/>
-                <DeployFile LocalName="ModelSupport_TrendTrader\default.txaPackage" Configuration="Release" Class="ProjectFile"/>
-                <DeployFile LocalName="ModelSupport_TrendTrader\default.txvpck" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txvpck" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txvpck" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="Sources\bleeper.pas" Configuration="Debug" Class="ProjectFile"/>
-                <DeployFile LocalName="TrendTrader.todo" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="TrendTrader.todo" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="TrendTrader.todo" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="TrendTrader_Icon.ico" Configuration="Debug" Class="UWP_DelphiLogo44"/>

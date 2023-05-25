@@ -374,7 +374,7 @@ begin
   begin
     Data := Node^.GetData;
     if (Data^.DocType = ntQualifier) then
-      frameAutoTrades.SetFilter(TAutoTradesCommon.Create(0, Data^.Qualifier.InstanceNum, Data^.Qualifier.RecordId, 0, 0, False));
+      frameAutoTrades.SetFilter(TAutoTradesCommon.Create(0, Data^.Qualifier.InstanceNum, Data^.Qualifier.RecordId, 0, 0, False, 0));
     if not frameAutoTrades.vstTree.IsEmpty then
       frameAutoTradesvstTreeFocusChanged(frameAutoTrades.vstTree, frameAutoTrades.GetFirstVisibleNode, 0);
   end
@@ -390,8 +390,8 @@ begin
   if Assigned(Node) then
   begin
     Data := Node^.GetData;
-    frameActiveOrders.SetFilter(TAutoTradesCommon.Create(0, Data.QualifierInstance, Data.QualifierId, Data.InstanceNum, Data.AutoTradesId, False));
-    frameOrderStatus.SetFilter(TAutoTradesCommon.Create(0, Data.QualifierInstance, Data.QualifierId, Data.InstanceNum, Data.AutoTradesId, False));
+    frameActiveOrders.SetFilter(TAutoTradesCommon.Create(0, Data.QualifierInstance, Data.QualifierId, Data.InstanceNum, Data.AutoTradesId, False, 0));
+    frameOrderStatus.SetFilter(TAutoTradesCommon.Create(0, Data.QualifierInstance, Data.QualifierId, Data.InstanceNum, Data.AutoTradesId, False, 0));
   end
   else
   begin

@@ -291,6 +291,8 @@ begin
   CreateNewField('TICK_DATA', 'IS_HISTORICAL', 'BOOLEAN', '0', ConnectionFeed);
   CreateNewField('CANDIDATES', 'ALWAYS_MAX', 'BOOLEAN', 'FALSE');
   CreateNewField('CANDIDATES', 'REPEAT_INSTRUMENTS', 'BOOLEAN', 'FALSE');
+  CreateNewField('ORDERS', 'IS_ACTIVE_TIME', 'BOOLEAN', 'FALSE');
+  CreateNewField('ORDERS', 'ACTIVE_TIME', 'INTEGER', '0');
 
   CreateObject('TICK_TYPES', C_SQL_CREATE_TICK_TYPES, rtTable, ConnectionFeed);
 

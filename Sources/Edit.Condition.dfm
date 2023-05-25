@@ -2,8 +2,8 @@ object frmEditCondition: TfrmEditCondition
   Left = 0
   Top = 0
   Caption = 'Condition'
-  ClientHeight = 284
-  ClientWidth = 608
+  ClientHeight = 303
+  ClientWidth = 653
   Color = clBtnFace
   Constraints.MinHeight = 323
   Constraints.MinWidth = 610
@@ -22,15 +22,16 @@ object frmEditCondition: TfrmEditCondition
   object pnlTop: TPanel
     Left = 0
     Top = 0
-    Width = 608
+    Width = 653
     Height = 103
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
     OnDragDrop = pnlTopDragDrop
     OnDragOver = pnlTopDragOver
+    ExplicitWidth = 608
     DesignSize = (
-      608
+      653
       103)
     object lblDescription: TLabel
       AlignWithMargins = True
@@ -121,7 +122,7 @@ object frmEditCondition: TfrmEditCondition
         'Veto')
     end
     object btnShowSearchForm: TBitBtn
-      Left = 558
+      Left = 603
       Top = 68
       Width = 32
       Height = 32
@@ -135,21 +136,24 @@ object frmEditCondition: TfrmEditCondition
       Images = DMImage.vil16
       ParentFont = False
       TabOrder = 3
+      ExplicitLeft = 558
     end
   end
   object pnlBottom: TPanel
     Left = 0
-    Top = 244
-    Width = 608
+    Top = 263
+    Width = 653
     Height = 40
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
+    ExplicitTop = 244
+    ExplicitWidth = 608
     DesignSize = (
-      608
+      653
       40)
     object btnSave: TBitBtn
-      Left = 507
+      Left = 552
       Top = 0
       Width = 100
       Height = 40
@@ -164,9 +168,10 @@ object frmEditCondition: TfrmEditCondition
       Images = DMImage.vil32
       ParentFont = False
       TabOrder = 0
+      ExplicitLeft = 507
     end
     object btnCancel: TBitBtn
-      Left = 406
+      Left = 451
       Top = 0
       Width = 100
       Height = 40
@@ -182,22 +187,25 @@ object frmEditCondition: TfrmEditCondition
       ModalResult = 2
       ParentFont = False
       TabOrder = 1
+      ExplicitLeft = 406
     end
   end
   object pcMain: TPageControl
     Left = 0
     Top = 103
-    Width = 608
-    Height = 141
-    ActivePage = tabGradient
+    Width = 653
+    Height = 160
+    ActivePage = tabRealTime
     Align = alClient
     TabOrder = 2
+    ExplicitWidth = 608
+    ExplicitHeight = 141
     object tabRealTime: TTabSheet
       Caption = 'Real Time'
       ImageIndex = 2
       TabVisible = False
       object lblDivisionTickTypeCaption1: TLabel
-        Left = 154
+        Left = 186
         Top = 13
         Width = 51
         Height = 16
@@ -212,7 +220,7 @@ object frmEditCondition: TfrmEditCondition
         ParentFont = False
       end
       object lblDivisionTickTypeCaption2: TLabel
-        Left = 279
+        Left = 306
         Top = 13
         Width = 50
         Height = 16
@@ -227,7 +235,7 @@ object frmEditCondition: TfrmEditCondition
         ParentFont = False
       end
       object lblSecondParam: TLabel
-        Left = 232
+        Left = 266
         Top = 34
         Width = 9
         Height = 16
@@ -240,21 +248,21 @@ object frmEditCondition: TfrmEditCondition
         ParentFont = False
       end
       object lblComparisonRt: TLabel
-        Left = 402
+        Left = 457
         Top = 13
         Width = 68
         Height = 16
         Caption = 'Comparison'
       end
       object lblConditionLimit: TLabel
-        Left = 502
+        Left = 557
         Top = 13
         Width = 84
         Height = 16
         Caption = 'Condition Limit'
       end
       object lblFirstBracket: TLabel
-        Left = 86
+        Left = 123
         Top = 35
         Width = 4
         Height = 16
@@ -266,7 +274,7 @@ object frmEditCondition: TfrmEditCondition
         ParentFont = False
       end
       object lblComparison: TLabel
-        Left = 392
+        Left = 435
         Top = 30
         Width = 4
         Height = 16
@@ -274,8 +282,8 @@ object frmEditCondition: TfrmEditCondition
       object gbMode: TGroupBox
         Left = 6
         Top = 19
-        Width = 71
-        Height = 109
+        Width = 111
+        Height = 128
         TabOrder = 0
         object rbPercent: TRadioButton
           Left = 12
@@ -313,17 +321,26 @@ object frmEditCondition: TfrmEditCondition
           TabOrder = 3
           OnClick = rbPercentClick
         end
+        object rbAmountSize: TRadioButton
+          Left = 12
+          Top = 104
+          Width = 90
+          Height = 17
+          Caption = 'Amount size'
+          TabOrder = 4
+          OnClick = rbPercentClick
+        end
       end
       object cbTickType1: TComboBox
-        Left = 124
+        Left = 161
         Top = 31
-        Width = 100
+        Width = 99
         Height = 24
         TabOrder = 1
         OnChange = OnTickTypeChange
       end
       object cbTickType2: TComboBox
-        Left = 250
+        Left = 280
         Top = 31
         Width = 100
         Height = 24
@@ -331,7 +348,7 @@ object frmEditCondition: TfrmEditCondition
         OnChange = OnTickTypeChange
       end
       object cbInequalityRt: TComboBox
-        Left = 376
+        Left = 431
         Top = 31
         Width = 120
         Height = 24
@@ -349,7 +366,7 @@ object frmEditCondition: TfrmEditCondition
           'between')
       end
       object edtCondLimit: TNumberBox
-        Left = 515
+        Left = 570
         Top = 31
         Width = 62
         Height = 24

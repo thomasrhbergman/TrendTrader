@@ -13,7 +13,6 @@ object frmScannerMain: TfrmScannerMain
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = True
   Position = poDesigned
   ShowHint = True
   OnClose = FormClose
@@ -21,7 +20,6 @@ object frmScannerMain: TfrmScannerMain
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlAutoOrder: TPanel
     Left = 842
@@ -754,6 +752,22 @@ object frmScannerMain: TfrmScannerMain
             inherited pnlOrderGroupSetTop: TPanel
               Width = 834
               ExplicitWidth = 834
+              inherited lblViewType: TLabel
+                Left = 8
+                Width = 53
+                Height = 13
+                ExplicitLeft = 8
+                ExplicitWidth = 53
+                ExplicitHeight = 13
+              end
+              inherited lblSearchFor: TLabel
+                Left = 24
+                Width = 37
+                Height = 13
+                ExplicitLeft = 24
+                ExplicitWidth = 37
+                ExplicitHeight = 13
+              end
               inherited edtSearch: TEdit
                 Width = 741
                 ExplicitWidth = 741

@@ -29,7 +29,8 @@ type
                                        IAutoTrade,
                                        IInstrumentSpecDetails,
                                        IUpdateFeeds,
-                                       IHistoricalData)
+                                       IHistoricalData,
+                                       IError)
     aAddEmbargoColumn: TAction;
     aChangeWeigthValue: TAction;
     aChangeWeigthValueColumn: TAction;
@@ -224,6 +225,7 @@ type
     FMonitor: IMonitor;
     FSilenceMode: Boolean;
     FSubscribedList: TList<Integer>;
+    FActiveNodes: TList<PVirtualNode>;
     function AddOrGetColumn(var aColumnsInfo: TColumnsInfo): Integer;
     function CheckColumn(const aColumnsInfo: TColumnsInfo): Boolean;
     function CheckData: Boolean;
@@ -294,6 +296,11 @@ type
     procedure OnOrderStatus(Sender: TObject; Order: TIABOrder; Status: TIABOrderState);
     procedure OnRebuildFromTWS(Sender: TObject);
 
+    //implementation IError
+    procedure OnError(Sender: TObject; TempId, ErrorCode: Integer; ErrorMsg: string);
+
+    procedure CheckAlwaysMax(TempId: Integer; Status: TIABOrderState);
+
     procedure DockTo;
     procedure LoadParamsFromXml;
     procedure OpenSequenceRecord;
@@ -306,6 +313,7 @@ type
     property CreatedOrdersCount : Integer      read GetCreatedOrdersCount write SetCreatedOrdersCount;
     property IsLoaded           : Boolean      read FIsLoaded             write FIsLoaded;
     property TradesState        : TTradesState read GetTradesState        write SetTradesState;
+    property ActiveNodes        : TList<PVirtualNode> read FActiveNodes write FActiveNodes;
   public
     class function Execute(const aAutoTrade: TAutoTradeInfo): IAutoTrade;
     class function ShowEditForm(aItem: TBaseClass; aDialogMode: TDialogMode): TModalResult; overload; override;
@@ -428,9 +436,12 @@ begin
   TPublishers.InstrumentSpecDetailsPublisher.Subscribe(Self);
   TPublishers.ScannerPublisher.Subscribe(Self);
   TPublishers.OrderStatePublisher.Subscribe(Self);
+  TPublishers.ErrorPublisher.Subscribe(Self);
 
   if not Supports(Application.MainForm, IMonitor, FMonitor) then
     raise Exception.Create(rsNotSupportsIMonitor);
+
+  FActiveNodes := TList<PVirtualNode>.Create;
 end;
 
 procedure TfrmCandidateMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -462,12 +473,14 @@ begin
   TPublishers.InstrumentSpecDetailsPublisher.Unsubscribe(Self);
   TPublishers.ScannerPublisher.Unsubscribe(Self);
   TPublishers.OrderStatePublisher.Unsubscribe(Self);
+  TPublishers.ErrorPublisher.Unsubscribe(Self);
   //FCandidate.TradesState := TTradesState.tsNotConsidered;
   AutoTradesControllerPublisher.UpdateState(Self);
   FreeAndNil(FSubscribedList);
   FreeAndNil(FColumns);
   FreeAndNil(FInstrumentList);
   FreeAndNil(FCacheNodesWeight);
+  FreeAndNil(FActiveNodes);
   inherited;
 end;
 
@@ -747,6 +760,7 @@ var
   LastPrice: Double;
   LastExch: Double;
   Quantity: Integer;
+  SingleOrderAmount: Double;
   Currency: string;
   Info: string;
   OrderAmount: Double;
@@ -755,158 +769,174 @@ begin
   if Assigned(FAutoTrade) and
      aData^.IsCriteria and
      not aData^.IsLocked and
-    (CreatedOrdersCount < FCandidate.MaxNumberOrder) then
+    (ActiveNodes.Count < FCandidate.MaxNumberOrder) then
   begin
-    Info := 'Id=' + aData^.Id.ToString +
-            ', Name=' + aData^.Name +
-            ', Symbol=' + aData^.Symbol +
-            ', LocalSymbol=' + aData^.LocalSymbol +
-            ', Currency=' + aData^.Currency +
-            ', Multiplier=' + aData^.Multiplier.ToString;
-//    TPublishers.LogPublisher.Write([ltLogWriter], ddText, 'PreExecutionEvaluation', Info);
-    if SokidList.ActiveInstruments.Contains(aData^.Id) then Exit; // cannot use the same instrument in two active orders
-    LastPrice := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, ttLast);
-    if (LastPrice = 0) then
-    begin
-      TIABMarket.RequestMarketData(aData.Id);
-      Sleep(50);
-      LastPrice := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, ttClose);
-    end;
-    if (LastPrice = 0) and SokidList.ContainsKey(aData^.Id) then
-      LastPrice := SokidList.Items[aData^.Id].LastPrice;
-    if (LastPrice = 0) then
-    begin
-      aData^.Description := 'Not passed - No Feed';
-      aData^.IsLocked := True;
-      ShowNotification(aData);
-      TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddError, 'PreExecutionEvaluation', aData^.Description + ', ' + Info);
-    end
-    else
-    begin
-      //Currency := aData^.Currency;
-      Currency := FAutoTrade.Quantity.Currency;
-      LastExch := 1;
-      if Currency.IsEmpty then
-        Currency := SokidList.GetItem(aData^.Id).Currency;
-      if (LastExch <= 0) then
+//    Info := 'Id=' + aData^.Id.ToString +
+//            ', Name=' + aData^.Name +
+//            ', Symbol=' + aData^.Symbol +
+//            ', LocalSymbol=' + aData^.LocalSymbol +
+//            ', Currency=' + aData^.Currency +
+//            ', Multiplier=' + aData^.Multiplier.ToString;
+//    Info := 'Start: ActiveNodes.Count - '+ ActiveNodes.Count.ToString + '; MaxNumberOrder - '+ FCandidate.MaxNumberOrder.ToString;
+//    SaveToLog(Info);
+    try
+      if SokidList.ActiveInstruments.Contains(aData^.Id) then Exit; // cannot use the same instrument in two active orders
+      LastPrice := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, ttLast);
+      if (LastPrice = 0) then
       begin
-        aData^.Description := 'Not passed - No Exchange Rate ' + Currency;
+        TIABMarket.RequestMarketData(aData.Id);
+        Sleep(50);
+        LastPrice := TMonitorLists.PriceCache.GetLastPrice(aData^.Id, ttClose);
+      end;
+      if (LastPrice = 0) and SokidList.ContainsKey(aData^.Id) then
+        LastPrice := SokidList.Items[aData^.Id].LastPrice;
+      if (LastPrice = 0) then
+      begin
+        aData^.Description := 'Not passed - No Feed';
         aData^.IsLocked := True;
         ShowNotification(aData);
-        TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddError, Self, 'PreExecutionEvaluation', aData^.Description + ', ' + Info);
-        Exit;
-      end;
-
-      //Quantity := 0;
-      //OrderAmount := FAutoTrade.Quantity.OrderAmount;
-      if (LastPrice > 0) and (LastExch > 0) then
-      begin
-        if (FAutoTrade.Quantity.TotalOrderAmount < LastPrice) then
-        begin
-          aData^.Description := 'Not passed - No Total Money';
-          aData^.IsLocked := True;
-          ShowNotification(aData, 'No Total Money');
-          Exit;
-        end;
-
-        if (FAutoTrade.Quantity.TotalOrderAmount >= FAutoTrade.Quantity.OrderAmount) then
-          OrderAmount := FAutoTrade.Quantity.OrderAmount
-        else
-          OrderAmount := FAutoTrade.Quantity.TotalOrderAmount;
-
-        if (OrderAmount <= 0) then
-        begin
-          aData^.Description := 'Not passed - OrderAmount Is 0';
-          aData^.IsLocked := True;
-          ShowNotification(aData, 'OrderAmount is 0');
-          TPublishers.LogPublisher.Write([ltLogWriter], ddWarning, 'PreExecutionEvaluation', 'OrderAmount=0');
-        end;
-
-        if (aData^.Multiplier > 0) then
-          Quantity := Trunc((OrderAmount * LastExch / (LastPrice * aData^.Multiplier)))
-        else
-          Quantity := Trunc((OrderAmount * LastExch) / LastPrice);
-
-        PrecSettings := TOrderUtils.CheckPrecautionarySettings(aData^.SecurityType, Quantity, LastPrice);
-        for var PrecSetting in PrecSettings do
-          try
-            case PrecSetting of
-              psAlgorithmTotalValueLimit:
-                ;
-              psNumberOfTicks:
-                ;
-              psPercentage:
-                ;
-              psTotalValueLimit:
-                ;
-              psAlgorithmSizeLimit:
-                ;
-              psOrderQuantityMax:
-                //Quantity := Trunc(General.PrecautionarySettings[aData^.SecurityType][psOrderQuantityMax]);
-                ;
-              psMaxAllowedPrice, psMinAllowedPrice:
-                begin
-                  aData^.Description := 'Not passed - ' + PrecSetting.ToString;
-                  aData^.IsLocked := True;
-                  ShowNotification(aData, PrecSetting.ToString);
-                  Exit;
-                end;
-            end;
-          finally
-            TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddWarning, Self, 'PreExecutionEvaluation', PrecSetting.ToString);
-          end;
-        FAutoTrade.Quantity.TotalOrderAmount := FAutoTrade.Quantity.TotalOrderAmount - Trunc(Quantity * LastPrice);
-      end;
-
-      if (Quantity = 0) then
-      begin
-        aData^.Description := 'Not passed - Trade limit overdue';
-        aData^.IsLocked := True;
-        ShowNotification(aData, 'Trade limit overdue');
-        TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddError, Self, 'PreExecutionEvaluation', aData^.Description + ', ' + Info);
+        TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddError, 'PreExecutionEvaluation', aData^.Description + ', ' + Info);
       end
       else
       begin
-        TThread.Synchronize(nil,
-          procedure
-          var LNode: PVirtualNode;
+        Currency := aData^.Currency;
+        LastExch := 1;
+        if Currency.IsEmpty then
+          Currency := SokidList.GetItem(aData^.Id).Currency;
+        if (Currency <> FAutoTrade.Quantity.Currency) then
+          LastExch := TMonitorLists.CurrencyCache.GetLastExchange(FAutoTrade.Quantity.Currency, Currency);
+        if (LastExch <= 0) then
+        begin
+          aData^.Description := 'Not passed - No Exchange Rate ' + Currency;
+          aData^.IsLocked := True;
+          ShowNotification(aData);
+          TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddError, Self, 'PreExecutionEvaluation', aData^.Description + ', ' + Info);
+          Exit;
+        end;
+
+        //Quantity := 0;
+        //OrderAmount := FAutoTrade.Quantity.OrderAmount;
+        if (LastPrice > 0) and (LastExch > 0) then
+        begin
+          if (FAutoTrade.Quantity.TotalOrderAmount < LastPrice) then
           begin
-            LNode := FMonitor.CreateOrders(FAutoTrade,
-                                           aData,
-                                           TAutoTradesCommon.Create(Quantity,
-                                                                    0{FAutoTrade.Qualifier.QualifierInstance},
-                                                                    FCandidate.RecordId,
-                                                                    FAutoTrade.InstanceNum,
-                                                                    FAutoTrade.RecordId,
-                                                                    false{AllowSendDuplicateOrder}));
-            if LNode <> nil then
-            begin
-              if aData^.IsLocked then
-                CreatedOrdersCount := CreatedOrdersCount + 1;
-              aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
-              aData^.Description := 'Created';
-              aData^.MotherOrderDoc := TTreeFactory.GetTopOrder(LNode);
-              if not SokidList.ActiveInstruments.Contains(aData^.Id) then
-                SokidList.ActiveInstruments.Add(aData^.Id);
+            aData^.Description := 'Not passed - No Total Money';
+            aData^.IsLocked := True;
+            ShowNotification(aData, 'No Total Money');
+            Exit;
+          end;
+
+          if (FAutoTrade.Quantity.TotalOrderAmount >= FAutoTrade.Quantity.OrderAmount) then
+            OrderAmount := FAutoTrade.Quantity.OrderAmount
+          else
+            OrderAmount := FAutoTrade.Quantity.TotalOrderAmount;
+
+          if (OrderAmount <= 0) then
+          begin
+            aData^.Description := 'Not passed - OrderAmount Is 0';
+            aData^.IsLocked := True;
+            ShowNotification(aData, 'OrderAmount is 0');
+            TPublishers.LogPublisher.Write([ltLogWriter], ddWarning, 'PreExecutionEvaluation', 'OrderAmount=0');
+          end;
+
+          if (aData^.Multiplier > 0) then
+            Quantity := Trunc((OrderAmount * LastExch / (LastPrice * aData^.Multiplier)))
+          else
+            Quantity := Trunc((OrderAmount * LastExch) / LastPrice);
+
+          SingleOrderAmount := FAutoTrade.Quantity.OrderAmount * LastExch;
+
+          PrecSettings := TOrderUtils.CheckPrecautionarySettings(aData^.SecurityType, Quantity, LastPrice);
+          for var PrecSetting in PrecSettings do
+            try
+              case PrecSetting of
+                psAlgorithmTotalValueLimit:
+                  ;
+                psNumberOfTicks:
+                  ;
+                psPercentage:
+                  ;
+                psTotalValueLimit:
+                  ;
+                psAlgorithmSizeLimit:
+                  ;
+                psOrderQuantityMax:
+                  //Quantity := Trunc(General.PrecautionarySettings[aData^.SecurityType][psOrderQuantityMax]);
+                  ;
+                psMaxAllowedPrice, psMinAllowedPrice:
+                  begin
+                    aData^.Description := 'Not passed - ' + PrecSetting.ToString;
+                    aData^.IsLocked := True;
+                    ShowNotification(aData, PrecSetting.ToString);
+                    Exit;
+                  end;
+              end;
+            finally
+              TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddWarning, Self, 'PreExecutionEvaluation', PrecSetting.ToString);
             end;
-            {if FMonitor.CreateTemplateStructure(FCandidate.OrderGroupId,
-                                                aData,
-                                                TAutoTradesCommon.Create(Quantity,
-                                                                         FCandidate.QualifierInstance,
-                                                                         FCandidate.QualifierId,
-                                                                         FCandidate.InstanceNum,
-                                                                         FCandidate.RecordId,
-                                                                         FCandidate.AllowSendDuplicateOrder)) <> nil then
+          FAutoTrade.Quantity.TotalOrderAmount := FAutoTrade.Quantity.TotalOrderAmount - Trunc(Quantity * LastPrice);
+        end;
+
+        if (Quantity = 0) then
+        begin
+          aData^.Description := 'Not passed - Trade limit overdue';
+          aData^.IsLocked := True;
+          ShowNotification(aData, 'Trade limit overdue');
+          TPublishers.LogPublisher.Write([ltLogWriter, ltLogView, ltActivityLog], ddError, Self, 'PreExecutionEvaluation', aData^.Description + ', ' + Info);
+        end
+        else
+        begin
+          TThread.Synchronize(nil,
+            procedure
+            var LNode: PVirtualNode;
             begin
-              if aData^.IsLocked then
-                CreatedOrdersCount := CreatedOrdersCount + 1;
-              aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
-            end;}
-          end);
+              LNode := nil;
+              if CreatedOrdersCount < FCandidate.MaxNumberOrder then
+                LNode := FMonitor.CreateOrders(FAutoTrade,
+                                               aData,
+                                               TAutoTradesCommon.Create(Quantity,
+                                                                        0{FAutoTrade.Qualifier.QualifierInstance},
+                                                                        FCandidate.RecordId,
+                                                                        FAutoTrade.InstanceNum,
+                                                                        FAutoTrade.RecordId,
+                                                                        false,
+                                                                        SingleOrderAmount{AllowSendDuplicateOrder}));
+              if LNode <> nil then
+              begin
+                if aData^.IsLocked then
+                begin
+                  CreatedOrdersCount := CreatedOrdersCount + 1;
+                  //SaveToLog('CreatedOrdersCount - '+ CreatedOrdersCount.ToString);
+                  ActiveNodes.Add(LNode);
+                end;
+                aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
+                aData^.Description := 'Created';
+                aData^.MotherOrderDoc := TTreeFactory.GetTopOrder(LNode);
+                if not SokidList.ActiveInstruments.Contains(aData^.Id) then
+                  SokidList.ActiveInstruments.Add(aData^.Id);
+              end;
+              {if FMonitor.CreateTemplateStructure(FCandidate.OrderGroupId,
+                                                  aData,
+                                                  TAutoTradesCommon.Create(Quantity,
+                                                                           FCandidate.QualifierInstance,
+                                                                           FCandidate.QualifierId,
+                                                                           FCandidate.InstanceNum,
+                                                                           FCandidate.RecordId,
+                                                                           FCandidate.AllowSendDuplicateOrder)) <> nil then
+              begin
+                if aData^.IsLocked then
+                  CreatedOrdersCount := CreatedOrdersCount + 1;
+                aData^.Name := aData^.Name + ': ' + SimpleRoundTo(aData^.ExtraColumns.RankingSum, -2).ToString;
+              end;}
+            end);
+        end;
       end;
+      CheckTradesState;
+      AutoTradeInfoToGUI;
+    finally
+//      Info := 'End: ActiveNodes.Count - '+ ActiveNodes.Count.ToString + '; MaxNumberOrder - '+ FCandidate.MaxNumberOrder.ToString;
+//      SaveToLog(Info);
     end;
-    CheckTradesState;
-    AutoTradeInfoToGUI;
   end;
 end;
 
@@ -1664,6 +1694,53 @@ begin
                                       'SourceType=stCandidateMarket' + sLineBreak);
         FColumns.AddOrSetValue(aColumnsInfo.ColumnId, aColumnsInfo);
       end;
+  end;
+end;
+
+procedure TfrmCandidateMain.CheckAlwaysMax(TempId: Integer; Status: TIABOrderState);
+var Node, ParentNode: PVirtualNode;
+    Data: PTreeData;
+    InstrumentData: PInstrumentData;
+    InstrumentItem: TInstrumentItem;
+begin
+  Node := TMonitorLists.OrderList.GetNodeOrder(TempId);
+  ParentNode := TTreeFactory.GetTopOrderNode(Node);
+  if Assigned(Node) and ActiveNodes.Contains(ParentNode) then
+  begin
+    Data := Node^.GetData;
+    if Assigned(Data^.OrderDoc) and (Data^.OrderDoc.AutoTradesID = FAutoTrade.RecordId) then
+    begin
+      if (Status in [osCancelled, osError]) then
+      begin
+        if (Data^.OrderDoc.Filled > 0) then
+        begin
+          if TTreeFactory.StartChildOrders(Node, Data^.OrderDoc.Filled) then Exit;
+        end
+        else
+          TTreeFactory.CancelChildOrders(Node)
+      end
+      else if TTreeFactory.HasChildOrders(Node) then
+        Exit;
+      if SokidList.ActiveInstruments.Contains(Data^.OrderDoc.Instrument.SokidInfo.ContractId) then
+        SokidList.ActiveInstruments.Remove(Data^.OrderDoc.Instrument.SokidInfo.ContractId);
+      if cbRepeatInstruments.Checked then
+      begin
+        InstrumentItem := FInstrumentList.GetItem(Data^.OrderDoc.Instrument.SokidInfo.ContractId);
+        if Assigned(InstrumentItem) then
+          for Node in InstrumentItem.NodeList do
+            if Assigned(Node) then
+            begin
+              InstrumentData := Node^.GetData;
+              InstrumentData^.IsLocked := false;
+            end;
+      end;
+      if cbAlwaysMax.Checked then
+      begin
+        ActiveNodes.Remove(ParentNode);
+        CreatedOrdersCount := CreatedOrdersCount - 1;
+        //SaveToLog('Remove: ActiveNodes.Count - '+ ActiveNodes.Count.ToString);
+      end;
+    end;
   end;
 end;
 
@@ -2512,7 +2589,12 @@ begin
 end;
 
 procedure TfrmCandidateMain.SetCreatedOrdersCount(const Value: Integer);
+var lNeedPreExecutionEvaluation: boolean;
 begin
+  lNeedPreExecutionEvaluation :=
+     (CreatedOrdersCount = FCandidate.MaxNumberOrder)
+     and
+     (Value < FCandidate.MaxNumberOrder);
   FCandidate.CreatedOrdersCount := Value;
   CheckTradesState;
   if (Value > 0) then
@@ -2522,6 +2604,8 @@ begin
   UpdateStatus(C_PANEL_CREATED_ORDERS, Value.ToString);
   UpdateStatus(C_PANEL_TIME_CREATED_ORDERS, FormatDateTime('hh:nn:ss', Now));
   AutoTradesControllerPublisher.UpdateState(Self);
+  if lNeedPreExecutionEvaluation then
+    PreExecutionEvaluationOrders;
 end;
 
 procedure TfrmCandidateMain.SetValueFromPriceCache(const aData: PInstrumentData; const aColumnsInfo: TColumnsInfo);
@@ -2913,38 +2997,9 @@ begin
 end;
 
 procedure TfrmCandidateMain.OnOrderStatus(Sender: TObject; Order: TIABOrder; Status: TIABOrderState);
-var Node: PVirtualNode;
-    Data: PTreeData;
-    InstrumentData: PInstrumentData;
-    InstrumentItem: TInstrumentItem;
 begin
-  if Order.Completed and (Order.TempId > 0) then  //Only TWS API orders
-  begin
-    Node := TMonitorLists.OrderList.GetNodeOrder(Order.TempId);
-    if Assigned(Node) then
-    begin
-      if TTreeFactory.HasChildOrders(Node) then Exit;
-      Data := Node^.GetData;
-      if Assigned(Data^.OrderDoc) and (Data^.OrderDoc.AutoTradesID = FAutoTrade.RecordId) then
-      begin
-        if SokidList.ActiveInstruments.Contains(Order.ContractId) then
-          SokidList.ActiveInstruments.Remove(Order.ContractId);
-        if cbAlwaysMax.Checked then
-          CreatedOrdersCount := CreatedOrdersCount - 1;
-        if cbRepeatInstruments.Checked then
-        begin
-          InstrumentItem := FInstrumentList.GetItem(Order.ContractId);
-          if Assigned(InstrumentItem) then
-            for Node in InstrumentItem.NodeList do
-              if Assigned(Node) then
-              begin
-                InstrumentData := Node^.GetData;
-                InstrumentData^.IsLocked := false;
-              end;
-        end;
-      end;
-    end;
-  end;
+  if (Order.Completed or (Status in [osCancelled, osError])) and (Order.TempId > 0) then  //Only TWS API orders
+    CheckAlwaysMax(Order.TempId, Status);
 end;
 
 procedure TfrmCandidateMain.OnPriceChange(Sender: TObject; Id: Integer; TickType: TIABTickType; Value: Currency; TimeStamp: TDateTime);
@@ -3170,6 +3225,12 @@ end;
 
 procedure TfrmCandidateMain.OnCloseOrder(const aTempId: Integer);
 begin
+end;
+
+procedure TfrmCandidateMain.OnError(Sender: TObject; TempId, ErrorCode: Integer; ErrorMsg: string);
+begin
+  if (ErrorCode <> 322) and (TempId > 0) then
+    CheckAlwaysMax(TempId, osError);
 end;
 
 procedure TfrmCandidateMain.OnExecution(Sender: TObject; Order: TIABOrder);

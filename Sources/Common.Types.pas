@@ -54,7 +54,8 @@ type
     AutoTradesInstance: Integer;
     AutoTradesID : Integer;
     AllowSendDuplicateOrder: Boolean;
-    constructor Create(const aQuantity, aQualifierInstance, aQualifierID, aAutoTradesInstance, aAutoTradesID: Integer; aAllowSendDuplicateOrder: Boolean);
+    SingleOrderAmount: Double;
+    constructor Create(const aQuantity, aQualifierInstance, aQualifierID, aAutoTradesInstance, aAutoTradesID: Integer; aAllowSendDuplicateOrder: Boolean; aSingleOrderAmount: Double);
   end;
 
   TBasePrice = (pbAsk10=110, pbAsk9=109, pbAsk8=108, pbAsk7=107, pbAsk6=106, pbAsk5=105, pbAsk4=104, pbAsk3=103, pbAsk2=103, pbAsk1=101, pbAsk=100,
@@ -221,7 +222,7 @@ implementation
 
 { TAutoTradesCommon }
 
-constructor TAutoTradesCommon.Create(const aQuantity, aQualifierInstance, aQualifierID, aAutoTradesInstance, aAutoTradesID: Integer; aAllowSendDuplicateOrder: Boolean);
+constructor TAutoTradesCommon.Create(const aQuantity, aQualifierInstance, aQualifierID, aAutoTradesInstance, aAutoTradesID: Integer; aAllowSendDuplicateOrder: Boolean; aSingleOrderAmount: Double);
 begin
   Self := Default(TAutoTradesCommon);
   Self.Quantity                := aQuantity;
@@ -230,6 +231,7 @@ begin
   Self.AutoTradesInstance      := aAutoTradesInstance;
   Self.QualifierID             := aQualifierID;
   Self.QualifierInstance       := aQualifierInstance;
+  Self.SingleOrderAmount       := aSingleOrderAmount;
 end;
 
 { TStringObject }

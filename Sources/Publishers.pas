@@ -67,7 +67,7 @@ type
     procedure OnExecution(Sender: TObject; Order: TIABOrder);
     procedure OnOpenOrder(Sender: TObject; Order: TIABOrder);
     procedure OnOpenOrderNN(const aOrderList: array of TOrder);
-    procedure OnOrderStatus(Sender: TObject; Order: TIABOrder; Status: TIABOrderState);
+    procedure OnOrderStatus(Sender: TObject; Order: TIABOrder; Status: TIABOrderState); overload;
     procedure OnRebuildFromTWS(Sender: TObject);
   end;
 

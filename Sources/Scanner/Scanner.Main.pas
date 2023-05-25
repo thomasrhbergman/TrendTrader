@@ -874,7 +874,8 @@ begin
                                                                          FAutoTradeInfo.Qualifier.RecordId,
                                                                          FAutoTradeInfo.InstanceNum,
                                                                          FAutoTradeInfo.RecordId,
-                                                                         FAutoTradeInfo.AllowSendDuplicateOrder)) <> nil then
+                                                                         FAutoTradeInfo.AllowSendDuplicateOrder,
+                                                                         0)) <> nil then
             begin
               if aData^.IsLocked then
                 CreatedOrdersCount := CreatedOrdersCount + 1;

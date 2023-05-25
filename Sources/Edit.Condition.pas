@@ -76,6 +76,7 @@ type
     cbExtendOnLastPriceUp: TCheckBox;
     lblFirstBracket: TLabel;
     lblComparison: TLabel;
+    rbAmountSize: TRadioButton;
     procedure aAddFactorExecute(Sender: TObject);
     procedure aAddFactorUpdate(Sender: TObject);
     procedure aCalculateCondExecute(Sender: TObject);
@@ -237,13 +238,9 @@ begin
   for CondType in [ctRealtimeValue, ctTimeGap, ctGradient, ctTimeInForce] do
     cbConditionType.Items.Add(CondType.ToString);
 
-  cbTickType1.Items.Clear;
   cbTickType2.Items.Clear;
   for var TickType := ttBidSize to ttMotherFilledPrice do
-  begin
-    cbTickType1.Items.Add(TickType.ToString);
     cbTickType2.Items.Add(TickType.ToString);
-  end;
 
   {cbTypeOperation.Items.Clear;
   for var TypeOperation := Low(TTypeOperation) to toMult do
@@ -389,7 +386,7 @@ begin
     lblSecondParam.Caption := '/ MOAP';
     cbTickType2.Visible := false;
     cbInequalityRt.Visible := true;
-    lblDivisionTickTypeCaption2.Visible := true;
+    lblDivisionTickTypeCaption2.Visible := false;
     lblComparison.Caption := '';
   end
   else if rbValue.Checked then
@@ -398,7 +395,7 @@ begin
     lblSecondParam.Caption := ' ';
     cbTickType2.Visible := false;
     cbInequalityRt.Visible := true;
-    lblDivisionTickTypeCaption2.Visible := true;
+    lblDivisionTickTypeCaption2.Visible := false;
     lblComparison.Caption := '';
   end
   else if rbTrail.Checked then
@@ -410,6 +407,15 @@ begin
     lblDivisionTickTypeCaption2.Visible := false;
     lblComparison.Caption := 'Mother is BUY <='+ sLineBreak + 'Mother is SELL >='
   end
+  else if rbAmountSize.Checked then
+  begin
+    lblFirstBracket.Caption := '';
+    lblSecondParam.Caption := '* Ask / Single order amount';
+    cbTickType2.Visible := false;
+    cbInequalityRt.Visible := true;
+    lblDivisionTickTypeCaption2.Visible := false;
+    lblComparison.Caption := '';
+  end
   else
   begin
     lblFirstBracket.Caption := '';
@@ -419,6 +425,22 @@ begin
     lblDivisionTickTypeCaption2.Visible := true;
     lblComparison.Caption := '';
   end;
+
+  cbTickType1.Items.Clear;
+  if rbAmountSize.Checked then
+  begin
+    if not SameText(cbTickType1.Text, ttAskSize.ToString)
+       and
+       not SameText(cbTickType1.Text, ttBidSize.ToString)
+       and
+       not SameText(cbTickType1.Text, ttLastSize.ToString) then
+      cbTickType1.Text := '';
+    for var TickType in [ttAskSize, ttBidSize, ttLastSize] do
+      cbTickType1.Items.Add(TickType.ToString)
+  end
+  else
+    for var TickType := ttBidSize to ttMotherFilledPrice do
+      cbTickType1.Items.Add(TickType.ToString);
 end;
 
 procedure TfrmEditCondition.aRefreshPriceExecute(Sender: TObject);
@@ -554,7 +576,8 @@ end;
 
 procedure TfrmEditCondition.SetTickType1(const Value: TIABTickType);
 begin
-  cbTickType1.ItemIndex := Integer(Value);
+  //cbTickType1.ItemIndex := Integer(Value);
+  cbTickType1.Text := Value.ToString;
 end;
 
 procedure TfrmEditCondition.SetTickType2(const Value: TIABTickType);
@@ -564,8 +587,8 @@ end;
 
 function TfrmEditCondition.GetTickType1: TIABTickType;
 begin
-  if (cbTickType1.ItemIndex > -1) then
-    Result := TIABTickType(cbTickType1.ItemIndex)
+  if not String(cbTickType1.Text).IsEmpty then
+    Result := TIABTickType.FromString(cbTickType1.Text)
   else
     Result := ttLast;
 end;
@@ -670,6 +693,7 @@ begin
    1: rbValue.Checked := true;
    2: rbMOAP.Checked := true;
    3: rbTrail.Checked := true;
+   4: rbAmountSize.Checked := true;
   end;
 end;
 
@@ -686,6 +710,8 @@ begin
     Result := 2
   else if rbTrail.Checked then
     Result := 3
+  else if rbAmountSize.Checked then
+    Result := 4
   else
     Result := 0;
 end;

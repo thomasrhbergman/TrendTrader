@@ -162,6 +162,9 @@ type
     FTradeTime: TDateTime;
     FTriggerMethod: TTriggerMethod;
     FVisiblePart: Currency;
+    FIsActiveTime: boolean;
+    FActiveTime: integer;
+    FStartedAt: TDateTime;
     function GetCalculationStageItem(Index: TCalculationStage): Double;
     procedure SetCalculationStageItem(Index: TCalculationStage; const Value: Double);
     procedure SetOrderIBId(const Value: Integer);
@@ -206,7 +209,7 @@ type
     property IsRepetitive    : Boolean                read FIsRepetitive     write FIsRepetitive;
     property LastPrice       : Currency               read FLastPrice        write FLastPrice;
     property LatestFillPrice : Double                 read FLatestFillPrice  write FLatestFillPrice;
-    property Limit           : Double               read FLimit            write FLimit;
+    property Limit           : Double                 read FLimit            write FLimit;
     property MarketList      : string                 read FMarketList       write FMarketList;
     property Multiplier      : Double                 read FMultiplier       write FMultiplier;
     property OrderAction     : TIABAction             read FOrderAction      write FOrderAction;
@@ -222,6 +225,9 @@ type
     property TradeTime       : TDateTime              read FTradeTime        write FTradeTime;
     property TriggerMethod   : TTriggerMethod         read FTriggerMethod    write FTriggerMethod;
     property VisiblePart     : currency               read FVisiblePart      write FVisiblePart;
+    property IsActiveTime    : boolean                read FIsActiveTime     write FIsActiveTime;
+    property ActiveTime      : integer                read FActiveTime       write FActiveTime;
+    property StartedAt       : TDateTime              read FStartedAt;
   end;
 
   TOrderNNDoc = class(TCustomOrderDoc)
@@ -474,6 +480,8 @@ type
     FTimeInForce: Integer;
     FExtendOnLastPriceUp: Boolean;
     FTimeInForceStartTime: TDateTime;
+    FSingleOrderAmount: Double;
+    FAsk: Double;
     function GetMinMaxValueArrayItem(Index: TMinMaxValue): Double;
     function GetValueArrayItem(Index: TConditionType): Double;
     procedure AddConditionHistory;
@@ -548,6 +556,8 @@ type
     property ExtendOnLastPriceUp    : Boolean                  read FExtendOnLastPriceUp    write FExtendOnLastPriceUp;
     property TimeInForceStartTime   : TDateTime                read FTimeInForceStartTime   write FTimeInForceStartTime;
     property TimeInForceActive      : Boolean                  read GetTimeInForceActive;
+    property SingleOrderAmount      : Double                   read FSingleOrderAmount      write FSingleOrderAmount;
+    property Ask                    : Double                   read FAsk                    write FAsk;
   end;
 
   TAlgosDoc = class(TCustomDocument)
@@ -1180,6 +1190,7 @@ begin
     end;
   end;
   TPublishers.LogPublisher.Write([ltLogWriter], ddExitMethod, Self, 'DoBuy');
+  FStartedAt := Now;
 end;
 
 procedure TOrderIBDoc.FromDB(const aRecordId: Integer);
@@ -1266,6 +1277,8 @@ begin
         if SokidList.ContainsKey(Self.Instrument.SokidInfo.ContractId) then
           Self.Instrument.SokidInfo.AssignFrom(SokidList.Items[Self.Instrument.SokidInfo.ContractId]);
         Self.VisiblePart       := Query.FieldByName('VISIBLE_PART').AsFloat;
+        Self.IsActiveTime      := Query.FieldByName('IS_ACTIVE_TIME').AsBoolean;
+        Self.ActiveTime        := Query.FieldByName('ACTIVE_TIME').AsInteger;
       end;
     end;
   finally
@@ -1401,14 +1414,16 @@ resourcestring
                       'IS_FINAL            = :IsFinal, '           +
                       'TRIGGER_METHOD      = :TriggerMethod, '     +
                       'INSTRUMENT          = :Instrument, '        +
-                      'VISIBLE_PART        = :VisiblePart '        +
+                      'VISIBLE_PART        = :VisiblePart, '       +
+                      'IS_ACTIVE_TIME      = :IsActiveTime, '      +
+                      'ACTIVE_TIME         = :ActiveTime '         +
                       ' WHERE ID = :RecordId';
   C_SQL_INSERT_TEXT =  'INSERT INTO ORDERS '+
                       '(ID,ADVANCED_ORDER_TYPE,DESCRIPTION,ORDER_ACTION,CONTRACT_ID,DECIMALS,INSTRUMENT_NAME,QUANTITY,'+
                       'LIMIT_PRICE,AUX_PRICE,TRAIL_STP_PRICE,TRAILING_PERCENT,ORDER_TYPE,TIME_IN_FORCE,IS_ACTIVATE_CHILD,'+
                       'SCOPE,XML_PARAMS,OCA_GROUP_NUMBER,TIME_START,TIME_STOP,MAX_NUM_SHARES,MAX_NUM_AMOUNT,TRIGGER_METHOD,'+
                       'BROKER_ID,SYMBOL,LOCAL_SYMBOL,CURRENCY,EXPIRY,LMT_PRICE_OFFSET,RATE_TYPE,SECURITY_TYPE,IS_FINAL,EXCHANGE,'+
-                      'INSTRUMENT,VISIBLE_PART)' +
+                      'INSTRUMENT,VISIBLE_PART,IS_ACTIVE_TIME,ACTIVE_TIME)' +
                       ' VALUES(:RecordId, '          +
                       '        :AdvancedOrderType, ' +
                       '        :Description, '       +
@@ -1443,7 +1458,9 @@ resourcestring
                       '        :IsFinal, '           +
                       '        :Exchange,'           +
                       '        :Instrument,'         +
-                      '        :VisiblePart)';
+                      '        :VisiblePart,'        +
+                      '        :IsActiveTime,'       +
+                      '        :ActiveTime)';
 
   procedure FillXmlParams;
   var
@@ -1539,6 +1556,8 @@ begin
     else
       Query.ParamByName('Expiry').Clear;
     Query.ParamByName('VisiblePart').AsFloat         := Self.VisiblePart;
+    Query.ParamByName('IsActiveTime').AsBoolean      := Self.IsActiveTime;
+    Query.ParamByName('ActiveTime').AsInteger        := Self.ActiveTime;
     try
       Query.Prepare;
       Query.ExecSQL;
@@ -1928,6 +1947,8 @@ begin
     0: Result := ' %';
     1: Result := ' Value';
     2: Result := ' MOAP';
+    3: Result := ' Trail';
+    4: Result := ' Amount Size';
   end;
 end;
 
@@ -2165,7 +2186,7 @@ procedure TConditionDoc.SetEnabled(const Value: boolean);
 var Node: PVirtualNode;
     Data: PTreeData;
 begin
-  inherited;
+  inherited SetEnabled(Value);
   // init base price
   if Enabled then
   begin
@@ -2283,28 +2304,35 @@ begin
 
   if CondType = ctRealtimeValue then
   begin
-    case RealTimeType of
-      0 : Result := Result + Format('%s/%s%s%s, ',
-                                      [TickType1Value.ToString,
-                                       TickType2Value.ToString,
-                                       InequalityRt.ToString,
-                                       FloatToStr(CondLimit)]);
-      1 : Result := Result + Format('%s%s%s, ',
-                                      [TickType1Value.ToString,
-                                       InequalityRt.ToString,
-                                       FloatToStr(CondLimit)]);
-      2 : Result := Result + Format('%s/%s%s%s, ',
-                                      [TickType1Value.ToString,
-                                       TickType2Value.ToString,
-                                       InequalityRt.ToString,
-                                       FloatToStr(CondLimit)]);
-      3 : Result := Result + Format('100*(%s-%s)/%s%s%s, ',
-                                      [TickType1Value.ToString,
-                                       BasePrice.ToString,
-                                       BasePrice.ToString,
-                                       InequalityRt.ToString,
-                                       FloatToStr(CondLimit)])
-    end;
+    if Enabled or (ConditionTime > 0) then
+      case RealTimeType of
+        0 : Result := Result + Format('%s/%s%s%s, ',
+                                        [TickType1Value.ToString,
+                                         TickType2Value.ToString,
+                                         InequalityRt.ToString,
+                                         FloatToStr(CondLimit)]);
+        1 : Result := Result + Format('%s%s%s, ',
+                                        [TickType1Value.ToString,
+                                         InequalityRt.ToString,
+                                         FloatToStr(CondLimit)]);
+        2 : Result := Result + Format('%s/%s%s%s, ',
+                                        [TickType1Value.ToString,
+                                         TickType2Value.ToString,
+                                         InequalityRt.ToString,
+                                         FloatToStr(CondLimit)]);
+        3 : Result := Result + Format('100*(%s-%s)/%s%s%s, ',
+                                        [TickType1Value.ToString,
+                                         BasePrice.ToString,
+                                         BasePrice.ToString,
+                                         InequalityRt.ToString,
+                                         FloatToStr(CondLimit)]);
+        4 : Result := Result + Format('%s*%s/%s%s%s, ',
+                                        [TickType1Value.ToString,
+                                         Ask.ToString,
+                                         SingleOrderAmount.ToString,
+                                         InequalityRt.ToString,
+                                         FloatToStr(CondLimit)])
+      end;
   end
   else if CondType = ctGradient then
     Result := Result + FloatToStr(Gradient) + ', '

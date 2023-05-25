@@ -5,7 +5,6 @@ inherited frmDockFormTotalController: TfrmDockFormTotalController
   OnDestroy = FormDestroy
   ExplicitWidth = 1102
   ExplicitHeight = 667
-  PixelsPerInch = 96
   TextHeight = 13
   object splAutoTrades: TSplitter [0]
     Left = 0
