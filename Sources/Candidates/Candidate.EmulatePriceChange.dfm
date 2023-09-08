@@ -12,10 +12,8 @@ object frmCandidateEmulatePriceChange: TfrmCandidateEmulatePriceChange
   Font.Name = 'Tahoma'
   Font.Style = []
   FormStyle = fsStayOnTop
-  OldCreateOrder = False
   Position = poMainFormCenter
   OnClose = FormClose
-  PixelsPerInch = 96
   TextHeight = 13
   object pnlBottom: TPanel
     Left = 0
@@ -181,6 +179,7 @@ object frmCandidateEmulatePriceChange: TfrmCandidateEmulatePriceChange
       end>
   end
   object MemTable: TFDMemTable
+    BeforePost = MemTableBeforePost
     FieldDefs = <>
     IndexDefs = <>
     FetchOptions.AssignedValues = [evMode]
@@ -198,7 +197,7 @@ object frmCandidateEmulatePriceChange: TfrmCandidateEmulatePriceChange
     end
     object MemTablePrice: TCurrencyField
       FieldName = 'Price'
-      DisplayFormat = '0.00'
+      DisplayFormat = '0.0000'
     end
     object MemTableApplied: TBooleanField
       FieldName = 'Applied'

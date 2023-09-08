@@ -83,17 +83,20 @@ type
     procedure Clear;
   end;
 
-  TCalculationType = (ctGradientToday, ctGradientLogTerm, ctCorridorWidth);
+  TCalculationType = (ctGradientToday, ctGradientLogTerm, ctCorridorWidth, ctGradientCalc, ctLastPosition);
   TCalculationTypeHelper = record helper for TCalculationType
   private const
-    CalculationTypeName: array [TCalculationType] of string = ('Gradient today', 'Gradient log term', 'Corridor width');
+    CalculationTypeName: array [TCalculationType] of string = ('Gradient today', 'Gradient log term', 'Corridor width', 'Gradient', 'Last Position %');
   public
+    class function FromString(aValue: string): TCalculationType; static;
     function ToString: string;
   end;
 
   TCalculationColumn = record
     CalculationType  : TCalculationType;
     Duration         : Integer;
+    Value1           : Double;
+    Value2           : Double;
     function Caption: string;
     function IsEquals(ACalculationColumn: TCalculationColumn): Boolean;
     function ToList: string;
@@ -1499,6 +1502,18 @@ end;
 
 { TCalculationTypeHelper }
 
+class function TCalculationTypeHelper.FromString(aValue: string): TCalculationType;
+var CalculationType: TCalculationType;
+begin
+  Result := ctGradientCalc;
+  for CalculationType := Low(TCalculationType) to High(TCalculationType) do
+    if SameText(CalculationType.ToString, aValue) then
+    begin
+      Result := CalculationType;
+      break;
+    end;
+end;
+
 function TCalculationTypeHelper.ToString: string;
 begin
   Result := CalculationTypeName[Self];
@@ -1521,7 +1536,11 @@ begin
     ctGradientLogTerm:
       Result := ctGradientLogTerm.ToString + '[' + Duration.ToString + ' w]';
     ctCorridorWidth:
-      Result := ctCorridorWidth.ToString;
+      Result := ctCorridorWidth.ToString + '[' + Duration.ToString + ' s]';
+    ctGradientCalc:
+      Result := ctGradientCalc.ToString + '[' + Duration.ToString + ' s]';
+    ctLastPosition:
+      Result := ctLastPosition.ToString + '[' + Duration.ToString + ' s]';
   end;
 end;
 
@@ -1541,6 +1560,8 @@ begin
       StInfo.Text     := aInfo;
       CalculationType := TCalculationType(StrToIntDef(StInfo.Values['CalculationType'], 0));
       Duration        := StrToIntDef(StInfo.Values['Duration'], 0);
+      Value1          := StrToFloatDef(StInfo.Values['Value1'], 0);
+      Value2          := StrToFloatDef(StInfo.Values['Value2'], 0);
     finally
       FreeAndNil(StInfo);
     end;
@@ -1550,7 +1571,9 @@ end;
 function TCalculationColumn.IsEquals(ACalculationColumn: TCalculationColumn): Boolean;
 begin
   Result := (ACalculationColumn.CalculationType = Self.CalculationType) and
-            (ACalculationColumn.Duration = Self.Duration);
+            (ACalculationColumn.Duration = Self.Duration) and
+            (ACalculationColumn.Value1 = Self.Value1) and
+            (ACalculationColumn.Value2 = Self.Value2);
 end;
 
 function TCalculationColumn.ToList: string;
@@ -1560,7 +1583,9 @@ begin
   sb := TStringBuilder.Create;
   try
     sb.AppendFormat('CalculationType=%d', [Integer(CalculationType)]).AppendLine
-      .AppendFormat('Duration=%d', [Duration]).AppendLine;
+      .AppendFormat('Duration=%d', [Duration]).AppendLine
+      .AppendFormat('Value1=%f', [Value1]).AppendLine
+      .AppendFormat('Value2=%f', [Value2]).AppendLine;
     Result := sb.ToString;
   finally
     FreeAndNil(sb);

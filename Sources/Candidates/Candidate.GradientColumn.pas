@@ -20,6 +20,11 @@ type
     cbCalcType: TComboBox;
     seDuration: TSpinEdit;
     lblDuration: TLabel;
+    pnlValues: TPanel;
+    Label1: TLabel;
+    edValue2: TNumberBox;
+    edValue1: TNumberBox;
+    Label2: TLabel;
     procedure OnChangeVisibility(Sender: TObject);
   private
     FColumnsInfo: TColumnsInfo;
@@ -60,7 +65,7 @@ var
   CalcType: TCalculationType;
 begin
   cbCalcType.Items.Clear;
-  for CalcType := Low(TCalculationType) to High(TCalculationType) do
+  for CalcType in [ctCorridorWidth, ctGradientCalc, ctLastPosition] do
     cbCalcType.Items.Add(CalcType.ToString);
 
   case DialogMode of
@@ -74,8 +79,10 @@ begin
         Self.Caption         := 'Edit Column Info';
         btnAddColumn.Enabled := True;
         btnAddColumn.Caption := 'Ok';
-        cbCalcType.ItemIndex := Ord(FColumnsInfo.CalcColumn.CalculationType);
+        cbCalcType.ItemIndex := cbCalcType.Items.IndexOf(FColumnsInfo.CalcColumn.CalculationType.ToString);
         seDuration.Value     := FColumnsInfo.CalcColumn.Duration;
+        edValue1.Value       := FColumnsInfo.CalcColumn.Value1;
+        edValue2.Value       := FColumnsInfo.CalcColumn.Value2;
         edWeight.ValueFloat  := FColumnsInfo.Weight;
       end;
     dmView:
@@ -92,19 +99,34 @@ end;
 
 procedure TfrmCandidateGradientColumn.Denitialize;
 begin
-  FColumnsInfo.CalcColumn.CalculationType := TCalculationType(cbCalcType.ItemIndex);
+  FColumnsInfo.CalcColumn.CalculationType := TCalculationType.FromString(cbCalcType.Text);
   FColumnsInfo.CalcColumn.Duration        := seDuration.Value;
+  FColumnsInfo.CalcColumn.Value1          := edValue1.Value;
+  FColumnsInfo.CalcColumn.Value2          := edValue2.Value;
   FColumnsInfo.Weight                     := edWeight.ValueFloat;
 end;
 
 procedure TfrmCandidateGradientColumn.OnChangeVisibility(Sender: TObject);
+var CalculationType: TCalculationType;
 begin
-  seDuration.Visible     := (cbCalcType.ItemIndex = Ord(ctGradientLogTerm)) or (cbCalcType.ItemIndex = Ord(ctGradientToday));
-  lblDuration.Visible    := seDuration.Visible;
-  if cbCalcType.ItemIndex = Ord(ctGradientLogTerm) then
-    lblDuration.Caption := 'Weeks:'
-  else if cbCalcType.ItemIndex = Ord(ctGradientToday) then
-    lblDuration.Caption := 'Monitoring (sec):';
+  CalculationType        := TCalculationType.FromString(cbCalcType.Text);
+  pnlValues.Visible      := CalculationType in [ctCorridorWidth, ctGradientCalc, ctLastPosition];
+  if CalculationType = ctLastPosition then
+  begin
+    edValue1.MinValue := 0;
+    edValue1.MaxValue := 100;
+    edValue2.MinValue := 0;
+    edValue2.MaxValue := 100;
+    edValue1.Value := edValue1.Value;
+    edValue2.Value := edValue2.Value;
+  end
+  else
+  begin
+    edValue1.MinValue := 0;
+    edValue1.MaxValue := 0;
+    edValue2.MinValue := 0;
+    edValue2.MaxValue := 0;
+  end;
 end;
 
 end.

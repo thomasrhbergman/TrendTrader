@@ -3,7 +3,7 @@ object frmCandidateGradientColumn: TfrmCandidateGradientColumn
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Add Column'
-  ClientHeight = 105
+  ClientHeight = 104
   ClientWidth = 392
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -11,9 +11,7 @@ object frmCandidateGradientColumn: TfrmCandidateGradientColumn
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poMainFormCenter
-  PixelsPerInch = 96
   TextHeight = 13
   object lblWeight: TLabel
     Left = 265
@@ -30,12 +28,12 @@ object frmCandidateGradientColumn: TfrmCandidateGradientColumn
     ParentFont = False
   end
   object lblDuration: TLabel
-    Left = 267
-    Top = 8
-    Width = 43
+    Left = 94
+    Top = 35
+    Width = 98
     Height = 16
     Alignment = taRightJustify
-    Caption = 'Weeks:'
+    Caption = 'Monitoring (sec):'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
@@ -45,12 +43,13 @@ object frmCandidateGradientColumn: TfrmCandidateGradientColumn
   end
   object pnlBottom: TPanel
     Left = 0
-    Top = 64
+    Top = 63
     Width = 392
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitTop = 91
     object btnAddColumn: TBitBtn
       Left = 249
       Top = 1
@@ -90,7 +89,7 @@ object frmCandidateGradientColumn: TfrmCandidateGradientColumn
     Left = 328
     Top = 35
     Width = 57
-    Height = 21
+    Height = 22
     AcceptExpressions = True
     CurrencyString = '%'
     Mode = nbmFloat
@@ -108,14 +107,72 @@ object frmCandidateGradientColumn: TfrmCandidateGradientColumn
     TabOrder = 2
     OnChange = OnChangeVisibility
   end
+  object pnlValues: TPanel
+    Left = 146
+    Top = 3
+    Width = 238
+    Height = 29
+    BevelOuter = bvNone
+    TabOrder = 3
+    object Label1: TLabel
+      Left = 38
+      Top = 6
+      Width = 49
+      Height = 16
+      Alignment = taRightJustify
+      Caption = 'Between'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object Label2: TLabel
+      Left = 154
+      Top = 6
+      Width = 21
+      Height = 16
+      Alignment = taCenter
+      Caption = 'and'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -13
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      ParentFont = False
+    end
+    object edValue2: TNumberBox
+      Left = 181
+      Top = 5
+      Width = 57
+      Height = 21
+      AcceptExpressions = True
+      CurrencyString = '%'
+      Mode = nbmFloat
+      TabOrder = 0
+      UseMouseWheel = True
+    end
+    object edValue1: TNumberBox
+      Left = 93
+      Top = 5
+      Width = 57
+      Height = 21
+      AcceptExpressions = True
+      CurrencyString = '%'
+      Mode = nbmFloat
+      TabOrder = 1
+      UseMouseWheel = True
+    end
+  end
   object seDuration: TSpinEdit
-    Left = 328
-    Top = 7
+    Left = 198
+    Top = 35
     Width = 57
     Height = 22
     MaxValue = 0
     MinValue = 0
-    TabOrder = 3
+    TabOrder = 4
     Value = 1
   end
 end

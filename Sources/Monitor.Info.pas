@@ -639,12 +639,66 @@ begin
 end;
 
 class function TDocumentInfo.GetPriceHistory(const aContractId: Integer; const aFilterFunc: TFilterFunc): string;
+type
+  TPriceHistory = record
+    TimeStamp: string;
+    Last: string;
+    LastSize: string;
+    Bid: string;
+    BidSize: string;
+    Ask: string;
+    AskSize: string;
+    Close: string;
+    Open: string;
+    Low: string;
+    High: string;
+    Volume: string;
+    HistVolatility: string;
+    History: string;
+  end;
 var
   InstInfo  : string;
   PriceList : TPriceList;
   sb        : TStringBuilder;
   Row       : Integer;
   arrPrices : TArray<TPrice>;
+  Prices    : TArray<TPriceHistory>;
+
+  procedure AddPrice(APrice: TPrice);
+  var LTimeStamp: string;
+      I, Idx: integer;
+  begin
+    LTimeStamp := FormatDateTime('hh:nn:ss.zzz', APrice.TimeStamp);
+    Idx := -1;
+    for I := 0 to Length(Prices) - 1 do
+      if SameText(Prices[I].TimeStamp, LTimeStamp) then
+      begin
+        Idx := I;
+        break;
+      end;
+    if Idx = -1 then
+    begin
+      SetLength(Prices, Length(Prices) + 1);
+      Idx := Length(Prices) - 1;
+      Prices[Idx].TimeStamp := LTimeStamp;
+      Prices[Idx].History := IfThen(APrice.IsHistorical, '✕', C_HTML_NBSP);
+    end;
+    case APrice.TickType of
+      ttLast: Prices[Idx].Last := FloatToStr(APrice.Value);
+      ttLastSize: Prices[Idx].LastSize := FloatToStr(APrice.Value);
+      ttBid: Prices[Idx].Bid := FloatToStr(APrice.Value);
+      ttBidSize: Prices[Idx].BidSize := FloatToStr(APrice.Value);
+      ttAsk: Prices[Idx].Ask := FloatToStr(APrice.Value);
+      ttAskSize: Prices[Idx].AskSize := FloatToStr(APrice.Value);
+      ttClose: Prices[Idx].Close := FloatToStr(APrice.Value);
+      ttOpen: Prices[Idx].Open := FloatToStr(APrice.Value);
+      ttLow: Prices[Idx].Low := FloatToStr(APrice.Value);
+      ttHigh: Prices[Idx].High := FloatToStr(APrice.Value);
+      ttVolume: Prices[Idx].Volume := FloatToStr(APrice.Value);
+      ttOptionHistoricalVol: Prices[Idx].HistVolatility := FloatToStr(APrice.Value);
+    end;
+
+  end;
 begin
   Result := '';
   if (aContractID > 0) then
@@ -676,219 +730,29 @@ begin
       PriceList := TMonitorLists.PriceCache.GetPriceList(aContractID);
       if Assigned(PriceList) then
       begin
-        Row := 0;
         arrPrices := PriceList.GetLastPrices(aFilterFunc);
         for var Price in arrPrices do
           if (Price.TickType in [ttLast, ttLastSize, ttBid, ttBidSize, ttAsk, ttAskSize, ttClose, ttOpen, ttLow, ttHigh, ttVolume, ttOptionHistoricalVol]) then
-          begin
-            Inc(Row);
-            case Price.TickType of
-              ttLast:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               Price.Value,     //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttLastSize:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               Price.Value,     //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttBid:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               Price.Value,     //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttBidSize:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               Price.Value,     //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttAsk:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               Price.Value,     //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttAskSize:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               Price.Value,     //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttClose:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               Price.Value,     //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttOpen:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               Price.Value,     //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttLow:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               Price.Value,     //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttHigh:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               Price.Value,     //ttHigh
-                                                               0,               //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttVolume:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               Price.Value,     //ttVolume
-                                                               0,               //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-              ttOptionHistoricalVol:
-                sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row,
-                                                               FormatDateTime('hh:nn:ss.zzz', Price.TimeStamp),
-                                                               0,               //ttLast
-                                                               0,               //ttLastSize
-                                                               0,               //ttBid
-                                                               0,               //ttBidSize
-                                                               0,               //ttAsk
-                                                               0,               //ttAskSize
-                                                               0,               //ttClose
-                                                               0,               //ttOpen
-                                                               0,               //ttLow
-                                                               0,               //ttHigh
-                                                               0,               //ttVolume
-                                                               Price.Value,     //ttOptionHistoricalVol
-                                                               IfThen(Price.IsHistorical, '✕', C_HTML_NBSP)
-                                                               ]))).AppendLine;
-            end;
-          end;
+            AddPrice(Price);
+
+
+        for Row := 0 to Length(Prices) - 1 do
+          sb.Append(THtmlLib.GetTableLineTag(VarArrayOf([Row + 1,
+                                                         Prices[Row].TimeStamp,
+                                                         Prices[Row].Last,                //ttLast
+                                                         Prices[Row].LastSize,            //ttLastSize
+                                                         Prices[Row].Bid,                 //ttBid
+                                                         Prices[Row].BidSize,             //ttBidSize
+                                                         Prices[Row].Ask,                 //ttAsk
+                                                         Prices[Row].AskSize,             //ttAskSize
+                                                         Prices[Row].Close,               //ttClose
+                                                         Prices[Row].Open,                //ttOpen
+                                                         Prices[Row].Low,                 //ttLow
+                                                         Prices[Row].High,                //ttHigh
+                                                         Prices[Row].Volume,              //ttVolume
+                                                         Prices[Row].HistVolatility,      //ttOptionHistoricalVol
+                                                         Prices[Row].History
+                                                        ]))).AppendLine;
         sb.Append(C_HTML_TABLE_CLOSE).AppendLine
           .Append(C_HTML_BODY_CLOSE).AppendLine;
       end;

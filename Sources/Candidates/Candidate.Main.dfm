@@ -1,6 +1,7 @@
 object frmCandidateMain: TfrmCandidateMain
   Left = 0
   Top = 0
+  ActiveControl = vstCandidate
   Caption = 'Scan'
   ClientHeight = 649
   ClientWidth = 1256
@@ -344,9 +345,6 @@ object frmCandidateMain: TfrmCandidateMain
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
-    DesignSize = (
-      1059
-      583)
     object pnlOptions: TPanel
       Left = 0
       Top = 0
@@ -356,6 +354,9 @@ object frmCandidateMain: TfrmCandidateMain
       BevelOuter = bvNone
       ShowCaption = False
       TabOrder = 0
+      DesignSize = (
+        1059
+        50)
       object lblAutoTradeTemplateCaption: TLabel
         Left = 244
         Top = -1
@@ -488,6 +489,16 @@ object frmCandidateMain: TfrmCandidateMain
         TabOrder = 9
         WordWrap = True
       end
+      object lbColumns: TListBox
+        Left = 751
+        Top = 0
+        Width = 308
+        Height = 50
+        Anchors = [akLeft, akTop, akRight]
+        ItemHeight = 13
+        TabOrder = 10
+        OnDblClick = lbColumnsDblClick
+      end
     end
     object pnlContent: TPanel
       Left = 0
@@ -497,17 +508,26 @@ object frmCandidateMain: TfrmCandidateMain
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
+      object splLog: TSplitter
+        Left = 717
+        Top = 0
+        Height = 450
+        Align = alRight
+        ExplicitLeft = 656
+        ExplicitTop = 256
+        ExplicitHeight = 100
+      end
       object vstCandidate: TVirtualStringTree
         Left = 0
         Top = 0
-        Width = 1059
+        Width = 717
         Height = 450
         Align = alClient
         BevelInner = bvNone
         BevelOuter = bvNone
         DragType = dtVCL
         Header.AutoSizeIndex = -1
-        Header.Height = 21
+        Header.Height = 22
         Header.Options = [hoColumnResize, hoDrag, hoOwnerDraw, hoShowHint, hoShowImages, hoVisible]
         Header.SortColumn = 1
         HintMode = hmHint
@@ -536,6 +556,7 @@ object frmCandidateMain: TfrmCandidateMain
         OnInitNode = vstCandidateInitNode
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
+        ExplicitWidth = 677
         Columns = <
           item
             CaptionAlignment = taCenter
@@ -581,16 +602,57 @@ object frmCandidateMain: TfrmCandidateMain
           TabOrder = 0
         end
       end
-    end
-    object lbColumns: TListBox
-      Left = 752
-      Top = 2
-      Width = 504
-      Height = 44
-      Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 13
-      TabOrder = 2
-      OnDblClick = lbColumnsDblClick
+      object pnlLog: TPanel
+        Left = 720
+        Top = 0
+        Width = 339
+        Height = 450
+        Align = alRight
+        BevelInner = bvRaised
+        BevelOuter = bvLowered
+        TabOrder = 2
+        object meLog: TMemo
+          Left = 2
+          Top = 86
+          Width = 335
+          Height = 362
+          Align = alClient
+          ReadOnly = True
+          ScrollBars = ssVertical
+          TabOrder = 0
+          ExplicitLeft = 680
+          ExplicitTop = 0
+          ExplicitWidth = 379
+          ExplicitHeight = 450
+        end
+        object pnlLogOptions: TPanel
+          Left = 2
+          Top = 2
+          Width = 335
+          Height = 84
+          Align = alTop
+          BevelOuter = bvNone
+          TabOrder = 1
+          object rgGradientCalcMode: TRadioGroup
+            AlignWithMargins = True
+            Left = 3
+            Top = 3
+            Width = 329
+            Height = 74
+            Align = alTop
+            Caption = 'Gradient Calc Mode'
+            ItemIndex = 0
+            Items.Strings = (
+              'TimeStamp (DateTime as Float)'
+              'MilliSeconds (Integer)'
+              'Seconds (Float)')
+            TabOrder = 0
+            ExplicitLeft = 4
+            ExplicitTop = 4
+            ExplicitWidth = 185
+          end
+        end
+      end
     end
   end
   object sbMain: TStatusBar

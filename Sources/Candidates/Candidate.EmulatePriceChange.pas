@@ -42,6 +42,7 @@ type
     procedure TimerPriceChangeTimer(Sender: TObject);
     procedure grPricesDrawColumnCell(Sender: TObject; const Rect: TRect;
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    procedure MemTableBeforePost(DataSet: TDataSet);
   private
     FInstrumentId: Integer;
     FLastPrice: currency;
@@ -180,6 +181,13 @@ begin
     LastPrice := TMonitorLists.PriceCache.GetLastPrice(FInstrumentId, ttLast)
   else
     LastPrice := arrPrices[Length(arrPrices) - 1].Value;
+end;
+
+procedure TfrmCandidateEmulatePriceChange.MemTableBeforePost(DataSet: TDataSet);
+begin
+  inherited;
+  if MemTable.FieldByName('Price').AsFloat < 0 then
+    MemTable.FieldByName('Price').Value := 0.0001;
 end;
 
 procedure TfrmCandidateEmulatePriceChange.SetControlsEnabled(AEnabled: boolean);

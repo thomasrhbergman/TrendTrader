@@ -22,6 +22,13 @@ uses
   Candidate.EmulatePriceChange, MonitorTree.Factory, NNfunctions.Types;
 {$ENDREGION}
 
+type TGradientRecord = record
+  Gradient: Double;
+  Corridor: Double;
+  LastPosition: Double;
+  Calculated: Boolean;
+end;
+
 type
   TfrmCandidateMain = class(TCustomForm, ICandidateMarket,
                                        IScanner,
@@ -120,6 +127,11 @@ type
     mmEmulatePriceChange: TMenuItem;
     cbAlwaysMax: TCheckBox;
     cbRepeatInstruments: TCheckBox;
+    meLog: TMemo;
+    splLog: TSplitter;
+    pnlLog: TPanel;
+    pnlLogOptions: TPanel;
+    rgGradientCalcMode: TRadioGroup;
     procedure aAddEmbargoColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnUpdate(Sender: TObject);
@@ -236,6 +248,7 @@ type
     procedure ApplyAutoOrder;
     procedure AutoTradeInfoToGUI;
     procedure CalculateAllRankingSum;
+    function CalcGradient(Id, GradientDuration, GradientMode: Integer): TGradientRecord;
     procedure CalculateGradient(const aNode: PVirtualNode; const aColumnsInfo: TColumnsInfo);
     procedure CalculateGradientLogTerm(const aNode: PVirtualNode; const aColumnsInfo: TColumnsInfo);
     procedure CalculateRankingSum(const aData: PInstrumentData);
@@ -300,6 +313,8 @@ type
     procedure OnError(Sender: TObject; TempId, ErrorCode: Integer; ErrorMsg: string);
 
     procedure CheckAlwaysMax(TempId: Integer; Status: TIABOrderState);
+
+    procedure AddToLog(AText: string);
 
     procedure DockTo;
     procedure LoadParamsFromXml;
@@ -492,6 +507,7 @@ begin
 //  MainForm  := Application.MainForm;
 //  Self.Left := MainForm.Left + MainForm.Width;
 //  Self.Top  := MainForm.Top;
+  AddToLog(DateTimeToStr(Now));
 end;
 
 procedure TfrmCandidateMain.Initialize;
@@ -1492,6 +1508,11 @@ begin
   end;
 end;
 
+procedure TfrmCandidateMain.AddToLog(AText: string);
+begin
+  meLog.Lines.Add(AText);
+end;
+
 procedure TfrmCandidateMain.FillColumnList;
 var
   RunColumnsInfo: TColumnsInfo;
@@ -2168,7 +2189,15 @@ begin
           stCandidateMarket:
             RankingSum := RankingSum + ColumnsItem.Rank * Weight;
           stCalcColumn:
-            RankingSum := RankingSum + ColumnsItem.Price * Weight;
+            begin
+              if ColumnsInfo.CalcColumn.CalculationType in [ctGradientCalc, ctCorridorWidth, ctlastPosition] then
+                if not ColumnsItem.IsUnsufficientData
+                    and
+                   (ColumnsItem.Price >= ColumnsInfo.CalcColumn.Value1)
+                    and
+                   (ColumnsItem.Price <= ColumnsInfo.CalcColumn.Value2) then
+                  RankingSum := RankingSum + Weight;
+            end;
           stTickColumn:
 //            if (ColumnsInfo.TickColumn.IBValue2 <> ttNotSet) then
 //              RankingSum := RankingSum + ColumnsItem.Price * Weight * 100
@@ -2241,7 +2270,233 @@ begin
   gbIsolate.Visible := False;
 end;
 
+function TfrmCandidateMain.CalcGradient(Id, GradientDuration, GradientMode: Integer): TGradientRecord;
+type TDataRecord = record
+  Time1: TDateTime;
+  Time2: Int64;
+  Time3: Double;
+  Price: Double;
+end;
+//new version
+var PriceList: TPriceList;
+    arrPrices: TArray<TPrice>;
+    StartTime: TDateTime;
+    I: integer;
+    Data: TArray<TDataRecord>;
+    LocalLog: string;
+
+    procedure LocalAddToLog(AText: string);
+    begin
+      if not LocalLog.IsEmpty then
+        LocalLog := LocalLog + #13#10;
+      LocalLog := LocalLog + AText;
+    end;
+
+    function PrepareValue(AValue: Double): Double;
+    begin
+      if (Abs(AValue) < 0.0000001) or IsNan(AValue) or IsInfinite(AValue) then
+        AValue := 0;
+      Result := AValue;
+    end;
+
+    procedure LinearRegressionLeastSquares(const Data: TArray<TDataRecord>; var A, B: Double);
+    var
+      n, i: Integer;
+      sumX, sumY, sumXY, sumX2: Double;
+    begin
+      n := Length(Data);
+
+      if n < 2 then
+        raise Exception.Create('At least 2 data points are required for linear regression.');
+
+      sumX := 0;
+      sumY := 0;
+      sumXY := 0;
+      sumX2 := 0;
+
+      for i := 0 to n - 1 do
+      begin
+        if GradientMode = 1 then
+        begin
+          sumX := sumX + Data[i].Time1;
+          sumY := sumY + Data[i].Price;
+          sumXY := sumXY + Data[i].Time1 * Data[i].Price;
+          sumX2 := sumX2 + Sqr(Data[i].Time1);
+        end
+        else if GradientMode = 2 then
+        begin
+          sumX := sumX + Data[i].Time2;
+          sumY := sumY + Data[i].Price;
+          sumXY := sumXY + Data[i].Time2 * Data[i].Price;
+          sumX2 := sumX2 + Sqr(Data[i].Time2);
+        end
+        else
+        begin
+          sumX := sumX + Data[i].Time3;
+          sumY := sumY + Data[i].Price;
+          sumXY := sumXY + Data[i].Time3 * Data[i].Price;
+          sumX2 := sumX2 + Sqr(Data[i].Time3);
+        end;
+      end;
+
+      A := (n * sumXY - sumX * sumY) / (n * sumX2 - Sqr(sumX));
+      B := (sumY - A * sumX) / n;
+    end;
+
+    procedure CalcGradientValues(Data: TArray<TDataRecord>; var AGradient: TGradientRecord);
+    var Slope, Intercept: Double;
+        I: integer;
+        CalcPrices: TArray<Double>;
+        MinResidual, MaxResidual, Residual: Double;
+        DeltaT1: TDateTime;
+        DeltaT2: Int64;
+        DeltaT3: Double;
+        DeltaP: Double;
+        P1, P2: Double;
+    begin
+      if Length(Data) = 0 then Exit;
+      MinResidual := 0;
+      MaxResidual := 0;
+      DeltaT1 := 0;
+      DeltaT2 := 0;
+      DeltaT3 := 0;
+      LinearRegressionLeastSquares(Data, Slope, Intercept);
+      SetLength(CalcPrices, Length(Data));
+      LocalAddToLog('Calculation values');
+      for I := 0 to Length(Data) - 1 do
+      begin
+        if GradientMode = 1 then
+        begin
+          CalcPrices[I] := Slope * Data[I].Time1 + Intercept;
+          LocalAddToLog(Data[I].Time1.ToString + #9 + FloatToStr(Data[I].Price) + #9 + CalcPrices[I].ToString);
+        end
+        else if GradientMode = 2 then
+        begin
+          CalcPrices[I] := Slope * Data[I].Time2 + Intercept;
+          LocalAddToLog(Data[I].Time2.ToString + #9 + FloatToStr(Data[I].Price) + #9 + CalcPrices[I].ToString);
+        end
+        else
+        begin
+          CalcPrices[I] := Slope * Data[I].Time3 + Intercept;
+          LocalAddToLog(Data[I].Time3.ToString + #9 + FloatToStr(Data[I].Price) + #9 + CalcPrices[I].ToString);
+        end;
+        Residual := Data[I].Price - CalcPrices[I];
+        if I = 0 then
+        begin
+          MinResidual := Residual;
+          MaxResidual := Residual;
+        end
+        else
+        begin
+          if MinResidual > Residual then
+            MinResidual := Residual;
+          if MaxResidual < Residual then
+            MaxResidual := Residual;
+        end;
+      end;
+      if GradientMode = 1 then
+        DeltaT1 := Data[Length(Data)-1].Time1 - Data[0].Time1
+      else if GradientMode = 2 then
+        DeltaT2 := Data[Length(Data)-1].Time2 - Data[0].Time2
+      else
+        DeltaT3 := Data[Length(Data)-1].Time3 - Data[0].Time3;
+      DeltaP := (CalcPrices[Length(CalcPrices) - 1] - Abs(MinResidual))
+                -
+                (CalcPrices[0] - Abs(MinResidual));
+
+      if GradientMode = 1 then
+      begin
+        if DeltaT1 <> 0 then
+          AGradient.Gradient := PrepareValue(DeltaP / DeltaT1)
+        else
+          AGradient.Gradient := 0;
+        //LocalAddToLog('Coridor calc = '+ (MaxResidual - MinResidual).ToString + ' * ' + DeltaT1.ToString + ' / ' + Sqrt(DeltaT1 * DeltaT1 + DeltaP * DeltaP).ToString);
+        AGradient.Corridor := PrepareValue((MaxResidual - MinResidual)
+                                           * DeltaT1
+                                           / Sqrt(DeltaT1 * DeltaT1 + DeltaP * DeltaP));
+      end
+      else if GradientMode = 2 then
+      begin
+        if DeltaT2 <> 0 then
+          AGradient.Gradient := PrepareValue(DeltaP / DeltaT2)
+        else
+          AGradient.Gradient := 0;
+        //LocalAddToLog('Coridor calc = '+ (MaxResidual - MinResidual).ToString + ' * ' + DeltaT2.ToString + ' / ' + Sqrt(DeltaT2 * DeltaT2 + DeltaP * DeltaP).ToString);
+        AGradient.Corridor := PrepareValue((MaxResidual - MinResidual)
+                                           * DeltaT2
+                                           / Sqrt(DeltaT2 * DeltaT2 + DeltaP * DeltaP));
+      end
+      else
+      begin
+        if DeltaT3 <> 0 then
+          AGradient.Gradient := PrepareValue(DeltaP / DeltaT3)
+        else
+          AGradient.Gradient := 0;
+        //LocalAddToLog('Coridor calc = '+ (MaxResidual - MinResidual).ToString + ' * ' + DeltaT3.ToString + ' / ' + Sqrt(DeltaT3 * DeltaT3 + DeltaP * DeltaP).ToString);
+        AGradient.Corridor := PrepareValue((MaxResidual - MinResidual)
+                                           * DeltaT3
+                                           / Sqrt(DeltaT3 * DeltaT3 + DeltaP * DeltaP));
+      end;
+
+      P1 := Data[Length(Data) - 1].Price - (CalcPrices[Length(CalcPrices) - 1] - Abs(MinResidual));
+      P2 := (CalcPrices[Length(CalcPrices) - 1] + Abs(MaxResidual) - (CalcPrices[Length(CalcPrices) - 1] - Abs(MinResidual)));
+//      LocalAddToLog('P1 = '+ P1.ToString);
+//      LocalAddToLog('P2 = '+ P2.ToString);
+      AGradient.LastPosition := PrepareValue((100 * P1)
+                                               /
+                                              (100 * P2)
+                                              * 100);
+    end;
+
+begin
+  LocalLog := '';
+  try
+    Result.Calculated := false;
+    Result.Gradient := 0;
+    Result.Corridor := 0;
+    Result.LastPosition := 0;
+    LocalAddToLog('----');
+    LocalAddToLog('Monitoring = '+ GradientDuration.ToString);
+    PriceList := TMonitorLists.PriceCache.GetPriceList(Id);
+    if (PriceList.Count > 0) and (SecondsBetween(PriceList.FirstTimeStamp, Now) < GradientDuration) then
+    begin
+      LocalAddToLog('No prices');
+      Exit;
+    end;
+    StartTime := IncSecond(Now, -GradientDuration);
+    arrPrices := PriceList.GetLastPricesBroken(
+                    function(const aPrice: TPrice): Boolean
+                    begin
+                      //Result := (SecondsBetween(aPrice.TimeStamp, Now) < GradientDuration);
+                      Result := aPrice.TimeStamp > StartTime;
+                    end);
+    if (Length(arrPrices) < 2) then
+    begin
+      LocalAddToLog('No price array');
+      Exit;
+    end;
+
+    SetLength(Data, Length(arrPrices));
+    for I := 0 to Length(arrPrices) - 1 do
+    begin
+      Data[I].Time1 := arrPrices[I].TimeStamp;
+      Data[I].Time2 := Abs(MilliSecondsBetween(arrPrices[I].TimeStamp, StartTime));
+      Data[I].Time3 := Abs(MilliSecondsBetween(arrPrices[I].TimeStamp, StartTime)) / 1000;
+      Data[I].Price := arrPrices[I].Value;
+    end;
+
+    CalcGradientValues(Data, Result);
+    Result.Calculated := true;
+    LocalAddToLog('Gradient = '+ Result.Gradient.ToString);
+    LocalAddToLog('CorridorWidth = '+ Result.Corridor.ToString);
+    LocalAddToLog('LastPosition = '+ Result.LastPosition.ToString);
+  finally
+    AddToLog(LocalLog);
+  end;
+end;
+
 procedure TfrmCandidateMain.CalculateGradient(const aNode: PVirtualNode; const aColumnsInfo: TColumnsInfo);
+// old version
 var
   Data: PInstrumentData;
 begin
@@ -2351,33 +2606,36 @@ begin
                   gradientValue := 0;
                 if IsNan(gradientValue) or IsInfinite(gradientValue) then
                   gradientValue := 0;
+
+                AddToLog('Old gradient = '+ gradientValue.ToString);
+                AddToLog('Old corridor = '+ corridorValue.ToString);
               end;
             end;
 
-            if not(Application.Terminated or (csDestroying in TForm(Self).ComponentState)) and
-              Assigned(Data) and Data^.ExtraColumns.Items.ContainsKey(aColumnsInfo.ColumnId) then
-            begin
-              ColumnsItem := Data^.ExtraColumns.Items[aColumnsInfo.ColumnId];
-              PrevPrice := ColumnsItem.Price;
-              case aColumnsInfo.CalcColumn.CalculationType of
-                ctGradientToday:
-                  ColumnsItem.Price := gradientValue;
-                ctCorridorWidth:
-                  ColumnsItem.Price := corridorValue;
-              end;
-              ColumnsItem.IsUnsufficientData := IsUnsufficientData;
-              if (not IsUnsufficientData) and (ColumnsItem.TimeStamp = 0) then
-                ColumnsItem.TimeStamp := Now;
-
-              if (ColumnsItem.Price = 0) then
-                ColumnsItem.ColTick := clBlack
-              else if (ColumnsItem.Price >= PrevPrice) then
-                ColumnsItem.ColTick := clGreen
-              else
-                ColumnsItem.ColTick := clRed;
-              Data^.ExtraColumns.Items.AddOrSetValue(aColumnsInfo.ColumnId, ColumnsItem);
-              CalculateRankingSum(Data);
-            end;
+//            if not(Application.Terminated or (csDestroying in TForm(Self).ComponentState)) and
+//              Assigned(Data) and Data^.ExtraColumns.Items.ContainsKey(aColumnsInfo.ColumnId) then
+//            begin
+//              ColumnsItem := Data^.ExtraColumns.Items[aColumnsInfo.ColumnId];
+//              PrevPrice := ColumnsItem.Price;
+//              case aColumnsInfo.CalcColumn.CalculationType of
+//                ctGradientToday:
+//                  ColumnsItem.Price := gradientValue;
+//                ctCorridorWidth:
+//                  ColumnsItem.Price := corridorValue;
+//              end;
+//              ColumnsItem.IsUnsufficientData := IsUnsufficientData;
+//              if (not IsUnsufficientData) and (ColumnsItem.TimeStamp = 0) then
+//                ColumnsItem.TimeStamp := Now;
+//
+//              if (ColumnsItem.Price = 0) then
+//                ColumnsItem.ColTick := clBlack
+//              else if (ColumnsItem.Price >= PrevPrice) then
+//                ColumnsItem.ColTick := clGreen
+//              else
+//                ColumnsItem.ColTick := clRed;
+//              Data^.ExtraColumns.Items.AddOrSetValue(aColumnsInfo.ColumnId, ColumnsItem);
+//              CalculateRankingSum(Data);
+//            end;
           except
             on E: Exception do
               TPublishers.LogPublisher.Write([ltLogWriter], ddError, Self, 'CalculateGradient', E.Message);
@@ -3010,80 +3268,130 @@ var
   Node: PVirtualNode;
   ColumnsItem: TExtraColumns.TColumnsItem;
   PrevPrice: Double;
+  GradientValues: TDictionary<integer, TGradientRecord>;
+  ColorCalculated: boolean;
 begin
-  if (TickType = ttLast) then
-    FIsPriceExists := FInstrumentList.ContainsKey(Id);
-  for ColumnsInfo in FColumns.Values do
-    if ((ColumnsInfo.SourceType = stTickColumn) and ((ColumnsInfo.TickColumn.IBValue1 = TickType) or (ColumnsInfo.TickColumn.IBValue2 = TickType))) or
-       ((ColumnsInfo.SourceType = stCalcColumn) and (TickType = ttLast) and (ColumnsInfo.CalcColumn.CalculationType in [ctGradientToday, ctCorridorWidth])) or
-       ((ColumnsInfo.SourceType = stEmbargoColumn) and (ColumnsInfo.EmbargoColumn.EmbargoType = etVolumeAmount) and (TickType in [ColumnsInfo.EmbargoColumn.IBValue, ttLast])) or
-       (ColumnsInfo.SourceType = stPriceChangeColumn) then
+  GradientValues := TDictionary<integer, TGradientRecord>.Create;
+  try
+    if (TickType = ttLast) then
+      FIsPriceExists := FInstrumentList.ContainsKey(Id);
+
+    if not FInstrumentList.ContainsKey(Id) then Exit;
+
+    if (TickType = ttLast) then
     begin
-      InstrumentItem := FInstrumentList.GetItem(Id);
-      if Assigned(InstrumentItem) then
+      AddToLog('');
+      AddToLog('PriceChange for '+ SokidList.GetItem(Id).Name);
+      for ColumnsInfo in FColumns.Values do
+        if (ColumnsInfo.SourceType = stCalcColumn) then
+          if ColumnsInfo.CalcColumn.CalculationType in [ctGradientCalc, ctCorridorWidth, ctlastPosition] then
+            if not GradientValues.ContainsKey(ColumnsInfo.CalcColumn.Duration) then
+              GradientValues.AddOrSetValue(ColumnsInfo.CalcColumn.Duration, CalcGradient(Id, ColumnsInfo.CalcColumn.Duration, rgGradientCalcMode.ItemIndex + 1));
+    end;
+
+    for ColumnsInfo in FColumns.Values do
+      if ((ColumnsInfo.SourceType = stTickColumn) and ((ColumnsInfo.TickColumn.IBValue1 = TickType) or (ColumnsInfo.TickColumn.IBValue2 = TickType))) or
+         ((ColumnsInfo.SourceType = stCalcColumn) and (TickType = ttLast) and (ColumnsInfo.CalcColumn.CalculationType in [ctGradientCalc, ctCorridorWidth, ctLastPosition])) or
+         ((ColumnsInfo.SourceType = stEmbargoColumn) and (ColumnsInfo.EmbargoColumn.EmbargoType = etVolumeAmount) and (TickType in [ColumnsInfo.EmbargoColumn.IBValue, ttLast])) or
+         (ColumnsInfo.SourceType = stPriceChangeColumn) then
       begin
-        for Node in InstrumentItem.NodeList do
-          if Assigned(Node) then
-          begin
-            Data := Node^.GetData;
-            if Assigned(Data) then
+        InstrumentItem := FInstrumentList.GetItem(Id);
+        if Assigned(InstrumentItem) then
+        begin
+          for Node in InstrumentItem.NodeList do
+            if Assigned(Node) then
             begin
-              if (ColumnsInfo.ColumnId > 0) and (Data^.ExtraColumns.Items.ContainsKey(ColumnsInfo.ColumnId)) then
+              Data := Node^.GetData;
+              if Assigned(Data) then
               begin
-                ColumnsItem := Data^.ExtraColumns.Items[ColumnsInfo.ColumnId];
-                PrevPrice := ColumnsItem.Price;
+                if (ColumnsInfo.ColumnId > 0) and (Data^.ExtraColumns.Items.ContainsKey(ColumnsInfo.ColumnId)) then
+                begin
+                  ColorCalculated := false;
+                  ColumnsItem := Data^.ExtraColumns.Items[ColumnsInfo.ColumnId];
+                  PrevPrice := ColumnsItem.Price;
 
-                case ColumnsInfo.SourceType of
-                  stStaticList:
-                    ;
-                  stCandidateMarket:
-                    ;
-                  stTickColumn:
-                    begin
-                      if (ColumnsInfo.TickColumn.IBValue2 <> ttNotSet) and (ColumnsInfo.TickColumn.TypeOperation <> toNone) then
-                        ColumnsItem.Price := ColumnsInfo.TickColumn.TypeOperation.Calc(TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue1),
-                                                                                       TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue2))
-                      else
-                        ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue1);
-                      if (ColumnsItem.TimeStamp = 0) then
-                        ColumnsItem.TimeStamp := TimeStamp;
-                    end;
-                  stCalcColumn:
-                    CalculateGradient(Node, ColumnsInfo);
-                  stPriceChangeColumn:
-                    begin
-                      // stop calculate if order is filled
-                      if Assigned(Data.MotherOrderDoc) and (Data.MotherOrderDoc.Filled > 0) then
-                        ColumnsItem.StopCalculatePriceChange := true
-                      else
-                        ColumnsItem.PriceChangeWeight := CalculatePriceChangeWeight(Node, ColumnsInfo);
-                    end;
-                  stEmbargoColumn:
-                    ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.EmbargoColumn.IBValue)
-                                         *
-                                         TMonitorLists.PriceCache.GetLastPrice(Id, ttLast);
+                  case ColumnsInfo.SourceType of
+                    stStaticList:
+                      ;
+                    stCandidateMarket:
+                      ;
+                    stTickColumn:
+                      begin
+                        if (ColumnsInfo.TickColumn.IBValue2 <> ttNotSet) and (ColumnsInfo.TickColumn.TypeOperation <> toNone) then
+                          ColumnsItem.Price := ColumnsInfo.TickColumn.TypeOperation.Calc(TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue1),
+                                                                                         TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue2))
+                        else
+                          ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue1);
+                        if (ColumnsItem.TimeStamp = 0) then
+                          ColumnsItem.TimeStamp := TimeStamp;
+                      end;
+                    stCalcColumn:
+                      begin
+                        if (TickType = ttLast) then
+                        begin
+                          //CalculateGradient(Node, ColumnsInfo);
+                          ColumnsItem.IsUnsufficientData := false;
+                          ColumnsItem.Price := 0;
+                          if GradientValues.ContainsKey(ColumnsInfo.CalcColumn.Duration) then
+                          begin
+                            ColumnsItem.IsUnsufficientData := not GradientValues.Items[ColumnsInfo.CalcColumn.Duration].Calculated;
+                            case ColumnsInfo.CalcColumn.CalculationType of
+                              ctGradientCalc: ColumnsItem.Price := GradientValues.Items[ColumnsInfo.CalcColumn.Duration].Gradient;
+                              ctCorridorWidth: ColumnsItem.Price := GradientValues.Items[ColumnsInfo.CalcColumn.Duration].Corridor;
+                              ctlastPosition: ColumnsItem.Price := GradientValues.Items[ColumnsInfo.CalcColumn.Duration].LastPosition;
+                            end;
+                          end;
+                          if (ColumnsItem.Price >= ColumnsInfo.CalcColumn.Value1)
+                              and
+                             (ColumnsItem.Price <= ColumnsInfo.CalcColumn.Value2) then
+                            ColumnsItem.ColTick := clGreen
+                          else if not ColumnsItem.IsUnsufficientData then
+                            ColumnsItem.ColTick := clRed
+                          else
+                            ColumnsItem.ColTick := clBlack;
+                          ColorCalculated := true;
+                        end;
+                      end;
+                    stPriceChangeColumn:
+                      begin
+                        // stop calculate if order is filled
+                        if Assigned(Data.MotherOrderDoc) and (Data.MotherOrderDoc.Filled > 0) then
+                          ColumnsItem.StopCalculatePriceChange := true
+                        else
+                          ColumnsItem.PriceChangeWeight := CalculatePriceChangeWeight(Node, ColumnsInfo);
+                      end;
+                    stEmbargoColumn:
+                      ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.EmbargoColumn.IBValue)
+                                           *
+                                           TMonitorLists.PriceCache.GetLastPrice(Id, ttLast);
+                  end;
+
+                  if not ColorCalculated then
+                  begin
+                    if (ColumnsItem.Price = 0) then
+                      ColumnsItem.ColTick := clBlack
+                    else if (ColumnsItem.Price >= PrevPrice) then
+                      ColumnsItem.ColTick := clGreen
+                    else
+                      ColumnsItem.ColTick := clRed;
+                  end;
+
+                  Data^.ExtraColumns.Items.AddOrSetValue(ColumnsInfo.ColumnId, ColumnsItem);
+                  CalculateRankingSum(Data);
+                  vstCandidate.InvalidateNode(Node);
                 end;
-
-                if (ColumnsItem.Price = 0) then
-                  ColumnsItem.ColTick := clBlack
-                else if (ColumnsItem.Price >= PrevPrice) then
-                  ColumnsItem.ColTick := clGreen
-                else
-                  ColumnsItem.ColTick := clRed;
-
-                Data^.ExtraColumns.Items.AddOrSetValue(ColumnsInfo.ColumnId, ColumnsItem);
-                CalculateRankingSum(Data);
-                vstCandidate.InvalidateNode(Node);
               end;
             end;
-          end;
+        end;
+        TThread.Queue(nil,
+          procedure
+          begin
+            PreExecutionEvaluationOrders;
+          end);
       end;
-      TThread.Queue(nil,
-        procedure
-        begin
-          PreExecutionEvaluationOrders;
-        end);
-    end;
+  finally
+    GradientValues.Free;
+  end;
 end;
 
 procedure TfrmCandidateMain.OnRebuildFromTWS(Sender: TObject);
