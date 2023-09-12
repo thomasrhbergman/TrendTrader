@@ -542,6 +542,7 @@ object frmCandidateMain: TfrmCandidateMain
         OnAdvancedHeaderDraw = vstCandidateAdvancedHeaderDraw
         OnBeforeCellPaint = vstCandidateBeforeCellPaint
         OnCompareNodes = vstCandidateCompareNodes
+        OnContextPopup = vstCandidateContextPopup
         OnDragAllowed = vstCandidateDragAllowed
         OnDragOver = vstCandidateDragOver
         OnDrawText = vstCandidateDrawText
@@ -556,7 +557,6 @@ object frmCandidateMain: TfrmCandidateMain
         OnInitNode = vstCandidateInitNode
         Touch.InteractiveGestures = [igPan, igPressAndTap]
         Touch.InteractiveGestureOptions = [igoPanSingleFingerHorizontal, igoPanSingleFingerVertical, igoPanInertia, igoPanGutter, igoParentPassthrough]
-        ExplicitWidth = 677
         Columns = <
           item
             CaptionAlignment = taCenter
@@ -620,10 +620,6 @@ object frmCandidateMain: TfrmCandidateMain
           ReadOnly = True
           ScrollBars = ssVertical
           TabOrder = 0
-          ExplicitLeft = 680
-          ExplicitTop = 0
-          ExplicitWidth = 379
-          ExplicitHeight = 450
         end
         object pnlLogOptions: TPanel
           Left = 2
@@ -647,9 +643,6 @@ object frmCandidateMain: TfrmCandidateMain
               'MilliSeconds (Integer)'
               'Seconds (Float)')
             TabOrder = 0
-            ExplicitLeft = 4
-            ExplicitTop = 4
-            ExplicitWidth = 185
           end
         end
       end
@@ -939,6 +932,11 @@ object frmCandidateMain: TfrmCandidateMain
     end
     object miShowTradeChart: TMenuItem
       Action = aShowTradeChart
+    end
+    object mmGradientChart: TMenuItem
+      Caption = 'Show Gradient Chart'
+      Visible = False
+      OnClick = mmGradientChartClick
     end
     object miShowPriceHistory: TMenuItem
       Action = aShowPriceHistory

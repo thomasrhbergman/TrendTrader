@@ -98,6 +98,11 @@ type
     procedure OnMotherFilledPriceChange(const MotherNode: PVirtualNode);
   end;
 
+  IGradientChange = interface(ICustomInterface)
+   ['{138153D1-B286-486F-B5EA-6FE3D6590122}']
+    procedure OnGradientChange(const aId, aDuration: integer; const aGradientRec: TGradientRecord);
+  end;
+
 
 implementation
 

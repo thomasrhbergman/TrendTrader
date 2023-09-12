@@ -18,16 +18,9 @@ uses
   IABFunctions.MarketData, AutoTrades.Types, DaModule.Utils, VirtualTrees.Helper, Global.Resources, Vcl.Themes,
   Monitor.Info, Publishers, System.Notification, Chart.Trade, Vcl.NumberBox, IABFunctions.Helpers, System.Types,
   MonitorTree.Helper, Candidate.GradientColumn, VirtualTrees.Types, FireDAC.Comp.Client, FireDAC.Stan.Param,
-  FireDAC.Comp.DataSet, ListForm, Candidate.PriceChangeColumn,
+  FireDAC.Comp.DataSet, ListForm, Candidate.PriceChangeColumn, Chart.Gradient,
   Candidate.EmulatePriceChange, MonitorTree.Factory, NNfunctions.Types;
 {$ENDREGION}
-
-type TGradientRecord = record
-  Gradient: Double;
-  Corridor: Double;
-  LastPosition: Double;
-  Calculated: Boolean;
-end;
 
 type
   TfrmCandidateMain = class(TCustomForm, ICandidateMarket,
@@ -132,6 +125,7 @@ type
     pnlLog: TPanel;
     pnlLogOptions: TPanel;
     rgGradientCalcMode: TRadioGroup;
+    mmGradientChart: TMenuItem;
     procedure aAddEmbargoColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnExecute(Sender: TObject);
     procedure aChangeWeigthValueColumnUpdate(Sender: TObject);
@@ -193,6 +187,8 @@ type
     procedure lbColumnsDblClick(Sender: TObject);
     procedure aAddPriceChangeColumnExecute(Sender: TObject);
     procedure mmEmulatePriceChangeClick(Sender: TObject);
+    procedure mmGradientChartClick(Sender: TObject);
+    procedure vstCandidateContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
   private const
     COL_INSTRUMENT  = 0;
     COL_RANKING_SUM = 1;
@@ -679,6 +675,31 @@ begin
   begin
     Data := vstCandidate.FocusedNode^.GetData;
     TfrmCandidateEmulatePriceChange.ShowDocument(Data^.Id);
+  end;
+end;
+
+procedure TfrmCandidateMain.mmGradientChartClick(Sender: TObject);
+var
+  Data: PInstrumentData;
+  ColumnsInfo: TColumnsInfo;
+  ColumnId: Integer;
+begin
+  if Assigned(vstCandidate.FocusedNode) then
+  begin
+    ColumnId := vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id;
+    if FColumns.ContainsKey(ColumnId) then
+    begin
+      ColumnsInfo := FColumns[ColumnId];
+      if (ColumnsInfo.SourceType = stCalcColumn) then
+      begin;
+        Data := vstCandidate.FocusedNode^.GetData;
+        with TfrmGradientChartForm.Create(nil) do
+        begin
+          Initialize(Data^.Id, ColumnsInfo.CalcColumn.Duration);
+          Show;
+        end;
+      end;
+    end;
   end;
 end;
 
@@ -2199,10 +2220,18 @@ begin
                   RankingSum := RankingSum + Weight;
             end;
           stTickColumn:
+            begin
+              if ColumnsInfo.TickColumn.Result01 then
+              begin
+                if ColumnsInfo.TickColumn.Result01Inequality.IsCondition(ColumnsItem.Price, ColumnsInfo.TickColumn.Result01Value) then
+                  RankingSum := RankingSum + Weight;
+              end
+              else
 //            if (ColumnsInfo.TickColumn.IBValue2 <> ttNotSet) then
 //              RankingSum := RankingSum + ColumnsItem.Price * Weight * 100
 //            else
-              RankingSum := RankingSum + ColumnsItem.Price * Weight;
+                RankingSum := RankingSum + ColumnsItem.Price * Weight;
+            end;
           stPriceChangeColumn:
             RankingSum := RankingSum + ColumnsItem.PriceChangeWeight * Weight;
         end;
@@ -2271,18 +2300,11 @@ begin
 end;
 
 function TfrmCandidateMain.CalcGradient(Id, GradientDuration, GradientMode: Integer): TGradientRecord;
-type TDataRecord = record
-  Time1: TDateTime;
-  Time2: Int64;
-  Time3: Double;
-  Price: Double;
-end;
 //new version
 var PriceList: TPriceList;
     arrPrices: TArray<TPrice>;
     StartTime: TDateTime;
     I: integer;
-    Data: TArray<TDataRecord>;
     LocalLog: string;
 
     procedure LocalAddToLog(AText: string);
@@ -2299,12 +2321,12 @@ var PriceList: TPriceList;
       Result := AValue;
     end;
 
-    procedure LinearRegressionLeastSquares(const Data: TArray<TDataRecord>; var A, B: Double);
+    procedure LinearRegressionLeastSquares(const ARec: TGradientRecord; var A, B: Double);
     var
       n, i: Integer;
       sumX, sumY, sumXY, sumX2: Double;
     begin
-      n := Length(Data);
+      n := Length(ARec.RealPrices);
 
       if n < 2 then
         raise Exception.Create('At least 2 data points are required for linear regression.');
@@ -2316,26 +2338,26 @@ var PriceList: TPriceList;
 
       for i := 0 to n - 1 do
       begin
-        if GradientMode = 1 then
+        if ARec.TimeMode = gtmDateTime then
         begin
-          sumX := sumX + Data[i].Time1;
-          sumY := sumY + Data[i].Price;
-          sumXY := sumXY + Data[i].Time1 * Data[i].Price;
-          sumX2 := sumX2 + Sqr(Data[i].Time1);
+          sumX := sumX + ARec.Time1[I];
+          sumY := sumY + ARec.RealPrices[I];
+          sumXY := sumXY + ARec.Time1[I] * ARec.RealPrices[I];
+          sumX2 := sumX2 + Sqr(ARec.Time1[I]);
         end
-        else if GradientMode = 2 then
+        else if ARec.TimeMode = gtmMilliSeconds then
         begin
-          sumX := sumX + Data[i].Time2;
-          sumY := sumY + Data[i].Price;
-          sumXY := sumXY + Data[i].Time2 * Data[i].Price;
-          sumX2 := sumX2 + Sqr(Data[i].Time2);
+          sumX := sumX + ARec.Time2[I];
+          sumY := sumY + ARec.RealPrices[I];
+          sumXY := sumXY + ARec.Time2[I] * ARec.RealPrices[I];
+          sumX2 := sumX2 + Sqr(ARec.Time2[I]);
         end
         else
         begin
-          sumX := sumX + Data[i].Time3;
-          sumY := sumY + Data[i].Price;
-          sumXY := sumXY + Data[i].Time3 * Data[i].Price;
-          sumX2 := sumX2 + Sqr(Data[i].Time3);
+          sumX := sumX + ARec.Time3[I];
+          sumY := sumY + ARec.RealPrices[I];
+          sumXY := sumXY + ARec.Time3[I] * ARec.RealPrices[I];
+          sumX2 := sumX2 + Sqr(ARec.Time3[I]);
         end;
       end;
 
@@ -2343,10 +2365,9 @@ var PriceList: TPriceList;
       B := (sumY - A * sumX) / n;
     end;
 
-    procedure CalcGradientValues(Data: TArray<TDataRecord>; var AGradient: TGradientRecord);
+    procedure CalcGradientValues(var ARec: TGradientRecord);
     var Slope, Intercept: Double;
         I: integer;
-        CalcPrices: TArray<Double>;
         MinResidual, MaxResidual, Residual: Double;
         DeltaT1: TDateTime;
         DeltaT2: Int64;
@@ -2354,33 +2375,32 @@ var PriceList: TPriceList;
         DeltaP: Double;
         P1, P2: Double;
     begin
-      if Length(Data) = 0 then Exit;
+      if Length(ARec.RealPrices) = 0 then Exit;
       MinResidual := 0;
       MaxResidual := 0;
       DeltaT1 := 0;
       DeltaT2 := 0;
       DeltaT3 := 0;
-      LinearRegressionLeastSquares(Data, Slope, Intercept);
-      SetLength(CalcPrices, Length(Data));
+      LinearRegressionLeastSquares(ARec, Slope, Intercept);
       LocalAddToLog('Calculation values');
-      for I := 0 to Length(Data) - 1 do
+      for I := 0 to Length(ARec.RealPrices) - 1 do
       begin
-        if GradientMode = 1 then
+        if ARec.TimeMode = gtmDateTime then
         begin
-          CalcPrices[I] := Slope * Data[I].Time1 + Intercept;
-          LocalAddToLog(Data[I].Time1.ToString + #9 + FloatToStr(Data[I].Price) + #9 + CalcPrices[I].ToString);
+          ARec.CalcPrices[I] := Slope * ARec.Time1[I] + Intercept;
+          LocalAddToLog(ARec.Time1[I].ToString + #9 + FloatToStr(ARec.RealPrices[I]) + #9 + ARec.CalcPrices[I].ToString);
         end
-        else if GradientMode = 2 then
+        else if ARec.TimeMode = gtmMilliSeconds then
         begin
-          CalcPrices[I] := Slope * Data[I].Time2 + Intercept;
-          LocalAddToLog(Data[I].Time2.ToString + #9 + FloatToStr(Data[I].Price) + #9 + CalcPrices[I].ToString);
+          ARec.CalcPrices[I] := Slope * ARec.Time2[I] + Intercept;
+          LocalAddToLog(ARec.Time2[I].ToString + #9 + FloatToStr(ARec.RealPrices[I]) + #9 + ARec.CalcPrices[I].ToString);
         end
         else
         begin
-          CalcPrices[I] := Slope * Data[I].Time3 + Intercept;
-          LocalAddToLog(Data[I].Time3.ToString + #9 + FloatToStr(Data[I].Price) + #9 + CalcPrices[I].ToString);
+          ARec.CalcPrices[I] := Slope * ARec.Time3[I] + Intercept;
+          LocalAddToLog(ARec.Time3[I].ToString + #9 + FloatToStr(ARec.RealPrices[I]) + #9 + ARec.CalcPrices[I].ToString);
         end;
-        Residual := Data[I].Price - CalcPrices[I];
+        Residual := ARec.RealPrices[I] - ARec.CalcPrices[I];
         if I = 0 then
         begin
           MinResidual := Residual;
@@ -2394,67 +2414,70 @@ var PriceList: TPriceList;
             MaxResidual := Residual;
         end;
       end;
-      if GradientMode = 1 then
-        DeltaT1 := Data[Length(Data)-1].Time1 - Data[0].Time1
-      else if GradientMode = 2 then
-        DeltaT2 := Data[Length(Data)-1].Time2 - Data[0].Time2
+      for I := 0 to Length(ARec.RealPrices) - 1 do
+      begin
+        ARec.LowLinePrices[I] := ARec.CalcPrices[I] - Abs(MinResidual);
+        ARec.HighLinePrices[I] := ARec.CalcPrices[I] + Abs(MaxResidual);
+      end;
+      if ARec.TimeMode = gtmDateTime then
+        DeltaT1 := ARec.Time1[Length(ARec.Time1)-1] - ARec.Time1[0]
+      else if ARec.TimeMode = gtmMilliSeconds then
+        DeltaT2 := ARec.Time2[Length(ARec.Time2)-1] - ARec.Time2[0]
       else
-        DeltaT3 := Data[Length(Data)-1].Time3 - Data[0].Time3;
-      DeltaP := (CalcPrices[Length(CalcPrices) - 1] - Abs(MinResidual))
+        DeltaT3 := ARec.Time3[Length(ARec.Time3)-1] - ARec.Time3[0];
+      DeltaP := (ARec.CalcPrices[Length(ARec.CalcPrices) - 1] - Abs(MinResidual))
                 -
-                (CalcPrices[0] - Abs(MinResidual));
+                (ARec.CalcPrices[0] - Abs(MinResidual));
 
-      if GradientMode = 1 then
+      if ARec.TimeMode = gtmDateTime then
       begin
         if DeltaT1 <> 0 then
-          AGradient.Gradient := PrepareValue(DeltaP / DeltaT1)
+          ARec.Gradient := PrepareValue(DeltaP / DeltaT1)
         else
-          AGradient.Gradient := 0;
+          ARec.Gradient := 0;
         //LocalAddToLog('Coridor calc = '+ (MaxResidual - MinResidual).ToString + ' * ' + DeltaT1.ToString + ' / ' + Sqrt(DeltaT1 * DeltaT1 + DeltaP * DeltaP).ToString);
-        AGradient.Corridor := PrepareValue((MaxResidual - MinResidual)
-                                           * DeltaT1
-                                           / Sqrt(DeltaT1 * DeltaT1 + DeltaP * DeltaP));
+        ARec.Corridor := PrepareValue((MaxResidual - MinResidual)
+                                       * DeltaT1
+                                       / Sqrt(DeltaT1 * DeltaT1 + DeltaP * DeltaP));
       end
-      else if GradientMode = 2 then
+      else if ARec.TimeMode = gtmMilliSeconds then
       begin
         if DeltaT2 <> 0 then
-          AGradient.Gradient := PrepareValue(DeltaP / DeltaT2)
+          ARec.Gradient := PrepareValue(DeltaP / DeltaT2)
         else
-          AGradient.Gradient := 0;
+          ARec.Gradient := 0;
         //LocalAddToLog('Coridor calc = '+ (MaxResidual - MinResidual).ToString + ' * ' + DeltaT2.ToString + ' / ' + Sqrt(DeltaT2 * DeltaT2 + DeltaP * DeltaP).ToString);
-        AGradient.Corridor := PrepareValue((MaxResidual - MinResidual)
-                                           * DeltaT2
-                                           / Sqrt(DeltaT2 * DeltaT2 + DeltaP * DeltaP));
+        ARec.Corridor := PrepareValue((MaxResidual - MinResidual)
+                                       * DeltaT2
+                                       / Sqrt(DeltaT2 * DeltaT2 + DeltaP * DeltaP));
       end
       else
       begin
         if DeltaT3 <> 0 then
-          AGradient.Gradient := PrepareValue(DeltaP / DeltaT3)
+          ARec.Gradient := PrepareValue(DeltaP / DeltaT3)
         else
-          AGradient.Gradient := 0;
+          ARec.Gradient := 0;
         //LocalAddToLog('Coridor calc = '+ (MaxResidual - MinResidual).ToString + ' * ' + DeltaT3.ToString + ' / ' + Sqrt(DeltaT3 * DeltaT3 + DeltaP * DeltaP).ToString);
-        AGradient.Corridor := PrepareValue((MaxResidual - MinResidual)
-                                           * DeltaT3
-                                           / Sqrt(DeltaT3 * DeltaT3 + DeltaP * DeltaP));
+        ARec.Corridor := PrepareValue((MaxResidual - MinResidual)
+                                       * DeltaT3
+                                       / Sqrt(DeltaT3 * DeltaT3 + DeltaP * DeltaP));
       end;
 
-      P1 := Data[Length(Data) - 1].Price - (CalcPrices[Length(CalcPrices) - 1] - Abs(MinResidual));
-      P2 := (CalcPrices[Length(CalcPrices) - 1] + Abs(MaxResidual) - (CalcPrices[Length(CalcPrices) - 1] - Abs(MinResidual)));
+      P1 := ARec.RealPrices[Length(ARec.RealPrices) - 1] - (ARec.CalcPrices[Length(ARec.CalcPrices) - 1] - Abs(MinResidual));
+      P2 := (ARec.CalcPrices[Length(ARec.CalcPrices) - 1] + Abs(MaxResidual) - (ARec.CalcPrices[Length(ARec.CalcPrices) - 1] - Abs(MinResidual)));
 //      LocalAddToLog('P1 = '+ P1.ToString);
 //      LocalAddToLog('P2 = '+ P2.ToString);
-      AGradient.LastPosition := PrepareValue((100 * P1)
-                                               /
-                                              (100 * P2)
-                                              * 100);
+      ARec.LastPosition := PrepareValue((100 * P1)
+                                           /
+                                          (100 * P2)
+                                          * 100);
     end;
 
 begin
   LocalLog := '';
   try
-    Result.Calculated := false;
-    Result.Gradient := 0;
-    Result.Corridor := 0;
-    Result.LastPosition := 0;
+    Result.Clear;
+    Result.TimeMode := TGradientTimeMode(GradientMode);
     LocalAddToLog('----');
     LocalAddToLog('Monitoring = '+ GradientDuration.ToString);
     PriceList := TMonitorLists.PriceCache.GetPriceList(Id);
@@ -2476,21 +2499,22 @@ begin
       Exit;
     end;
 
-    SetLength(Data, Length(arrPrices));
+    Result.SetPricesCount(Length(arrPrices));
     for I := 0 to Length(arrPrices) - 1 do
     begin
-      Data[I].Time1 := arrPrices[I].TimeStamp;
-      Data[I].Time2 := Abs(MilliSecondsBetween(arrPrices[I].TimeStamp, StartTime));
-      Data[I].Time3 := Abs(MilliSecondsBetween(arrPrices[I].TimeStamp, StartTime)) / 1000;
-      Data[I].Price := arrPrices[I].Value;
+      Result.Time1[I] := arrPrices[I].TimeStamp;
+      Result.Time2[I] := Abs(MilliSecondsBetween(arrPrices[I].TimeStamp, StartTime));
+      Result.Time3[I] := Abs(MilliSecondsBetween(arrPrices[I].TimeStamp, StartTime)) / 1000;
+      Result.RealPrices[I] := arrPrices[I].Value;
     end;
 
-    CalcGradientValues(Data, Result);
+    CalcGradientValues(Result);
     Result.Calculated := true;
     LocalAddToLog('Gradient = '+ Result.Gradient.ToString);
     LocalAddToLog('CorridorWidth = '+ Result.Corridor.ToString);
     LocalAddToLog('LastPosition = '+ Result.LastPosition.ToString);
   finally
+    TPublishers.GradientPublisher.OnGradientChange(Id, GradientDuration, Result);
     AddToLog(LocalLog);
   end;
 end;
@@ -3286,7 +3310,7 @@ begin
         if (ColumnsInfo.SourceType = stCalcColumn) then
           if ColumnsInfo.CalcColumn.CalculationType in [ctGradientCalc, ctCorridorWidth, ctlastPosition] then
             if not GradientValues.ContainsKey(ColumnsInfo.CalcColumn.Duration) then
-              GradientValues.AddOrSetValue(ColumnsInfo.CalcColumn.Duration, CalcGradient(Id, ColumnsInfo.CalcColumn.Duration, rgGradientCalcMode.ItemIndex + 1));
+              GradientValues.AddOrSetValue(ColumnsInfo.CalcColumn.Duration, CalcGradient(Id, ColumnsInfo.CalcColumn.Duration, rgGradientCalcMode.ItemIndex));
     end;
 
     for ColumnsInfo in FColumns.Values do
@@ -3324,6 +3348,14 @@ begin
                           ColumnsItem.Price := TMonitorLists.PriceCache.GetLastPrice(Id, ColumnsInfo.TickColumn.IBValue1);
                         if (ColumnsItem.TimeStamp = 0) then
                           ColumnsItem.TimeStamp := TimeStamp;
+                        if ColumnsInfo.TickColumn.Result01 then
+                        begin
+                          if ColumnsInfo.TickColumn.Result01Inequality.IsCondition(ColumnsItem.Price, ColumnsInfo.TickColumn.Result01Value) then
+                            ColumnsItem.ColTick := clGreen
+                          else
+                            ColumnsItem.ColTick := clRed;
+                          ColorCalculated := true;
+                        end
                       end;
                     stCalcColumn:
                       begin
@@ -3662,6 +3694,23 @@ begin
       ColumnsItem1 := Data1^.ExtraColumns.Items[ColumnsInfo.ColumnId];
       ColumnsItem2 := Data2^.ExtraColumns.Items[ColumnsInfo.ColumnId];
       Result := CompareValue(ColumnsItem1.Price, ColumnsItem2.Price);
+    end;
+  end;
+end;
+
+procedure TfrmCandidateMain.vstCandidateContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
+var
+  ColumnsInfo: TColumnsInfo;
+  ColumnId: Integer;
+begin
+  mmGradientChart.Visible := false;
+  if Assigned(vstCandidate.FocusedNode) then
+  begin
+    ColumnId := vstCandidate.Header.Columns[vstCandidate.FocusedColumn].Id;
+    if FColumns.ContainsKey(ColumnId) then
+    begin
+      ColumnsInfo := FColumns[ColumnId];
+      mmGradientChart.Visible := (ColumnsInfo.SourceType = stCalcColumn);
     end;
   end;
 end;

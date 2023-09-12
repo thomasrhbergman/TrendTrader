@@ -101,6 +101,11 @@ type
     procedure OnMotherFilledPriceChange(const MotherNode: PVirtualNode);
   end;
 
+  TGradientPublisher = class(TCustomPublisher)
+  public
+    procedure OnGradientChange(const aId, aDuration: integer; const aGradientRec: TGradientRecord);
+  end;
+
 
   TPublishers = class
   class var
@@ -118,6 +123,7 @@ type
     TickOptionComputationPublisher               : TTickOptionComputationPublisher;
     MonitorStructureChangePublisher              : TMonitorStructureChangePublisher;
     MotherFilledPriceChangePublisher             : TMotherFilledPriceChangePublisher;
+    GradientPublisher                            : TGradientPublisher;
   end;
 
 implementation
@@ -587,6 +593,23 @@ begin
     end;
 end;
 
+{ TGradientPublisher }
+
+procedure TGradientPublisher.OnGradientChange(const aId, aDuration: integer; const aGradientRec: TGradientRecord);
+var
+  obj: TObject;
+  mf: IGradientChange;
+begin
+  if not Application.Terminated then
+    for var i := 0 to Self.Count - 1 do
+    begin
+      obj := Self.Items[i];
+      if Assigned(obj) and Supports(obj, IGradientChange, mf) then
+        mf.OnGradientChange(aId, aDuration, aGradientRec);
+    end;
+
+end;
+
 initialization
   TPublishers.ConnectionStatePublisher                     := TConnectionStatePublisher.Create;
   TPublishers.ErrorPublisher                               := TErrorPublisher.Create;
@@ -602,6 +625,7 @@ initialization
   TPublishers.TickOptionComputationPublisher               := TTickOptionComputationPublisher.Create;
   TPublishers.MonitorStructureChangePublisher              := TMonitorStructureChangePublisher.Create;
   TPublishers.MotherFilledPriceChangePublisher             := TMotherFilledPriceChangePublisher.Create;
+  TPublishers.GradientPublisher                            := TGradientPublisher.Create;
 
 finalization
   if Assigned(TPublishers.ConnectionStatePublisher) then
@@ -632,6 +656,8 @@ finalization
     FreeAndNil(TPublishers.MonitorStructureChangePublisher);
   if Assigned(TPublishers.MotherFilledPriceChangePublisher) then
     FreeAndNil(TPublishers.MotherFilledPriceChangePublisher);
+  if Assigned(TPublishers.GradientPublisher) then
+    FreeAndNil(TPublishers.GradientPublisher);
 
 end.
 

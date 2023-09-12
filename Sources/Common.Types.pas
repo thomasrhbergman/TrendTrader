@@ -208,6 +208,25 @@ type
     function ToString: string;
   end;
 
+  TGradientTimeMode = (gtmDateTime, gtmMilliseconds, gtmSeconds);
+
+  TGradientRecord = record
+    TimeMode: TGradientTimeMode;
+    Time1: TArray<TDateTime>;
+    Time2: TArray<Int64>;
+    Time3: TArray<Double>;
+    RealPrices: TArray<Double>;
+    CalcPrices: TArray<Double>;
+    LowLinePrices: TArray<Double>;
+    HighLinePrices: TArray<Double>;
+    Gradient: Double;
+    Corridor: Double;
+    LastPosition: Double;
+    Calculated: Boolean;
+    procedure Clear;
+    procedure SetPricesCount(ALength: Integer);
+  end;
+
 const
   C_CURRENCY_FORMAT         = ',0.00';
   C_DECIMALS                = 4;
@@ -463,6 +482,30 @@ end;
 function TCreationTypeHelper.ToString: string;
 begin
   Result := CreationTypeString[Self];
+end;
+
+{ TGradientRecord }
+
+procedure TGradientRecord.Clear;
+begin
+  Self := Default(TGradientRecord);
+  Self.TimeMode := gtmDateTime;
+  SetPricesCount(0);
+  Self.Gradient := 0;
+  Self.Corridor := 0;
+  Self.LastPosition := 0;
+  Self.Calculated := false;
+end;
+
+procedure TGradientRecord.SetPricesCount(ALength: Integer);
+begin
+  SetLength(Self.Time1, ALength);
+  SetLength(Self.Time2, ALength);
+  SetLength(Self.Time3, ALength);
+  SetLength(Self.RealPrices, ALength);
+  SetLength(Self.CalcPrices, ALength);
+  SetLength(Self.LowLinePrices, ALength);
+  SetLength(Self.HighLinePrices, ALength);
 end;
 
 end.
