@@ -196,10 +196,28 @@
             </Platforms>
             <Deployment Version="4">
                 <DeployFile LocalName="bin\TrendTrader.exe" Configuration="Debug" Class="ProjectOutput"/>
+                <DeployFile LocalName="bin\TrendTrader.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>TrendTrader.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="bin\TrendTrader.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txaPackage" Configuration="Debug" Class="ProjectFile"/>
+                <DeployFile LocalName="ModelSupport_TrendTrader\default.txaPackage" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txaPackage" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txvpck" Configuration="Debug" Class="ProjectFile"/>
+                <DeployFile LocalName="ModelSupport_TrendTrader\default.txvpck" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="ModelSupport_TrendTrader\default.txvpck" Configuration="Release" Class="ProjectFile"/>
                 <DeployFile LocalName="Sources\bleeper.pas" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="TrendTrader.todo" Configuration="Debug" Class="ProjectFile"/>
@@ -1511,6 +1529,10 @@
         </DCCReference>
         <DCCReference Include="Sources\Candidates\Candidate.EmulatePriceChange.pas">
             <Form>frmCandidateEmulatePriceChange</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="Sources\Charts\Chart.Gradient.pas">
+            <Form>frmGradientChartForm</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <None Include="TrendTrader.todo"/>

@@ -223,7 +223,8 @@ uses
   OrderTemplate.Edit in 'Sources\OrderTemplates\OrderTemplate.Edit.pas' {frmOrderTemplateEdit},
   OrderTemplate.Types in 'Sources\OrderTemplates\OrderTemplate.Types.pas',
   Candidate.PriceChangeColumn in 'Sources\Candidates\Candidate.PriceChangeColumn.pas' {frmCandidatePriceChangeColumn},
-  Candidate.EmulatePriceChange in 'Sources\Candidates\Candidate.EmulatePriceChange.pas' {frmCandidateEmulatePriceChange};
+  Candidate.EmulatePriceChange in 'Sources\Candidates\Candidate.EmulatePriceChange.pas' {frmCandidateEmulatePriceChange},
+  Chart.Gradient in 'Sources\Charts\Chart.Gradient.pas' {frmGradientChartForm};
 
 {$R *.res}
 
@@ -242,6 +243,7 @@ begin
     Application.CreateForm(TDMod, DMod);
   Application.CreateForm(TDMImage, DMImage);
   Application.CreateForm(TfrmMonitor, frmMonitor);
+  Application.CreateForm(TfrmGradientChartForm, frmGradientChartForm);
   TfrmSplashScreen.ShowSplashScreen;
     try
       DMod.Initialize;

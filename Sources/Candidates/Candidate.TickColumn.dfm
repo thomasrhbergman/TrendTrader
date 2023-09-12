@@ -14,7 +14,7 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
   Position = poMainFormCenter
   TextHeight = 13
   object lblWeight: TLabel
-    Left = 41
+    Left = 28
     Top = 34
     Width = 45
     Height = 16
@@ -28,12 +28,26 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
     ParentFont = False
   end
   object lblTickType: TLabel
-    Left = 30
+    Left = 17
     Top = 5
     Width = 56
     Height = 16
     Alignment = taRightJustify
     Caption = 'TickType:'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+  end
+  object lblValue: TLabel
+    Left = 240
+    Top = 34
+    Width = 32
+    Height = 16
+    Alignment = taRightJustify
+    Caption = 'Value'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
@@ -63,9 +77,9 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
       ImageIndex = 46
       ImageName = 'tick'
       Images = DMImage.vil32
-      ModalResult = 1
       ParentFont = False
       TabOrder = 0
+      OnClick = btnAddColumnClick
     end
     object btnCancel: TBitBtn
       Left = 147
@@ -85,9 +99,9 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
     end
   end
   object cbIBValue1: TComboBox
-    Left = 92
+    Left = 79
     Top = 4
-    Width = 120
+    Width = 134
     Height = 21
     Style = csDropDownList
     TabOrder = 1
@@ -101,7 +115,7 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
     TabOrder = 2
   end
   object edWeight: TNumberBox
-    Left = 92
+    Left = 79
     Top = 34
     Width = 60
     Height = 21
@@ -120,5 +134,34 @@ object frmCandidateTickColumn: TfrmCandidateTickColumn
     Height = 21
     TabOrder = 4
     OnChange = cbTypeOperationChange
+  end
+  object cbResult01: TCheckBox
+    Left = 145
+    Top = 33
+    Width = 80
+    Height = 17
+    Caption = 'Result ( 0/1 )'
+    TabOrder = 5
+  end
+  object cbResult01Inequality: TComboBox
+    Left = 276
+    Top = 34
+    Width = 48
+    Height = 21
+    TabOrder = 6
+    OnChange = cbTypeOperationChange
+  end
+  object edResult01Value: TNumberBox
+    Left = 327
+    Top = 34
+    Width = 60
+    Height = 21
+    AcceptExpressions = True
+    CurrencyString = '%'
+    Mode = nbmFloat
+    MaxValue = 100.000000000000000000
+    TabOrder = 7
+    Value = 1.000000000000000000
+    UseMouseWheel = True
   end
 end

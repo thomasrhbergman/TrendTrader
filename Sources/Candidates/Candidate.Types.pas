@@ -105,10 +105,13 @@ type
   end;
 
   TTickColumn = record
-    TypeOperation : TTypeOperation;
-    Duration      : Integer;
-    IBValue1      : TIABTickType;
-    IBValue2      : TIABTickType;
+    TypeOperation       : TTypeOperation;
+    Duration            : Integer;
+    IBValue1            : TIABTickType;
+    IBValue2            : TIABTickType;
+    Result01            : Boolean;
+    Result01Inequality  : TInequalityType;
+    Result01Value       : Double;
     function Caption: string;
     function IsEquals(ATickColumn: TTickColumn): Boolean;
     function ToList: string;
@@ -1095,11 +1098,14 @@ begin
   begin
     StInfo := TStringList.Create;
     try
-      StInfo.Text   := aInfo;
-      TypeOperation := TTypeOperation(StrToIntDef(StInfo.Values['TypeOperation'], 0));
-      Duration      := StrToIntDef(StInfo.Values['Duration'], 0);
-      IBValue1      := TIABTickType(StrToIntDef(StInfo.Values['IBValue'], 0));
-      IBValue2      := TIABTickType(StrToIntDef(StInfo.Values['IBValue2'], 0));
+      StInfo.Text         := aInfo;
+      TypeOperation       := TTypeOperation(StrToIntDef(StInfo.Values['TypeOperation'], 0));
+      Duration            := StrToIntDef(StInfo.Values['Duration'], 0);
+      IBValue1            := TIABTickType(StrToIntDef(StInfo.Values['IBValue'], 0));
+      IBValue2            := TIABTickType(StrToIntDef(StInfo.Values['IBValue2'], 0));
+      Result01            := StrToBoolDef(StInfo.Values['Result01'], False);
+      Result01Inequality  := TInequalityType(StrToIntDef(StInfo.Values['Result01Inequality'], 0));
+      Result01Value       := StrToFloatDef(StInfo.Values['Result01Value'], 0);
     finally
       FreeAndNil(StInfo);
     end;
@@ -1111,7 +1117,10 @@ begin
   Result := (ATickColumn.TypeOperation = Self.TypeOperation) and
             (ATickColumn.Duration = Self.Duration) and
             (ATickColumn.IBValue1 = Self.IBValue1) and
-            (ATickColumn.IBValue2 = Self.IBValue2);
+            (ATickColumn.IBValue2 = Self.IBValue2) and
+            (ATickColumn.Result01 = Self.Result01) and
+            (ATickColumn.Result01Inequality = Self.Result01Inequality) and
+            (ATickColumn.Result01Value = Self.Result01Value);
 end;
 
 function TTickColumn.ToList: string;
@@ -1123,7 +1132,10 @@ begin
     sb.AppendFormat('TypeOperation=%d', [Integer(TypeOperation)]).AppendLine
       .AppendFormat('Duration=%d', [Duration]).AppendLine
       .AppendFormat('IBValue=%d', [Integer(IBValue1)]).AppendLine
-      .AppendFormat('IBValue2=%d', [Integer(IBValue2)]).AppendLine;
+      .AppendFormat('IBValue2=%d', [Integer(IBValue2)]).AppendLine
+      .AppendFormat('Result01=%s', [BoolToStr(Result01)]).AppendLine
+      .AppendFormat('Result01Inequality=%d', [Integer(Result01Inequality)]).AppendLine
+      .AppendFormat('Result01Value=%f', [Result01Value]).AppendLine;
     Result := sb.ToString;
   finally
     FreeAndNil(sb);
